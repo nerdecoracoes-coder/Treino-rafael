@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Treino Rafael</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f3f4f6;color:#111827}
+header{background:#111827;color:white;padding:18px 16px;position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:22px}.sub{opacity:.7;font-size:13px;margin-top:3px}
+main{max-width:720px;margin:auto;padding:14px 12px 90px}
+.card{background:white;border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 2px 8px #0000000d}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{border:0;border-radius:12px;padding:11px 14px;font-weight:700;background:#111827;color:white}
+button.secondary{background:#e5e7eb;color:#111827}
+.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1}
+.tabs button.active{background:#2563eb}
+.exercise h3{margin:0 0 4px}.last{font-size:13px;color:#2563eb;font-weight:600;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field label{font-size:11px;color:#6b7280;display:block;margin-bottom:3px}
+.field input{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meta input{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px}
+.muted{color:#6b7280;font-size:13px}
+.history-item{border-top:1px solid #e5e7eb;padding:10px 0}
+.danger{color:#b91c1c;background:#fee2e2}.success{background:#dcfce7;color:#166534}
+</style>
+</head>
+
+<body>
+<header>
+<h1>🏋️ Treino Rafael</h1>
+<div class="sub">Registro rápido • A/B • histórico no celular</div>
+</header>
+
+<main>
+<div class="tabs">
+<button id="tabA" onclick="setWorkout('A')">Treino A</button>
+<button id="tabB" onclick="setWorkout('B')">Treino B</button>
+<button onclick="showHistory()">Histórico</button>
+</div>
+
+<section id="app"></section>
+</main>
+
+<script>
+const workouts={
+A:{name:"Costas, bíceps e anteriores de pernas",ex:[
+["Agachamento",18,20],
+["Puxada aberta na polia",52,15],
+["Remada neutra máquina",59,15],
+["Leg press máquina",117,20],
+["Bíceps máquina",36,15],
+["Cadeira extensora",59,15],
+["Rosca martelo com halteres",10,12],
+["Elevação lateral com halteres",8,12]
+]},
+B:{name:"Peito, tríceps, ombros e posteriores",ex:[
+["Lombar na máquina",59,20],
+["Crucifixo máquina",100,15],
+["Supino reto máquina",50,15],
+["Cadeira flexora",36,20],
+["Desenvolvimento máquina",27,15],
+["Cadeira abdutora",45,"—"],
+["Tríceps polia corda",20,15],
+["Tríceps francês corda",17,12],
+["Elevação frontal",8,12],
+["Elevação lateral",5,12]
+]}
+};
+
+let current='A';
+const key='treinoRafaelHistorico';
+
+function val(id){
+return document.getElementById(id)?.value||"";
+}
+
+function setWorkout(w){
+current=w;
+render();
+}
+
+function render(){
+document.getElementById('tabA').classList.toggle('active',current==='A');
+document.getElementById('tabB').classList.toggle('active',current==='B');
+
+const d=new Date().toISOString().slice(0,10);
+
+let h=`
+<div class="card">
+<b>${workouts[current].name}</b>
+<div class="muted">Preencha durante o treino. A carga azul é a referência da 1ª série anterior.</div>
+
+<div class="meta" style="margin-top:10px">
+<div><label>Peso hoje (kg)</label><input id="peso" type="number" step=".1"></div>
+<div><label>Duração (min)</label><input id="duracao" type="number"></div>
+<div><label>Calorias estimadas</label><input id="cal" type="number"></div>
+<div><label>Data</label><input id="data" type="date" value="${d}"></div>
+</div>
+</div>
+`;
+
+workouts[current].ex.forEach((e,i)=>{
+h+=`
+<div class="card exercise">
+<h3>${i+1}. ${e[0]}</h3>
+<div class="last">Último início: ${e[1]} kg × ${e[2]} reps</div>
+
+<div class="grid">
+${[1,2,3].map(s=>`
+<div class="field">
+<label>Série ${s} — carga</label>
+<input id="c${i}s${s}" type="number" step=".5">
+</div>
+
+<div class="field">
+<label>Série ${s} — reps</label>
+<input id="r${i}s${s}" type="number">
+</div>
+`).join('')}
+</div>
+
+<div style="margin-top:8px">
+<input id="o${i}" placeholder="Observação (opcional)"
+style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px">
+</div>
+</div>
+`;
+});
+
+h+=`<button onclick="save()" style="width:100%;font-size:16px">✅ Salvar treino</button>`;
+
+document.getElementById('app').innerHTML=h;
+}
+
+function save(){
+const entry={
+workout:current,
+date:val('data'),
+weight:val('peso'),
+duration:val('duracao'),
+cal:val('cal'),
+ex:[]
+};
+
+workouts[current].ex.forEach((e,i)=>{
+entry.ex.push({
+name:e[0],
+sets:[1,2,3].map(s=>({
+load:val(`c${i}s${s}`),
+reps:val(`r${i}s${s}`)
+})),
+obs:val(`o${i}`)
+});
+});
+
+const hist=JSON.parse(localStorage.getItem(key)||'[]');
+hist.push(entry);
+localStorage.setItem(key,JSON.stringify(hist));
+
+document.getElementById('app').innerHTML=`
+<div class="card success">
+<h2>Treino salvo! ✅</h2>
+<p>Os dados ficaram gravados neste celular.</p>
+<button onclick="render()">Novo treino</button>
+</div>
+`;
+}
+
+function showHistory(){
+const hist=JSON.parse(localStorage.getItem(key)||'[]').slice().reverse();
+
+let h='<div class="card"><h2>Histórico</h2>';
+
+if(!hist.length)
+h+='<p class="muted">Nenhum treino salvo ainda.</p
