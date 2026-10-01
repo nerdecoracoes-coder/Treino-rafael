@@ -291,4 +291,243 @@ let entry = {
 
 workout: current,
 
-date:
+date: document.getElementById("data").value,
+weight: document.getElementById("peso").value,
+duration: document.getElementById("duracao").value,
+calories: document.getElementById("calorias").value,
+exercises: []
+};
+
+workouts[current].ex.forEach(function(ex,index){
+entry.exercises.push({
+name: ex[0],
+sets:[
+{
+load: document.getElementById("c"+index+"1").value,
+reps: document.getElementById("r"+index+"1").value
+},
+{
+load: document.getElementById("c"+index+"2").value,
+reps: document.getElementById("r"+index+"2").value
+},
+{
+load: document.getElementById("c"+index+"3").value,
+reps: document.getElementById("r"+index+"3").value
+}
+],
+observation: document.getElementById("o"+index).value
+});
+});
+
+let history = JSON.parse(localStorage.getItem(key) || "[]");
+history.push(entry);
+localStorage.setItem(key,JSON.stringify(history));
+
+document.getElementById("app").innerHTML = `
+<div class="card success">
+<h2>Treino salvo! ✅</h2>
+<p>Os dados foram gravados neste celular.</p>
+<button class="secondary" onclick="showWorkout('${current}')">
+Novo treino
+</button>
+</div>
+`;
+}
+
+function showHistory(){
+
+setActive("btnH");
+
+let history = JSON.parse(localStorage.getItem(key) || "[]");
+
+history.reverse();
+
+let html = `<div class="card"><h2>Histórico</h2>`;
+
+if(history.length === 0){
+
+html += `<p class="muted">Nenhum treino salvo ainda.</p>`;
+
+}else{
+
+history.forEach(function(item,index){
+
+html += `
+<div class="history-item">
+
+<strong>${item.workout === "A" ? "Treino A" : "Treino B"}</strong>
+
+<p class="muted">
+Data: ${item.date || "-"}<br>
+Peso: ${item.weight || "-"} kg<br>
+Duração: ${item.duration || "-"} min<br>
+Calorias: ${item.calories || "-"}
+</p>
+
+<button class="secondary" onclick="showDetails(${history.length - 1 - index})">
+Ver detalhes
+</button>
+
+</div>
+`;
+
+});
+
+}
+
+html += `</div>`;
+
+html += `
+<div class="card">
+
+<button class="secondary" onclick="exportJSON()">
+📦 Exportar backup JSON
+</button>
+
+<br><br>
+
+<button class="secondary" onclick="exportCSV()">
+📊 Exportar CSV
+</button>
+
+</div>
+`;
+
+document.getElementById("app").innerHTML = html;
+}
+
+function showDetails(index){
+
+let history = JSON.parse(localStorage.getItem(key) || "[]");
+
+let item = history[index];
+
+let html = `
+<div class="card">
+
+<h2>${item.workout === "A" ? "Treino A" : "Treino B"}</h2>
+
+<p>
+<strong>Data:</strong> ${item.date || "-"}<br>
+<strong>Peso:</strong> ${item.weight || "-"} kg<br>
+<strong>Duração:</strong> ${item.duration || "-"} min<br>
+<strong>Calorias:</strong> ${item.calories || "-"}
+</p>
+
+</div>
+`;
+
+item.exercises.forEach(function(ex){
+
+html += `
+<div class="card">
+
+<h3>${ex.name}</h3>
+
+<p>
+Série 1: ${ex.sets[0].load || "-"} kg × ${ex.sets[0].reps || "-"}<br>
+Série 2: ${ex.sets[1].load || "-"} kg × ${ex.sets[1].reps || "-"}<br>
+Série 3: ${ex.sets[2].load || "-"} kg × ${ex.sets[2].reps || "-"}
+</p>
+
+${ex.observation ? `<p class="muted">Obs.: ${ex.observation}</p>` : ""}
+
+</div>
+`;
+
+});
+
+html += `
+<button class="primary" onclick="showHistory()">
+← Voltar ao histórico
+</button>
+`;
+
+document.getElementById("app").innerHTML = html;
+}
+
+function exportJSON(){
+
+let data = localStorage.getItem(key) || "[]";
+
+downloadFile(
+data,
+"treino-rafael-backup.json",
+"application/json"
+);
+
+}
+
+function exportCSV(){
+
+let history = JSON.parse(localStorage.getItem(key) || "[]");
+
+let csv =
+"Treino,Data,Peso,Duração,Calorias,Exercício,S1 Carga,S1 Reps,S2 Carga,S2 Reps,S3 Carga,S3 Reps,Observação\n";
+
+history.forEach(function(item){
+
+item.exercises.forEach(function(ex){
+
+csv += [
+
+item.workout,
+item.date,
+item.weight,
+item.duration,
+item.calories,
+ex.name,
+ex.sets[0].load,
+ex.sets[0].reps,
+ex.sets[1].load,
+ex.sets[1].reps,
+ex.sets[2].load,
+ex.sets[2].reps,
+ex.observation
+
+].map(function(value){
+
+return '"' +
+String(value || "").replace(/"/g,'""') +
+'"';
+
+}).join(",") + "\n";
+
+});
+
+});
+
+downloadFile(
+csv,
+"treino-rafael.csv",
+"text/csv"
+);
+
+}
+
+function downloadFile(content,filename,type){
+
+let blob = new Blob(
+[content],
+{type:type}
+);
+
+let url = URL.createObjectURL(blob);
+
+let a = document.createElement("a");
+
+a.href = url;
+a.download = filename;
+
+a.click();
+
+URL.revokeObjectURL(url);
+
+}
+
+showWorkout("A");
+
+</script>
+
+</body>
+</html>
