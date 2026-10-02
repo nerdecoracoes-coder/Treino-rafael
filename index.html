@@ -29,193 +29,1873 @@ hr{border:0;border-top:1px solid #eee;margin:15px 0}
 </style>
 </head>
 <body>
+
 <header>
 <h1>🏋️ Treino Rafael</h1>
-<div class="profile"><label style="color:#d1d5db;text-align:left">Perfil</label><select id="profileSelect" onchange="changeProfile(this.value)"></select></div>
+<div class="profile">
+<label style="color:#d1d5db;text-align:left">Perfil</label>
+<select id="profileSelect" onchange="changeProfile(this.value)"></select>
+</div>
 </header>
+
 <nav>
 <button id="btnT" onclick="showTraining()">Treino</button>
 <button id="btnH" onclick="showHistory()">Histórico</button>
 <button id="btnC" onclick="showConfig()">Configurar</button>
 </nav>
+
 <main id="app"></main>
+
 <script>
+
 const DBKEY="treinoRafaelDB_v4";
 const OLDKEY="treinoRafaelHistorico";
+
 let db=loadDB();
-let currentRoutine=null,lastSavedId=null;
+let currentRoutine=null;
+let lastSavedId=null;
 
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
-function slug(s){return String(s||"perfil").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-|-$/g,"").toLowerCase()}
+function uid(){
+ return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+}
 
-const defaultA={id:"A",name:"Treino A — Costas, Bíceps e Pernas",ex:[
-{name:"Agachamento",refLoad:18,refReps:20,targetLoad:18,targetReps:20},
-{name:"Puxada aberta na polia",refLoad:52,refReps:15,targetLoad:52,targetReps:15},
-{name:"Remada neutra máquina",refLoad:59,refReps:15,targetLoad:59,targetReps:15},
-{name:"Leg press máquina",refLoad:117,refReps:20,targetLoad:117,targetReps:20},
-{name:"Bíceps máquina",refLoad:36,refReps:15,targetLoad:36,targetReps:15},
-{name:"Cadeira extensora",refLoad:59,refReps:15,targetLoad:59,targetReps:15},
-{name:"Rosca martelo com halteres",refLoad:10,refReps:12,targetLoad:10,targetReps:12},
-{name:"Supino inclinado com halteres",refLoad:"",refReps:"",targetLoad:"",targetReps:""},
-{name:"Encolhimento com halteres",refLoad:"",refReps:"",targetLoad:"",targetReps:""}
-]};
+function slug(s){
+ return String(s||"perfil")
+ .normalize("NFD")
+ .replace(/[\u0300-\u036f]/g,"")
+ .replace(/[^a-zA-Z0-9]+/g,"-")
+ .replace(/^-|-$/g,"")
+ .toLowerCase();
+}
 
-const defaultB={id:"B",name:"Treino B — Peito, Tríceps, Ombros e Posterior",ex:[
-{name:"Crucifixo máquina",refLoad:100,refReps:15,targetLoad:100,targetReps:15},
-{name:"Supino reto máquina",refLoad:50,refReps:15,targetLoad:50,targetReps:15},
-{name:"Lombar na máquina",refLoad:59,refReps:20,targetLoad:59,targetReps:20},
-{name:"Cadeira flexora",refLoad:36,refReps:20,targetLoad:36,targetReps:20},
-{name:"Desenvolvimento máquina",refLoad:27,refReps:15,targetLoad:27,targetReps:15},
-{name:"Cadeira abdutora",refLoad:45,refReps:"",targetLoad:45,targetReps:""},
-{name:"Tríceps polia corda",refLoad:20,refReps:15,targetLoad:20,targetReps:15},
-{name:"Tríceps francês corda",refLoad:17,refReps:12,targetLoad:17,targetReps:12},
-{name:"Elevação lateral",refLoad:5,refReps:12,targetLoad:5,targetReps:12}
-]};
+const defaultA={
+ id:"A",
+ name:"Treino A — Costas, Bíceps e Pernas",
+ ex:[
+  {name:"Agachamento",refLoad:18,refReps:20,targetLoad:18,targetReps:20},
+  {name:"Puxada aberta na polia",refLoad:52,refReps:15,targetLoad:52,targetReps:15},
+  {name:"Remada neutra máquina",refLoad:59,refReps:15,targetLoad:59,targetReps:15},
+  {name:"Leg press máquina",refLoad:117,refReps:20,targetLoad:117,targetReps:20},
+  {name:"Bíceps máquina",refLoad:36,refReps:15,targetLoad:36,targetReps:15},
+  {name:"Cadeira extensora",refLoad:59,refReps:15,targetLoad:59,targetReps:15},
+  {name:"Rosca martelo com halteres",refLoad:10,refReps:12,targetLoad:10,targetReps:12},
+  {name:"Supino inclinado com halteres",refLoad:"",refReps:"",targetLoad:"",targetReps:""},
+  {name:"Encolhimento com halteres",refLoad:"",refReps:"",targetLoad:"",targetReps:""}
+ ]
+};
 
-function clone(x){return JSON.parse(JSON.stringify(x))}
-function makeProfile(id,name,routines){return{id,name,routines:routines||{}}}
+const defaultB={
+ id:"B",
+ name:"Treino B — Peito, Tríceps, Ombros e Posterior",
+ ex:[
+  {name:"Crucifixo máquina",refLoad:100,refReps:15,targetLoad:100,targetReps:15},
+  {name:"Supino reto máquina",refLoad:50,refReps:15,targetLoad:50,targetReps:15},
+  {name:"Lombar na máquina",refLoad:59,refReps:20,targetLoad:59,targetReps:20},
+  {name:"Cadeira flexora",refLoad:36,refReps:20,targetLoad:36,targetReps:20},
+  {name:"Desenvolvimento máquina",refLoad:27,refReps:15,targetLoad:27,targetReps:15},
+  {name:"Cadeira abdutora",refLoad:45,refReps:"",targetLoad:45,targetReps:""},
+  {name:"Tríceps polia corda",refLoad:20,refReps:15,targetLoad:20,targetReps:15},
+  {name:"Tríceps francês corda",refLoad:17,refReps:12,targetLoad:17,targetReps:12},
+  {name:"Elevação lateral",refLoad:5,refReps:12,targetLoad:5,targetReps:12}
+ ]
+};
+
+function clone(x){
+ return JSON.parse(JSON.stringify(x));
+}
+
+function makeProfile(id,name,routines){
+ return {
+  id,
+  name,
+  routines:routines||{}
+ };
+}
 
 function loadDB(){
- let raw=localStorage.getItem(DBKEY), data=null;
- try{if(raw)data=JSON.parse(raw)}catch(e){}
- if(!data||!Array.isArray(data.profiles)||!Array.isArray(data.history)){
-   data={version:4,currentProfile:"rafael",currentRoutine:"A",profiles:[
-     makeProfile("rafael","Rafael",{A:clone(defaultA),B:clone(defaultB)}),
-     makeProfile("natielle","Natielle",{})
-   ],history:[]};
+
+ let data=null;
+
+ try{
+  data=JSON.parse(localStorage.getItem(DBKEY)||"null");
+ }catch(e){
+  data=null;
  }
+
+ if(!data||typeof data!=="object"){
+  data={};
+ }
+
+ if(!Array.isArray(data.profiles)){
+  data.profiles=[];
+ }
+
+ if(!Array.isArray(data.history)){
+  data.history=[];
+ }
+
+ /*
+  Garante que o perfil Rafael exista.
+  Isso corrige o problema em que o banco antigo
+  existia, mas estava sem perfis.
+ */
+
+ if(!data.profiles.some(p=>p&&p.id==="rafael")){
+
+  data.profiles.unshift(
+   makeProfile(
+    "rafael",
+    "Rafael",
+    {
+     A:clone(defaultA),
+     B:clone(defaultB)
+    }
+   )
+  );
+
+ }
+
+ const r=data.profiles.find(
+  p=>p&&p.id==="rafael"
+ );
+
+ if(!r.routines||typeof r.routines!=="object"){
+  r.routines={};
+ }
+
+ if(!r.routines.A){
+  r.routines.A=clone(defaultA);
+ }
+
+ if(!r.routines.B){
+  r.routines.B=clone(defaultB);
+ }
+
+ /*
+  Garante o perfil Natielle.
+ */
+
+ if(!data.profiles.some(p=>p&&p.id==="natielle")){
+
+  data.profiles.push(
+   makeProfile(
+    "natielle",
+    "Natielle",
+    {}
+   )
+  );
+
+ }
+
+ data.profiles=data.profiles
+ .filter(p=>p&&p.id&&p.name)
+ .map(p=>{
+
+  if(!p.routines||typeof p.routines!=="object"){
+   p.routines={};
+  }
+
+  return p;
+
+ });
+
+ /*
+  Garante um perfil atual válido.
+ */
+
+ if(
+  !data.currentProfile||
+  !data.profiles.some(p=>p.id===data.currentProfile)
+ ){
+
+  data.currentProfile="rafael";
+
+ }
+
+ /*
+  Migra o histórico antigo.
+ */
+
  let old=[];
- try{old=JSON.parse(localStorage.getItem(OLDKEY)||"[]")}catch(e){}
- if(Array.isArray(old)&&old.length){
-   data.profiles.find(p=>p.id==="rafael");
-   const ids=new Set(data.history.map(x=>x.legacyId).filter(Boolean));
-   old.forEach((x,i)=>{
-     if(!ids.has(String(i)+"-"+x.date+"-"+x.workout)){
-       data.history.push({
-         id:uid(),legacyId:String(i)+"-"+x.date+"-"+x.workout,profileId:"rafael",
-         workout:x.workout,date:x.date||"",weight:x.weight||"",duration:x.duration||"",calories:x.calories||"",
-         exercises:(x.exercises||[]).map(e=>({name:e.name,refBefore:{load:"",reps:""},sets:e.sets||[],observation:e.observation||"",nextTarget:{load:"",reps:""}}))
-       });
-     }
-   });
-   localStorage.setItem(DBKEY,JSON.stringify(data));
+
+ try{
+  old=JSON.parse(
+   localStorage.getItem(OLDKEY)||"[]"
+  );
+ }catch(e){
+  old=[];
  }
+
+ if(Array.isArray(old)&&old.length){
+
+  const ids=new Set(
+   data.history
+   .map(x=>x.legacyId)
+   .filter(Boolean)
+  );
+
+  old.forEach((x,i)=>{
+
+   const legacyId=
+    String(i)+
+    "-"+
+    (x.date||"")+
+    "-"+
+    (x.workout||"");
+
+   if(!ids.has(legacyId)){
+
+    data.history.push({
+
+     id:uid(),
+
+     legacyId,
+
+     profileId:"rafael",
+
+     workout:x.workout||"A",
+
+     date:x.date||"",
+
+     weight:x.weight||"",
+
+     duration:x.duration||"",
+
+     calories:x.calories||"",
+
+     exercises:(x.exercises||[]).map(e=>({
+
+      name:e.name||"Exercício",
+
+      refBefore:{
+       load:"",
+       reps:""
+      },
+
+      sets:e.sets||[],
+
+      observation:e.observation||"",
+
+      nextTarget:{
+       load:"",
+       reps:""
+      }
+
+     }))
+
+    });
+
+   }
+
+  });
+
+ }
+
+ /*
+  Garante uma rotina inicial.
+ */
+
+ if(!data.currentRoutine){
+
+  const rp=data.profiles.find(
+   p=>p.id===data.currentProfile
+  );
+
+  data.currentRoutine=
+   rp
+   ?Object.keys(rp.routines)[0]||null
+   :null;
+
+ }
+
+ /*
+  Salva imediatamente a estrutura corrigida.
+ */
+
+ localStorage.setItem(
+  DBKEY,
+  JSON.stringify(data)
+ );
+
  return data;
 }
-function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
-function profile(){return db.profiles.find(p=>p.id===db.currentProfile)||db.profiles[0]}
-function routine(){return profile()?.routines[currentRoutine]}
-function setTab(id){["btnT","btnH","btnC"].forEach(x=>document.getElementById(x).classList.remove("active"));document.getElementById(id).classList.add("active")}
+
+function saveDB(){
+ localStorage.setItem(
+  DBKEY,
+  JSON.stringify(db)
+ );
+}
+
+function profile(){
+
+ return db.profiles.find(
+  p=>p.id===db.currentProfile
+ )||db.profiles[0];
+
+}
+
+function routine(){
+
+ return profile()?.routines[currentRoutine];
+
+}
+
+function setTab(id){
+
+ ["btnT","btnH","btnC"].forEach(
+  x=>document.getElementById(x).classList.remove("active")
+ );
+
+ document.getElementById(id).classList.add("active");
+
+}
+
 function refreshProfiles(){
- const s=document.getElementById("profileSelect"); if(!s)return;
- s.innerHTML=db.profiles.map(p=>`<option value="${p.id}" ${p.id===db.currentProfile?"selected":""}>${esc(p.name)}</option>`).join("");
+
+ const s=document.getElementById(
+  "profileSelect"
+ );
+
+ if(!s)return;
+
+ s.innerHTML=db.profiles
+ .map(p=>
+  `<option value="${p.id}" ${p.id===db.currentProfile?"selected":""}>${esc(p.name)}</option>`
+ )
+ .join("");
+
 }
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
 function changeProfile(id){
- db.currentProfile=id; const p=profile(); currentRoutine=Object.keys(p.routines)[0]||null; db.currentRoutine=currentRoutine; saveDB(); showTraining();
+
+ db.currentProfile=id;
+
+ const p=profile();
+
+ currentRoutine=
+  Object.keys(p.routines)[0]||null;
+
+ db.currentRoutine=currentRoutine;
+
+ saveDB();
+
+ showTraining();
+
 }
+
 function routineButtons(){
- const p=profile(); return Object.keys(p.routines).map(id=>`<button class="${id===currentRoutine?"primary":"secondary"}" style="width:auto" onclick="chooseRoutine('${id}')">${esc(p.routines[id].name)}</button>`).join(" ");
+
+ const p=profile();
+
+ return Object.keys(p.routines)
+ .map(id=>
+  `<button class="${id===currentRoutine?"primary":"secondary"}" style="width:auto" onclick="chooseRoutine('${id}')">${esc(p.routines[id].name)}</button>`
+ )
+ .join(" ");
+
 }
-function chooseRoutine(id){currentRoutine=id;db.currentRoutine=id;saveDB();showTraining()}
-  function showTraining(){
- setTab("btnT"); refreshProfiles();
- const p=profile(); if(!currentRoutine||!p.routines[currentRoutine])currentRoutine=Object.keys(p.routines)[0]||null;
- if(!currentRoutine){document.getElementById("app").innerHTML=`<div class="card"><h2>Nenhuma ficha criada</h2><button class="primary" onclick="showConfig()">Criar primeira ficha</button></div>`;return}
- const r=routine(),today=new Date().toISOString().slice(0,10);
- let html=`<div class="card"><div class="row">${routineButtons()}</div></div>
- <div class="card"><h2>${esc(r.name)}</h2><p class="muted">Os campos de treino real começam vazios. A referência azul é a última S1 registrada. A meta é a carga/repetições que você pretende usar no próximo treino.</p>
- <div class="grid">
- <div><label>Peso hoje (kg)</label><input id="peso" type="number" step="0.1"></div>
- <div><label>Duração (min)</label><input id="duracao" type="number"></div>
- <div><label>Calorias estimadas</label><input id="calorias" type="number"></div>
- <div><label>Data</label><input id="data" type="date" value="${today}"></div>
- </div></div>`;
+
+function chooseRoutine(id){
+
+ currentRoutine=id;
+
+ db.currentRoutine=id;
+
+ saveDB();
+
+ showTraining();
+
+}
+ function showTraining(){
+
+ setTab("btnT");
+ refreshProfiles();
+
+ const p=profile();
+
+ if(!p){
+  document.getElementById("app").innerHTML=
+   `<div class="card"><h2>Perfil não encontrado</h2></div>`;
+  return;
+ }
+
+ if(
+  !currentRoutine||
+  !p.routines[currentRoutine]
+ ){
+
+  currentRoutine=
+   Object.keys(p.routines)[0]||null;
+
+ }
+
+ if(!currentRoutine){
+
+  document.getElementById("app").innerHTML=`
+   <div class="card">
+    <h2>Nenhuma ficha criada</h2>
+    <button class="primary" onclick="showConfig()">
+     Criar primeira ficha
+    </button>
+   </div>`;
+
+  return;
+
+ }
+
+ const r=routine();
+
+ const today=
+  new Date()
+  .toISOString()
+  .slice(0,10);
+
+ let html=`
+
+ <div class="card">
+
+  <div class="row">
+   ${routineButtons()}
+  </div>
+
+ </div>
+
+ <div class="card">
+
+  <h2>${esc(r.name)}</h2>
+
+  <p class="muted">
+   Os campos do treino real começam vazios.
+   A referência azul é a última S1 registrada.
+   A meta é o que você pretende usar no próximo treino.
+  </p>
+
+  <div class="grid">
+
+   <div>
+    <label>Peso hoje (kg)</label>
+    <input id="peso" type="number" step="0.1">
+   </div>
+
+   <div>
+    <label>Duração (min)</label>
+    <input id="duracao" type="number">
+   </div>
+
+   <div>
+    <label>Calorias estimadas</label>
+    <input id="calorias" type="number">
+   </div>
+
+   <div>
+    <label>Data</label>
+    <input id="data" type="date" value="${today}">
+   </div>
+
+  </div>
+
+ </div>
+ `;
+
  r.ex.forEach((e,i)=>{
- html+=`<div class="card exercise"><h3>${i+1}. ${esc(e.name)}</h3>
- <div class="last">Última S1: ${e.refLoad!==""&&e.refLoad!=null?esc(e.refLoad)+" kg × "+esc(e.refReps||"-")+" reps":"sem registro"}</div>
- <div class="target"><strong>🎯 Meta para o próximo treino</strong>
- <div class="grid" style="margin-top:7px"><div><label>Carga alvo</label><input id="tL${i}" type="number" step="0.5" value="${esc(e.targetLoad??"")}"></div>
- <div><label>Reps alvo</label><input id="tR${i}" type="number" value="${esc(e.targetReps??"")}"></div></div></div>
- <div class="grid">
- ${[1,2,3].map(n=>`<div><label>Série ${n} — carga</label><input id="c${i}${n}" type="number" step="0.5"></div><div><label>Série ${n} — reps</label><input id="r${i}${n}" type="number"></div>`).join("")}
- </div><br><label>Observação</label><input id="o${i}" placeholder="Opcional"></div>`;
+
+  html+=`
+
+  <div class="card exercise">
+
+   <h3>
+    ${i+1}. ${esc(e.name)}
+   </h3>
+
+   <div class="last">
+
+    Última S1:
+
+    ${
+     e.refLoad!=="" &&
+     e.refLoad!=null
+
+     ?esc(e.refLoad)+" kg × "+
+      esc(e.refReps||"-")+" reps"
+
+     :"sem registro"
+    }
+
+   </div>
+
+   <div class="target">
+
+    <strong>
+     🎯 Meta para o próximo treino
+    </strong>
+
+    <div
+     class="grid"
+     style="margin-top:7px"
+    >
+
+     <div>
+      <label>Carga alvo</label>
+
+      <input
+       id="tL${i}"
+       type="number"
+       step="0.5"
+       value="${esc(e.targetLoad??"")}"
+      >
+     </div>
+
+     <div>
+      <label>Reps alvo</label>
+
+      <input
+       id="tR${i}"
+       type="number"
+       value="${esc(e.targetReps??"")}"
+      >
+     </div>
+
+    </div>
+
+   </div>
+
+   <div class="grid">
+
+    <div>
+     <label>Série 1 — carga</label>
+     <input
+      id="c${i}1"
+      type="number"
+      step="0.5"
+     >
+    </div>
+
+    <div>
+     <label>Série 1 — reps</label>
+     <input
+      id="r${i}1"
+      type="number"
+     >
+    </div>
+
+    <div>
+     <label>Série 2 — carga</label>
+     <input
+      id="c${i}2"
+      type="number"
+      step="0.5"
+     >
+    </div>
+
+    <div>
+     <label>Série 2 — reps</label>
+     <input
+      id="r${i}2"
+      type="number"
+     >
+    </div>
+
+    <div>
+     <label>Série 3 — carga</label>
+     <input
+      id="c${i}3"
+      type="number"
+      step="0.5"
+     >
+    </div>
+
+    <div>
+     <label>Série 3 — reps</label>
+     <input
+      id="r${i}3"
+      type="number"
+     >
+    </div>
+
+   </div>
+
+   <br>
+
+   <label>Observação</label>
+
+   <input
+    id="o${i}"
+    type="text"
+    placeholder="Opcional"
+   >
+
+  </div>
+
+  `;
+
  });
- html+=`<button class="primary" onclick="saveWorkout()">✅ Salvar treino</button>`;
+
+ html+=`
+
+ <button
+  class="primary"
+  onclick="saveWorkout()"
+ >
+  ✅ Salvar treino
+ </button>
+
+ `;
+
  document.getElementById("app").innerHTML=html;
+
 }
+
 function saveWorkout(){
- const p=profile(),r=routine();
- const entry={id:uid(),profileId:p.id,workout:currentRoutine,date:document.getElementById("data").value,weight:document.getElementById("peso").value,duration:document.getElementById("duracao").value,calories:document.getElementById("calorias").value,exercises:[]};
+
+ const p=profile();
+ const r=routine();
+
+ const entry={
+
+  id:uid(),
+
+  profileId:p.id,
+
+  workout:currentRoutine,
+
+  date:
+   document.getElementById("data").value,
+
+  weight:
+   document.getElementById("peso").value,
+
+  duration:
+   document.getElementById("duracao").value,
+
+  calories:
+   document.getElementById("calorias").value,
+
+  exercises:[]
+
+ };
+
  r.ex.forEach((e,i)=>{
-   const sets=[1,2,3].map(n=>({load:document.getElementById("c"+i+n).value,reps:document.getElementById("r"+i+n).value}));
-   const tl=document.getElementById("tL"+i).value,tr=document.getElementById("tR"+i).value;
-   entry.exercises.push({name:e.name,refBefore:{load:e.refLoad??"",reps:e.refReps??""},sets,observation:document.getElementById("o"+i).value,nextTarget:{load:tl,reps:tr}});
-   e.targetLoad=tl;e.targetReps=tr;
-   if(sets[0].load!==""){e.refLoad=sets[0].load;e.refReps=sets[0].reps}
+
+  const sets=[1,2,3].map(n=>({
+
+   load:
+    document.getElementById(
+     "c"+i+n
+    ).value,
+
+   reps:
+    document.getElementById(
+     "r"+i+n
+    ).value
+
+  }));
+
+  const tl=
+   document.getElementById(
+    "tL"+i
+   ).value;
+
+  const tr=
+   document.getElementById(
+    "tR"+i
+   ).value;
+
+  entry.exercises.push({
+
+   name:e.name,
+
+   refBefore:{
+    load:e.refLoad??"",
+    reps:e.refReps??""
+   },
+
+   sets:sets,
+
+   observation:
+    document.getElementById(
+     "o"+i
+    ).value,
+
+   nextTarget:{
+    load:tl,
+    reps:tr
+   }
+
+  });
+
+  /*
+   A meta fica guardada para o
+   próximo treino.
+  */
+
+  e.targetLoad=tl;
+  e.targetReps=tr;
+
+  /*
+   A S1 realizada vira a nova
+   referência.
+  */
+
+  if(sets[0].load!==""){
+
+   e.refLoad=sets[0].load;
+   e.refReps=sets[0].reps;
+
+  }
+
  });
- db.history.push(entry);saveDB();lastSavedId=entry.id;
- document.getElementById("app").innerHTML=`<div class="card success"><h2>Treino salvo! ✅</h2><p>Os dados deste dia foram gravados no perfil <strong>${esc(p.name)}</strong>.</p>
- <button class="primary" onclick="exportWorkout('${entry.id}')">📤 Exportar treino do dia</button><br><br>
- <button class="secondary" onclick="showTraining()">Novo treino</button> <button class="secondary" onclick="showHistory()">Histórico</button></div>`;
+
+ db.history.push(entry);
+
+ saveDB();
+
+ lastSavedId=entry.id;
+
+ document.getElementById("app").innerHTML=`
+
+ <div class="card success">
+
+  <h2>
+   Treino salvo! ✅
+  </h2>
+
+  <p>
+   Os dados deste dia foram gravados
+   no perfil
+   <strong>${esc(p.name)}</strong>.
+  </p>
+
+  <button
+   class="primary"
+   onclick="exportWorkout('${entry.id}')"
+  >
+   📤 Exportar treino do dia
+  </button>
+
+  <br><br>
+
+  <button
+   class="secondary"
+   onclick="showTraining()"
+  >
+   Novo treino
+  </button>
+
+  <button
+   class="secondary"
+   onclick="showHistory()"
+  >
+   Histórico
+  </button>
+
+ </div>
+
+ `;
+
 }
+
 function showHistory(){
- setTab("btnH");refreshProfiles();const p=profile();
- const arr=db.history.filter(x=>x.profileId===p.id).slice().reverse();
- let html=`<div class="card"><h2>Histórico — ${esc(p.name)}</h2>`;
- if(!arr.length)html+=`<p class="muted">Nenhum treino salvo neste perfil.</p>`;
- arr.forEach(x=>{const r=p.routines[x.workout];html+=`<div class="history-item"><strong>${esc(r?.name||x.workout)}</strong><p class="muted">Data: ${esc(x.date||"-")}<br>Peso: ${esc(x.weight||"-")} kg<br>Duração: ${esc(x.duration||"-")} min<br>Calorias: ${esc(x.calories||"-")}</p>
- <button class="secondary" onclick="showDetails('${x.id}')">Ver detalhes</button> <button class="secondary" onclick="exportWorkout('${x.id}')">📤 Exportar dia</button></div>`});
- html+=`</div><div class="card"><button class="secondary" onclick="exportProfileBackup()">📦 Backup deste perfil</button><br><br><button class="secondary" onclick="exportCSV()">📊 CSV deste perfil</button><br><br><button class="secondary" onclick="exportAllBackup()">🗄️ Backup completo de todos os perfis</button></div>`;
+
+ setTab("btnH");
+
+ refreshProfiles();
+
+ const p=profile();
+
+ const arr=
+  db.history
+  .filter(x=>x.profileId===p.id)
+  .slice()
+  .reverse();
+
+ let html=`
+
+ <div class="card">
+
+  <h2>
+   Histórico — ${esc(p.name)}
+  </h2>
+ `;
+
+ if(!arr.length){
+
+  html+=`
+   <p class="muted">
+    Nenhum treino salvo neste perfil.
+   </p>
+  `;
+
+ }
+
+ arr.forEach(x=>{
+
+  const r=
+   p.routines[x.workout];
+
+  html+=`
+
+  <div class="history-item">
+
+   <strong>
+    ${esc(r?.name||x.workout)}
+   </strong>
+
+   <p class="muted">
+
+    Data:
+    ${esc(x.date||"-")}
+    <br>
+
+    Peso:
+    ${esc(x.weight||"-")} kg
+
+    <br>
+
+    Duração:
+    ${esc(x.duration||"-")} min
+
+    <br>
+
+    Calorias:
+    ${esc(x.calories||"-")}
+
+   </p>
+
+   <button
+    class="secondary"
+    onclick="showDetails('${x.id}')"
+   >
+    Ver detalhes
+   </button>
+
+   <button
+    class="secondary"
+    onclick="exportWorkout('${x.id}')"
+   >
+    📤 Exportar dia
+   </button>
+
+  </div>
+
+  `;
+
+ });
+
+ html+=`
+
+ </div>
+
+ <div class="card">
+
+  <button
+   class="secondary"
+   onclick="exportProfileBackup()"
+  >
+   📦 Backup deste perfil
+  </button>
+
+  <br><br>
+
+  <button
+   class="secondary"
+   onclick="exportCSV()"
+  >
+   📊 CSV deste perfil
+  </button>
+
+  <br><br>
+
+  <button
+   class="secondary"
+   onclick="exportAllBackup()"
+  >
+   🗄️ Backup completo de todos os perfis
+  </button>
+
+ </div>
+
+ `;
+
  document.getElementById("app").innerHTML=html;
+
 }
+
 function showDetails(id){
- const x=db.history.find(h=>h.id===id),p=db.profiles.find(q=>q.id===x.profileId);
- let html=`<div class="card"><h2>${esc(p?.name)} — ${esc(x.workout)}</h2><p><strong>Data:</strong> ${esc(x.date||"-")}<br><strong>Peso:</strong> ${esc(x.weight||"-")} kg<br><strong>Duração:</strong> ${esc(x.duration||"-")} min<br><strong>Calorias:</strong> ${esc(x.calories||"-")}</p><button class="primary" onclick="exportWorkout('${x.id}')">📤 Exportar treino do dia</button></div>`;
- x.exercises.forEach(e=>{html+=`<div class="card"><h3>${esc(e.name)}</h3><p class="muted">Última S1 antes do treino: ${e.refBefore?.load||"-"} kg × ${e.refBefore?.reps||"-"}</p><p>S1: ${e.sets?.[0]?.load||"-"} kg × ${e.sets?.[0]?.reps||"-"}<br>S2: ${e.sets?.[1]?.load||"-"} kg × ${e.sets?.[1]?.reps||"-"}<br>S3: ${e.sets?.[2]?.load||"-"} kg × ${e.sets?.[2]?.reps||"-"}</p><p class="muted">Meta próxima: ${e.nextTarget?.load||"-"} kg × ${e.nextTarget?.reps||"-"} reps</p>${e.observation?`<p>Obs.: ${esc(e.observation)}</p>`:""}</div>`});
- html+=`<button class="primary" onclick="showHistory()">← Voltar</button>`;document.getElementById("app").innerHTML=html;
-}
-function exportWorkout(id){
- const x=db.history.find(h=>h.id===id);if(!x)return;const p=db.profiles.find(q=>q.id===x.profileId);const r=p?.routines[x.workout];
- const payload={tipo:"treino-do-dia",versao:4,exportedAt:new Date().toISOString(),profile:{id:p?.id,name:p?.name},routine:{id:x.workout,name:r?.name||x.workout},date:x.date,weight:x.weight,duration:x.duration,calories:x.calories,exercises:x.exercises};
- download(JSON.stringify(payload,null,2),`treino-${slug(p?.name)}-${x.date||"sem-data"}-${slug(x.workout)}.json`,"application/json");
-}
-function exportProfileBackup(){
- const p=profile();const payload={tipo:"backup-perfil",versao:4,exportedAt:new Date().toISOString(),profile:p,history:db.history.filter(x=>x.profileId===p.id)};download(JSON.stringify(payload,null,2),`backup-${slug(p.name)}.json`,"application/json");
-}
-function exportAllBackup(){download(JSON.stringify(db,null,2),"backup-treino-rafael-todos-perfis.json","application/json")}
-function exportCSV(){
- const p=profile(),arr=db.history.filter(x=>x.profileId===p.id),rows=["Perfil,Rotina,Data,Peso,Duração,Calorias,Exercício,S1 Carga,S1 Reps,S2 Carga,S2 Reps,S3 Carga,S3 Reps,Meta Carga,Meta Reps,Observação"];
- arr.forEach(x=>x.exercises.forEach(e=>rows.push([p.name,x.workout,x.date,x.weight,x.duration,x.calories,e.name,e.sets[0]?.load,e.sets[0]?.reps,e.sets[1]?.load,e.sets[1]?.reps,e.sets[2]?.load,e.sets[2]?.reps,e.nextTarget?.load,e.nextTarget?.reps,e.observation].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(","))));
- download(rows.join("\n"),`treino-${slug(p.name)}.csv`,"text/csv");
-}
-function download(content,filename,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500)}
-function showConfig(){
- setTab("btnC");refreshProfiles();const p=profile();
- let html=`<div class="card"><h2>Perfis</h2><div class="row"><input id="newProfile" placeholder="Nome do novo perfil"><button class="secondary" onclick="addProfile()">Adicionar</button></div><hr><p>Perfil atual: <strong>${esc(p.name)}</strong></p><div class="row"><input id="renameProfile" value="${esc(p.name)}"><button class="secondary" onclick="renameProfile()">Renomear</button></div></div>
- <div class="card"><h2>Fichas de ${esc(p.name)}</h2><div class="row"><input id="newRoutine" placeholder="Ex.: Treino C — Pernas"><button class="secondary" onclick="addRoutine()">Adicionar ficha</button></div><hr>`;
- Object.keys(p.routines).forEach(id=>{const r=p.routines[id];html+=`<div class="exercise-editor"><strong>${esc(r.name)}</strong><div class="row" style="margin-top:8px"><input id="rn-${id}" value="${esc(r.name)}"><button class="secondary" onclick="renameRoutine('${id}')">Renomear</button></div><p class="muted">${r.ex.length} exercícios</p><button class="secondary" onclick="editRoutine('${id}')">✏️ Editar exercícios</button></div>`});
- html+=`</div><div class="card"><h2>Dados</h2><button class="secondary" onclick="exportAllBackup()">🗄️ Exportar backup completo</button></div>`;
+
+ const x=
+  db.history.find(
+   h=>h.id===id
+  );
+
+ if(!x)return;
+
+ const p=
+  db.profiles.find(
+   q=>q.id===x.profileId
+  );
+
+ let html=`
+
+ <div class="card">
+
+  <h2>
+   ${esc(p?.name)} —
+   ${esc(x.workout)}
+  </h2>
+
+  <p>
+
+   <strong>Data:</strong>
+   ${esc(x.date||"-")}
+
+   <br>
+
+   <strong>Peso:</strong>
+   ${esc(x.weight||"-")} kg
+
+   <br>
+
+   <strong>Duração:</strong>
+   ${esc(x.duration||"-")} min
+
+   <br>
+
+   <strong>Calorias:</strong>
+   ${esc(x.calories||"-")}
+
+  </p>
+
+  <button
+   class="primary"
+   onclick="exportWorkout('${x.id}')"
+  >
+   📤 Exportar treino do dia
+  </button>
+
+ </div>
+
+ `;
+
+ x.exercises.forEach(e=>{
+
+  html+=`
+
+  <div class="card">
+
+   <h3>
+    ${esc(e.name)}
+   </h3>
+
+   <p class="muted">
+
+    Última S1 antes do treino:
+
+    ${e.refBefore?.load||"-"}
+    kg ×
+    ${e.refBefore?.reps||"-"}
+
+   </p>
+
+   <p>
+
+    S1:
+    ${e.sets?.[0]?.load||"-"}
+    kg ×
+    ${e.sets?.[0]?.reps||"-"}
+
+    <br>
+
+    S2:
+    ${e.sets?.[1]?.load||"-"}
+    kg ×
+    ${e.sets?.[1]?.reps||"-"}
+
+    <br>
+
+    S3:
+    ${e.sets?.[2]?.load||"-"}
+    kg ×
+    ${e.sets?.[2]?.reps||"-"}
+
+   </p>
+
+   <p class="muted">
+
+    Meta próxima:
+
+    ${e.nextTarget?.load||"-"}
+    kg ×
+    ${e.nextTarget?.reps||"-"}
+    reps
+
+   </p>
+
+   ${
+    e.observation
+    ?`<p>Obs.: ${esc(e.observation)}</p>`
+    :""
+   }
+
+  </div>
+
+  `;
+
+ });
+
+ html+=`
+
+ <button
+  class="primary"
+  onclick="showHistory()"
+ >
+  ← Voltar
+ </button>
+
+ `;
+
  document.getElementById("app").innerHTML=html;
+
 }
-function addProfile(){const n=document.getElementById("newProfile").value.trim();if(!n)return;const p=makeProfile(uid(),n,{});db.profiles.push(p);db.currentProfile=p.id;currentRoutine=null;saveDB();showConfig()}
-function renameProfile(){const n=document.getElementById("renameProfile").value.trim();if(!n)return;profile().name=n;saveDB();showConfig()}
-function addRoutine(){const n=document.getElementById("newRoutine").value.trim();if(!n)return;const id=uid();profile().routines[id]={id,name:n,ex:[]};currentRoutine=id;saveDB();editRoutine(id)}
-function renameRoutine(id){const n=document.getElementById("rn-"+id).value.trim();if(!n)return;profile().routines[id].name=n;saveDB();showConfig()}
+
+function exportWorkout(id){
+
+ const x=
+  db.history.find(
+   h=>h.id===id
+  );
+
+ if(!x)return;
+
+ const p=
+  db.profiles.find(
+   q=>q.id===x.profileId
+  );
+
+ const r=
+  p?.routines[x.workout];
+
+ const payload={
+
+  tipo:"treino-do-dia",
+
+  versao:4,
+
+  exportedAt:
+   new Date().toISOString(),
+
+  profile:{
+   id:p?.id,
+   name:p?.name
+  },
+
+  routine:{
+   id:x.workout,
+   name:r?.name||x.workout
+  },
+
+  date:x.date,
+
+  weight:x.weight,
+
+  duration:x.duration,
+
+  calories:x.calories,
+
+  exercises:x.exercises
+
+ };
+
+ download(
+
+  JSON.stringify(
+   payload,
+   null,
+   2
+  ),
+
+  `treino-${slug(p?.name)}-${x.date||"sem-data"}-${slug(x.workout)}.json`,
+
+  "application/json"
+
+ );
+
+}
+
+function exportProfileBackup(){
+
+ const p=profile();
+
+ const payload={
+
+  tipo:"backup-perfil",
+
+  versao:4,
+
+  exportedAt:
+   new Date().toISOString(),
+
+  profile:p,
+
+  history:
+   db.history.filter(
+    x=>x.profileId===p.id
+   )
+
+ };
+
+ download(
+
+  JSON.stringify(
+   payload,
+   null,
+   2
+  ),
+
+  `backup-${slug(p.name)}.json`,
+
+  "application/json"
+
+ );
+
+}
+
+function exportAllBackup(){
+
+ download(
+
+  JSON.stringify(
+   db,
+   null,
+   2
+  ),
+
+  "backup-treino-rafael-todos-perfis.json",
+
+  "application/json"
+
+ );
+
+}
+
+function exportCSV(){
+
+ const p=profile();
+
+ const arr=
+  db.history.filter(
+   x=>x.profileId===p.id
+  );
+
+ const rows=[
+
+  "Perfil,Rotina,Data,Peso,Duração,Calorias,Exercício,S1 Carga,S1 Reps,S2 Carga,S2 Reps,S3 Carga,S3 Reps,Meta Carga,Meta Reps,Observação"
+
+ ];
+
+ arr.forEach(x=>{
+
+  x.exercises.forEach(e=>{
+
+   rows.push(
+
+    [
+
+     p.name,
+
+     x.workout,
+
+     x.date,
+
+     x.weight,
+
+     x.duration,
+
+     x.calories,
+
+     e.name,
+
+     e.sets[0]?.load,
+
+     e.sets[0]?.reps,
+
+     e.sets[1]?.load,
+
+     e.sets[1]?.reps,
+
+     e.sets[2]?.load,
+
+     e.sets[2]?.reps,
+
+     e.nextTarget?.load,
+
+     e.nextTarget?.reps,
+
+     e.observation
+
+    ]
+
+    .map(v=>
+
+     `"${String(v??"").replace(/"/g,'""')}"`
+
+    )
+
+    .join(",")
+
+   );
+
+  });
+
+ });
+
+ download(
+
+  rows.join("\n"),
+
+  `treino-${slug(p.name)}.csv`,
+
+  "text/csv"
+
+ );
+
+}
+
+function download(
+ content,
+ filename,
+ type
+){
+
+ const blob=
+  new Blob(
+   [content],
+   {type}
+  );
+
+ const url=
+  URL.createObjectURL(blob);
+
+ const a=
+  document.createElement("a");
+
+ a.href=url;
+
+ a.download=filename;
+
+ document.body.appendChild(a);
+
+ a.click();
+
+ a.remove();
+
+ setTimeout(
+  ()=>URL.revokeObjectURL(url),
+  500
+ );
+
+}
+
+function showConfig(){
+
+ setTab("btnC");
+
+ refreshProfiles();
+
+ const p=profile();
+
+ let html=`
+
+ <div class="card">
+
+  <h2>Perfis</h2>
+
+  <div class="row">
+
+   <input
+    id="newProfile"
+    placeholder="Nome do novo perfil"
+   >
+
+   <button
+    class="secondary"
+    onclick="addProfile()"
+   >
+    Adicionar
+   </button>
+
+  </div>
+
+  <hr>
+
+  <p>
+   Perfil atual:
+   <strong>${esc(p.name)}</strong>
+  </p>
+
+  <div class="row">
+
+   <input
+    id="renameProfile"
+    value="${esc(p.name)}"
+   >
+
+   <button
+    class="secondary"
+    onclick="renameProfile()"
+   >
+    Renomear
+   </button>
+
+  </div>
+
+ </div>
+
+ <div class="card">
+
+  <h2>
+   Fichas de ${esc(p.name)}
+  </h2>
+
+  <div class="row">
+
+   <input
+    id="newRoutine"
+    placeholder="Ex.: Treino C — Pernas"
+   >
+
+   <button
+    class="secondary"
+    onclick="addRoutine()"
+   >
+    Adicionar ficha
+   </button>
+
+  </div>
+
+  <hr>
+
+ `;
+
+ Object.keys(p.routines)
+ .forEach(id=>{
+
+  const r=p.routines[id];
+
+  html+=`
+
+  <div class="exercise-editor">
+
+   <strong>
+    ${esc(r.name)}
+   </strong>
+
+   <div
+    class="row"
+    style="margin-top:8px"
+   >
+
+    <input
+     id="rn-${id}"
+     value="${esc(r.name)}"
+    >
+
+    <button
+     class="secondary"
+     onclick="renameRoutine('${id}')"
+    >
+     Renomear
+    </button>
+
+   </div>
+
+   <p class="muted">
+    ${r.ex.length} exercícios
+   </p>
+
+   <button
+    class="secondary"
+    onclick="editRoutine('${id}')"
+   >
+    ✏️ Editar exercícios
+   </button>
+
+  </div>
+
+  `;
+
+ });
+
+ html+=`
+
+ </div>
+
+ <div class="card">
+
+  <h2>Dados</h2>
+
+  <button
+   class="secondary"
+   onclick="exportAllBackup()"
+  >
+   🗄️ Exportar backup completo
+  </button>
+
+ </div>
+
+ `;
+
+ document.getElementById("app").innerHTML=html;
+
+}
+
+function addProfile(){
+
+ const n=
+  document
+  .getElementById("newProfile")
+  .value
+  .trim();
+
+ if(!n)return;
+
+ const p=
+  makeProfile(
+   uid(),
+   n,
+   {}
+  );
+
+ db.profiles.push(p);
+
+ db.currentProfile=p.id;
+
+ currentRoutine=null;
+
+ saveDB();
+
+ showConfig();
+
+}
+
+function renameProfile(){
+
+ const n=
+  document
+  .getElementById("renameProfile")
+  .value
+  .trim();
+
+ if(!n)return;
+
+ profile().name=n;
+
+ saveDB();
+
+ refreshProfiles();
+
+ showConfig();
+
+}
+
+function addRoutine(){
+
+ const n=
+  document
+  .getElementById("newRoutine")
+  .value
+  .trim();
+
+ if(!n)return;
+
+ const id=uid();
+
+ profile().routines[id]={
+
+  id,
+
+  name:n,
+
+  ex:[]
+
+ };
+
+ currentRoutine=id;
+
+ db.currentRoutine=id;
+
+ saveDB();
+
+ editRoutine(id);
+
+}
+
+function renameRoutine(id){
+
+ const n=
+  document
+  .getElementById(
+   "rn-"+id
+  )
+  .value
+  .trim();
+
+ if(!n)return;
+
+ profile().routines[id].name=n;
+
+ saveDB();
+
+ showConfig();
+
+}
+
 function editRoutine(id){
- currentRoutine=id;const r=profile().routines[id];let html=`<div class="card"><h2>Editar: ${esc(r.name)}</h2><p class="muted">Use ↑ e ↓ para mudar a ordem. As alterações da ficha não apagam o histórico.</p>
- <button class="secondary" onclick="clearExercises('${id}')">🗑️ Substituir ficha (limpar exercícios)</button></div><div id="exList">`;
- r.ex.forEach((e,i)=>{html+=exerciseEditor(e,i,id)});html+=`</div><div class="card"><button class="secondary" onclick="addExercise('${id}')">➕ Adicionar exercício</button><br><br><button class="primary" onclick="saveDB();showConfig()">Salvar ficha</button></div>`;document.getElementById("app").innerHTML=html;
+
+ currentRoutine=id;
+
+ db.currentRoutine=id;
+
+ const r=
+  profile().routines[id];
+
+ let html=`
+
+ <div class="card">
+
+  <h2>
+   Editar:
+   ${esc(r.name)}
+  </h2>
+
+  <p class="muted">
+
+   Use ↑ e ↓ para mudar a ordem.
+   As alterações da ficha não apagam
+   o histórico.
+
+  </p>
+
+  <button
+   class="secondary"
+   onclick="clearExercises('${id}')"
+  >
+   🗑️ Substituir ficha
+   (limpar exercícios)
+  </button>
+
+ </div>
+
+ <div id="exList">
+
+ `;
+
+ r.ex.forEach(
+  (e,i)=>{
+   html+=exerciseEditor(
+    e,
+    i,
+    id
+   );
+  }
+ );
+
+ html+=`
+
+ </div>
+
+ <div class="card">
+
+  <button
+   class="secondary"
+   onclick="addExercise('${id}')"
+  >
+   ➕ Adicionar exercício
+  </button>
+
+  <br><br>
+
+  <button
+   class="primary"
+   onclick="saveDB();showConfig()"
+  >
+   Salvar ficha
+  </button>
+
+ </div>
+
+ `;
+
+ document.getElementById(
+  "app"
+ ).innerHTML=html;
+
 }
-function exerciseEditor(e,i,id){return `<div class="exercise-editor"><div class="grid"><div><label>Exercício</label><input id="en-${i}" value="${esc(e.name)}"></div><div><label>Referência S1 carga</label><input id="el-${i}" type="number" step="0.5" value="${esc(e.refLoad??"")}"></div><div><label>Referência S1 reps</label><input id="er-${i}" type="number" value="${esc(e.refReps??"")}"></div><div><label>Meta carga</label><input id="etL-${i}" type="number" step="0.5" value="${esc(e.targetLoad??"")}"></div><div><label>Meta reps</label><input id="etR-${i}" type="number" value="${esc(e.targetReps??"")}"></div></div><div class="move"><button class="secondary" onclick="moveExercise('${id}',${i},-1)">↑</button><button class="secondary" onclick="moveExercise('${id}',${i},1)">↓</button><button class="danger" onclick="removeExercise('${id}',${i})">Remover</button></div></div>`}
+
+function exerciseEditor(
+ e,
+ i,
+ id
+){
+
+ return `
+
+ <div class="exercise-editor">
+
+  <div class="grid">
+
+   <div>
+
+    <label>
+     Exercício
+    </label>
+
+    <input
+     id="en-${i}"
+     value="${esc(e.name)}"
+    >
+
+   </div>
+
+   <div>
+
+    <label>
+     Referência S1 carga
+    </label>
+
+    <input
+     id="el-${i}"
+     type="number"
+     step="0.5"
+     value="${esc(e.refLoad??"")}"
+    >
+
+   </div>
+
+   <div>
+
+    <label>
+     Referência S1 reps
+    </label>
+
+    <input
+     id="er-${i}"
+     type="number"
+     value="${esc(e.refReps??"")}"
+    >
+
+   </div>
+
+   <div>
+
+    <label>
+     Meta carga
+    </label>
+
+    <input
+     id="etL-${i}"
+     type="number"
+     step="0.5"
+     value="${esc(e.targetLoad??"")}"
+    >
+
+   </div>
+
+   <div>
+
+    <label>
+     Meta reps
+    </label>
+
+    <input
+     id="etR-${i}"
+     type="number"
+     value="${esc(e.targetReps??"")}"
+    >
+
+   </div>
+
+  </div>
+
+  <div class="move">
+
+   <button
+    class="secondary"
+    onclick="moveExercise('${id}',${i},-1)"
+   >
+    ↑
+   </button>
+
+   <button
+    class="secondary"
+    onclick="moveExercise('${id}',${i},1)"
+   >
+    ↓
+   </button>
+
+   <button
+    class="danger"
+    onclick="removeExercise('${id}',${i})"
+   >
+    Remover
+   </button>
+
+  </div>
+
+ </div>
+
+ `;
+
+}
+
 function collectEditor(id){
- const r=profile().routines[id];r.ex.forEach((e,i)=>{e.name=document.getElementById("en-"+i)?.value.trim()||e.name;e.refLoad=document.getElementById("el-"+i)?.value??"";e.refReps=document.getElementById("er-"+i)?.value??"";e.targetLoad=document.getElementById("etL-"+i)?.value??"";e.targetReps=document.getElementById("etR-"+i)?.value??""});
+
+ const r=
+  profile().routines[id];
+
+ r.ex.forEach((e,i)=>{
+
+  const name=
+   document.getElementById(
+    "en-"+i
+   );
+
+  const refLoad=
+   document.getElementById(
+    "el-"+i
+   );
+
+  const refReps=
+   document.getElementById(
+    "er-"+i
+   );
+
+  const targetLoad=
+   document.getElementById(
+    "etL-"+i
+   );
+
+  const targetReps=
+   document.getElementById(
+    "etR-"+i
+   );
+
+  if(name)
+   e.name=name.value.trim()||e.name;
+
+  if(refLoad)
+   e.refLoad=refLoad.value;
+
+  if(refReps)
+   e.refReps=refReps.value;
+
+  if(targetLoad)
+   e.targetLoad=targetLoad.value;
+
+  if(targetReps)
+   e.targetReps=targetReps.value;
+
+ });
+
 }
-function moveExercise(id,i,d){collectEditor(id);const a=profile().routines[id].ex,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];saveDB();editRoutine(id)}
-function removeExercise(id,i){collectEditor(id);profile().routines[id].ex.splice(i,1);saveDB();editRoutine(id)}
-function addExercise(id){collectEditor(id);profile().routines[id].ex.push({name:"Novo exercício",refLoad:"",refReps:"",targetLoad:"",targetReps:""});saveDB();editRoutine(id)}
-function clearExercises(id){if(!confirm("Isso vai remover todos os exercícios desta ficha. O histórico não será apagado. Continuar?"))return;profile().routines[id].ex=[];saveDB();editRoutine(id)}
+
+function moveExercise(
+ id,
+ i,
+ d
+){
+
+ collectEditor(id);
+
+ const a=
+  profile().routines[id].ex;
+
+ const j=i+d;
+
+ if(
+  j<0||
+  j>=a.length
+ )return;
+
+ [
+  a[i],
+  a[j]
+ ]=[
+  a[j],
+  a[i]
+ ];
+
+ saveDB();
+
+ editRoutine(id);
+
+}
+
+function removeExercise(
+ id,
+ i
+){
+
+ collectEditor(id);
+
+ profile()
+ .routines[id]
+ .ex
+ .splice(i,1);
+
+ saveDB();
+
+ editRoutine(id);
+
+}
+
+function addExercise(id){
+
+ collectEditor(id);
+
+ profile()
+ .routines[id]
+ .ex
+ .push({
+
+  name:"Novo exercício",
+
+  refLoad:"",
+
+  refReps:"",
+
+  targetLoad:"",
+
+  targetReps:""
+
+ });
+
+ saveDB();
+
+ editRoutine(id);
+
+}
+
+function clearExercises(id){
+
+ if(
+  !confirm(
+   "Isso vai remover todos os exercícios desta ficha. O histórico não será apagado. Continuar?"
+  )
+ )return;
+
+ profile()
+ .routines[id]
+ .ex=[];
+
+ saveDB();
+
+ editRoutine(id);
+
+}
+
 showTraining();
+
 </script>
 </body>
 </html>
