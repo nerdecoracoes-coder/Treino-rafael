@@ -321,10 +321,12 @@ function loadDB(){
   Salva imediatamente a estrutura corrigida.
  */
 
+ try{
  localStorage.setItem(
   DBKEY,
   JSON.stringify(data)
  );
+}catch(e){}
 
  return data;
 }
