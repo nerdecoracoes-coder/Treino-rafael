@@ -51,7 +51,16 @@ hr{border:0;border-top:1px solid #eee;margin:15px 0}
 const DBKEY="treinoRafaelDB_v4";
 const OLDKEY="treinoRafaelHistorico";
 
-let db=loadDB();
+let db;
+
+try{
+ db=loadDB();
+}catch(e){
+ document.getElementById("app").innerHTML=
+  "<div class='card'><h2>Erro encontrado</h2><p>"+
+  e.message+
+  "</p></div>";
+}
 let currentRoutine=null;
 let lastSavedId=null;
 
