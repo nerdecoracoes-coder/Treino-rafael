@@ -51,16 +51,7 @@ hr{border:0;border-top:1px solid #eee;margin:15px 0}
 const DBKEY="treinoRafaelDB_v4";
 const OLDKEY="treinoRafaelHistorico";
 
-let db;
-
-try{
- db=loadDB();
-}catch(e){
- document.getElementById("app").innerHTML=
-  "<div class='card'><h2>Erro encontrado</h2><p>"+
-  e.message+
-  "</p></div>";
-}
+let db=null;
 let currentRoutine=null;
 let lastSavedId=null;
 
@@ -117,6 +108,13 @@ const defaultB={
   {name:"Elevação lateral",refLoad:5,refReps:12,targetLoad:5,targetReps:12}
  ]
 };
+ const defaultB={
+  ...
+};
+
+db=loadDB();
+ 
+function clone(x){
 
 function clone(x){
  return JSON.parse(JSON.stringify(x));
