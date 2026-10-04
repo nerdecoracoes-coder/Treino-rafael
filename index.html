@@ -2637,8 +2637,7 @@ function renderExerciseLibrary(){
 
   }).join("");
 
-}
- function addLibraryExercise(){
+}function addLibraryExercise(){
 
   const name = prompt(
     "Digite o nome do exercício:"
@@ -2656,35 +2655,78 @@ function renderExerciseLibrary(){
   const categories =
     db.exerciseCategories || [];
 
-  const category = prompt(
-    "Digite a categoria do exercício:\n\n" +
-    categories.join("\n")
+  const categoryList =
+    categories
+      .map(
+        (category,i)=>
+          `${i+1} - ${category}`
+      )
+      .join("\n");
+
+  const choice = prompt(
+    "Escolha a categoria:\n\n" +
+    categoryList +
+    "\n\nDigite o número da categoria."
   );
 
-  if(!category)return;
+  if(!choice)return;
 
-  const cleanCategory =
-    category.trim();
+  const index =
+    Number(choice) - 1;
 
-  if(!cleanCategory)return;
+  let cleanCategory =
+    categories[index];
 
-  if(
-    !db.exerciseCategories.includes(
-      cleanCategory
-    )
-  ){
-    db.exerciseCategories.push(
-      cleanCategory
-    );
+  if(!cleanCategory){
+
+    const newCategory =
+      prompt(
+        "Categoria não encontrada.\n\n" +
+        "Digite o nome da nova categoria:"
+      );
+
+    if(!newCategory)return;
+
+    cleanCategory =
+      newCategory.trim();
+
+    if(!cleanCategory)return;
+
+    const existing =
+      categories.find(
+        category =>
+          category.toLowerCase() ===
+          cleanCategory.toLowerCase()
+      );
+
+    if(existing){
+
+      cleanCategory = existing;
+
+    }else{
+
+      db.exerciseCategories.push(
+        cleanCategory
+      );
+
+    }
+
   }
 
   db.exerciseLibrary.push({
+
     id: Date.now().toString(),
+
     name: cleanName,
+
     category: cleanCategory,
+
     instructions: "",
+
     image: "",
+
     images: []
+
   });
 
   saveDB();
@@ -2694,7 +2736,8 @@ function renderExerciseLibrary(){
   );
 
   showConfig();
- }
+
+}
  function updateExerciseOptions(id){
 
   const categorySelect =
