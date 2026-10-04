@@ -1868,7 +1868,19 @@ function showConfig(){
      + Perfil
 
     </button>
+<br>
 
+<input
+  type="file"
+  id="profilePhotoInput"
+  accept="image/*"
+>
+
+<button
+  class="secondary"
+  onclick="saveProfilePhoto()">
+  📷 Salvar foto
+</button>
    </div>
 
   </div>
@@ -2136,7 +2148,7 @@ function addProfile(){
   id:id,
 
   name:name,
-
+photo:"",
   routines:{}
 
  });
@@ -2152,7 +2164,43 @@ function addProfile(){
 
 }
 
+function saveProfilePhoto(){
 
+  const input =
+    document.getElementById(
+      "profilePhotoInput"
+    );
+
+  const file =
+    input?.files?.[0];
+
+  if(!file){
+    alert("Selecione uma foto primeiro.");
+    return;
+  }
+
+  const reader =
+    new FileReader();
+
+  reader.onload = function(){
+
+    const p =
+      getProfile();
+
+    if(!p)return;
+
+    p.photo =
+      reader.result;
+
+    saveDB();
+
+    showConfig();
+
+    alert("Foto do perfil salva!");
+  };
+
+  reader.readAsDataURL(file);
+ }
 /* =====================================================
    NOVA FICHA
 ===================================================== */
