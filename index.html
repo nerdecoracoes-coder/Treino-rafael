@@ -2632,6 +2632,44 @@ function renderExerciseLibrary(){
 
   showConfig();
  }
+ function updateExerciseOptions(id){
+
+  const categorySelect =
+    document.getElementById(
+      "exerciseCategory_" + id
+    );
+
+  const exerciseSelect =
+    document.getElementById(
+      "exerciseSelect_" + id
+    );
+
+  if(!categorySelect || !exerciseSelect)return;
+
+  const category =
+    categorySelect.value;
+
+  const library =
+    db.exerciseLibrary || [];
+
+  const exercises =
+    library.filter(
+      ex => ex.category === category
+    );
+
+  exerciseSelect.innerHTML = `
+    <option value="">
+      Selecione o exercício
+    </option>
+
+    ${exercises.map(ex => `
+      <option value="${esc(ex.id)}">
+        ${esc(ex.name)}
+      </option>
+    `).join("")}
+  `;
+
+ }
 function addExercise(id){
 
   const p = getProfile();
