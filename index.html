@@ -753,6 +753,32 @@ if(!db.exerciseCategories){
   db.exerciseLibrary = [];
   saveDB();
  }
+ /* =====================================================
+   PADRONIZAR CATEGORIAS DOS EXERCÍCIOS
+===================================================== */
+
+if(db.exerciseLibrary){
+
+  db.exerciseLibrary.forEach(ex => {
+
+    if(!ex.category)return;
+
+    const encontrada =
+      db.exerciseCategories.find(
+        cat =>
+          cat.trim().toLowerCase() ===
+          ex.category.trim().toLowerCase()
+      );
+
+    if(encontrada){
+      ex.category = encontrada;
+    }
+
+  });
+
+  saveDB();
+
+}
 let currentRoutine = null;
 
 
