@@ -757,24 +757,53 @@ if(!db.exerciseCategories){
    PADRONIZAR CATEGORIAS DOS EXERCÍCIOS
 ===================================================== */
 
-if(db.exerciseLibrary){
+if(db.exerciseCategories){
 
-  db.exerciseLibrary.forEach(ex => {
+  const categoriasUnicas = [];
 
-    if(!ex.category)return;
+  db.exerciseCategories.forEach(category => {
 
-    const encontrada =
-      db.exerciseCategories.find(
+    const nome = category.trim();
+
+    if(!nome)return;
+
+    const existe =
+      categoriasUnicas.find(
         cat =>
-          cat.trim().toLowerCase() ===
-          ex.category.trim().toLowerCase()
+          cat.toLowerCase() ===
+          nome.toLowerCase()
       );
 
-    if(encontrada){
-      ex.category = encontrada;
+    if(!existe){
+      categoriasUnicas.push(nome);
     }
 
   });
+
+  db.exerciseCategories =
+    categoriasUnicas;
+
+
+  if(db.exerciseLibrary){
+
+    db.exerciseLibrary.forEach(ex => {
+
+      if(!ex.category)return;
+
+      const categoria =
+        db.exerciseCategories.find(
+          cat =>
+            cat.toLowerCase() ===
+            ex.category.trim().toLowerCase()
+        );
+
+      if(categoria){
+        ex.category = categoria;
+      }
+
+    });
+
+  }
 
   saveDB();
 
