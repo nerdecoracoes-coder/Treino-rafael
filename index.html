@@ -833,7 +833,19 @@ function refreshProfiles(){
 
    `
   ).join("");
+const avatar =
+ document.getElementById("profileAvatar");
 
+if(avatar){
+
+ const p=getProfile();
+
+ avatar.innerHTML =
+  p && p.photo
+   ? `<img src="${esc(p.photo)}" alt="">`
+   : "👤";
+
+ }
 }
 
 
