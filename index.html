@@ -2114,9 +2114,9 @@ html += `
        id="exerciseCategory_${id}"
        onchange="updateExerciseOptions('${esc(id)}')">
 
-       <option value="">
-        Selecione a categoria
-       </option>
+ <option value="">
+ Categorias
+</option>
 
        ${(db.exerciseCategories || []).map(category => `
         <option value="${esc(category)}">
@@ -2130,9 +2130,9 @@ html += `
       <select
        id="exerciseSelect_${id}">
 
-       <option value="">
-        Selecione o exercício
-       </option>
+<option value="">
+ Exercícios
+</option>
 
       </select>
 
