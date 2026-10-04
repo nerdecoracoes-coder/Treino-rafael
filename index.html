@@ -2654,46 +2654,81 @@ function addEvolutionRecord(){
 
     const rd=
      new FileReader();
+function addEvolutionRecord(){
+  const date=prompt("Data do registro (AAAA-MM-DD):",today());
+  if(!date)return;
 
+  const weight=prompt("Peso (kg):","");
+  if(weight===null)return;
 
-    rd.onload=()=>{
+  const waist=prompt("Cintura (cm):","");
+  if(waist===null)return;
 
-     photos.push({
+  const abdomen=prompt("Abdômen (cm):","");
+  if(abdomen===null)return;
 
-      name:file.name,
+  let photos=[];
 
-      data:rd.result
+  const finish=()=>{
+    db.evolution.push({
+      id:uid(),
+      profileId:getProfile().id,
+      date,
+      weight,
+      waist,
+      abdomen,
+      photos
+    });
 
-     });
+    saveDB();
+    showEvolution();
+  };
 
+  const addPhotos=confirm("Deseja adicionar fotos de evolução?");
 
-     left--;
+  if(!addPhotos){
+    finish();
+    return;
+  }
 
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept="image/*";
+  input.multiple=true;
 
-     if(left===0){
+  input.onchange=()=>{
+    const files=[...input.files].slice(0,3);
 
+    if(!files.length){
       finish();
+      return;
+    }
 
-     }
+    let left=files.length;
 
-    };
+    files.forEach(file=>{
+      const rd=new FileReader();
 
+      rd.onload=()=>{
+        photos.push({
+          name:file.name,
+          data:rd.result
+        });
 
-    rd.readAsDataURL(file);
+        left--;
 
-   }
-  );
+        if(left===0){
+          finish();
+        }
+      };
 
- };
+      rd.readAsDataURL(file);
+    });
+  };
 
-
- document.body.appendChild(
-  input
- );
-
-
- input.click();
-
+  document.body.appendChild(input);
+  input.click();
+  input.remove();
 }
 
 
