@@ -69,8 +69,14 @@ select,input{
  padding:10px;
  border:1px solid #d1d5db;
  border-radius:8px;
- font-size:16px;
+ font-size:14px;
  background:#fff;
+}
+
+.exerciseSelect{
+ font-size:14px;
+ font-weight:bold;
+ padding:10px 8px;
 }
 
 nav{
@@ -2111,8 +2117,9 @@ html += `
      <div class="row">
 
             <select
-       id="exerciseCategory_${id}"
-       onchange="updateExerciseOptions('${esc(id)}')">
+ class="exerciseSelect"
+ id="exerciseCategory_${id}"
+ onchange="updateExerciseOptions('${esc(id)}')">
 
  <option value="">
  Categorias
@@ -2128,7 +2135,8 @@ html += `
 
 
       <select
-       id="exerciseSelect_${id}">
+ class="exerciseSelect"
+ id="exerciseSelect_${id}">
 
 <option value="">
  Exercícios
