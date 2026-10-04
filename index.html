@@ -2613,40 +2613,48 @@ function renderExerciseLibrary(){
       );
 
     return `
-      <div style="margin-bottom:20px">
+      <div style="margin-bottom:24px">
 
-        <h3>
+        <h3 style="
+          margin-bottom:10px;
+          color:#111827;
+        ">
           ${esc(category)}
         </h3>
 
         ${exercises.map(ex => `
 
           <div class="card"
-               style="margin:8px 0">
+               style="
+                 margin:10px 0;
+                 padding:15px;
+               ">
 
-            <strong>
+            <div style="
+              font-size:18px;
+              font-weight:bold;
+              margin-bottom:8px;
+            ">
               ${esc(ex.name)}
-            </strong>
+            </div>
 
             ${
               ex.instructions
-              ? `
-                <p style="
-                  margin:8px 0 0;
-                  color:#6b7280;
-                  font-size:14px;
-                ">
-                  ${esc(ex.instructions)}
-                </p>
+              ?
               `
-              : `
-                <p style="
-                  margin:8px 0 0;
-                  color:#9ca3af;
-                  font-size:13px;
-                ">
-                  Sem instruções cadastradas.
-                </p>
+              <div style="
+                margin-top:8px;
+                line-height:1.5;
+              ">
+                <strong>📋 Execução:</strong><br>
+                ${esc(ex.instructions)}
+              </div>
+              `
+              :
+              `
+              <div class="muted">
+                📋 Instruções de execução não cadastradas.
+              </div>
               `
             }
 
@@ -2657,7 +2665,7 @@ function renderExerciseLibrary(){
       </div>
     `;
 
-    }).join("");
+  }).join("");
 }
 
 
