@@ -749,6 +749,10 @@ if(!db.exerciseCategories){
 
   saveDB();
 }
+ if(!db.exerciseLibrary){
+  db.exerciseLibrary = [];
+  saveDB();
+ }
 let currentRoutine = null;
 
 
@@ -2501,9 +2505,51 @@ function addExercise(id){
  }
 
 
+ const categories =
+  db.exerciseCategories || [];
+
+
+ const category =
+  prompt(
+   "Digite a categoria do exercício:\n\n"+
+   categories.join("\n")
+  );
+
+
+ if(!category)return;
+
+
+ const cleanCategory =
+  category.trim();
+
+
+ if(!cleanCategory)return;
+
+
+ if(
+  !db.exerciseCategories.includes(
+   cleanCategory
+  )
+ ){
+
+  db.exerciseCategories.push(
+   cleanCategory
+  );
+
+ }
+
+
  r.ex.push({
 
   name:name,
+
+  category:cleanCategory,
+
+  instructions:"",
+
+  image:"",
+
+  images:[],
 
   refLoad:"",
 
