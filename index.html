@@ -1881,7 +1881,13 @@ function showConfig(){
    </h2>
 
  `;
-
+html += `
+<button
+  class="primary"
+  onclick="importRoutine()">
+  📥 Importar ficha
+</button>
+`;
 
  Object.keys(
   p.routines || {}
