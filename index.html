@@ -1029,13 +1029,20 @@ function readDB(){
   )
  ){
 
+  let savedProfile="";
+
+  try{
+    savedProfile=
+     localStorage.getItem(
+      "treinoRafaelDefaultProfile"
+     ) || "";
+  }catch(e){}
+
   data.currentProfile=
-   localStorage.getItem(
-    "treinoRafaelDefaultProfile"
-   ) ||
+   savedProfile ||
    "rafael";
 
- }
+                     }
 
 
  if(
