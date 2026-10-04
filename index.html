@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#05070b">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Treino Rafael</title>
@@ -1032,17 +1033,19 @@ function readDB(){
   let savedProfile="";
 
   try{
-    savedProfile=
-     localStorage.getItem(
-      "treinoRafaelDefaultProfile"
-     ) || "";
+
+   savedProfile=
+    localStorage.getItem(
+     "treinoRafaelDefaultProfile"
+    ) || "";
+
   }catch(e){}
 
   data.currentProfile=
    savedProfile ||
    "rafael";
 
-                     }
+ }
 
 
  if(
@@ -1244,10 +1247,14 @@ function changeProfile(id){
 
  db.currentProfile=id;
 
- localStorage.setItem(
-  "treinoRafaelDefaultProfile",
-  id
- );
+ try{
+
+  localStorage.setItem(
+   "treinoRafaelDefaultProfile",
+   id
+  );
+
+ }catch(e){}
 
  const p=getProfile();
 
@@ -1887,12 +1894,6 @@ function saveWorkout(){
 
  db.history.push(entry);
 
-
- /*
-  Se o treino tiver peso,
-  também cria/atualiza o registro
-  correspondente na evolução.
- */
 
  if(entry.weight){
 
@@ -2586,7 +2587,6 @@ function addEvolutionRecord(){
    today()
   );
 
-
  if(!date)return;
 
 
@@ -2595,7 +2595,6 @@ function addEvolutionRecord(){
    "Peso (kg):",
    ""
   );
-
 
  if(weight===null)return;
 
@@ -2606,7 +2605,6 @@ function addEvolutionRecord(){
    ""
   );
 
-
  if(waist===null)return;
 
 
@@ -2616,8 +2614,54 @@ function addEvolutionRecord(){
    ""
   );
 
-
  if(abdomen===null)return;
+
+
+ let photos=[];
+
+
+ function finish(){
+
+  db.evolution.push({
+
+   id:uid(),
+
+   profileId:
+    getProfile().id,
+
+   date,
+
+   weight,
+
+   waist,
+
+   abdomen,
+
+   photos
+
+  });
+
+
+  saveDB();
+
+  showEvolution();
+
+ }
+
+
+ const addPhotos=
+  confirm(
+   "Deseja adicionar fotos de evolução?"
+  );
+
+
+ if(!addPhotos){
+
+  finish();
+
+  return;
+
+ }
 
 
  const input=
@@ -2641,9 +2685,6 @@ function addEvolutionRecord(){
    ].slice(0,3);
 
 
-  const photos=[];
-
-
   if(!files.length){
 
    finish();
@@ -2653,7 +2694,8 @@ function addEvolutionRecord(){
   }
 
 
-  let left=files.length;
+  let left=
+   files.length;
 
 
   files.forEach(
@@ -2661,115 +2703,45 @@ function addEvolutionRecord(){
 
     const rd=
      new FileReader();
-function addEvolutionRecord(){
-  const date=prompt("Data do registro (AAAA-MM-DD):",today());
-  if(!date)return;
 
-  const weight=prompt("Peso (kg):","");
-  if(weight===null)return;
 
-  const waist=prompt("Cintura (cm):","");
-  if(waist===null)return;
+    rd.onload=()=>{
 
-  const abdomen=prompt("Abdômen (cm):","");
-  if(abdomen===null)return;
+     photos.push({
 
-  let photos=[];
+      name:file.name,
 
-  const finish=()=>{
-    db.evolution.push({
-      id:uid(),
-      profileId:getProfile().id,
-      date,
-      weight,
-      waist,
-      abdomen,
-      photos
-    });
+      data:rd.result
 
-    saveDB();
-    showEvolution();
-  };
+     });
 
-  const addPhotos=confirm("Deseja adicionar fotos de evolução?");
 
-  if(!addPhotos){
-    finish();
-    return;
-  }
+     left--;
 
-  const input=document.createElement("input");
-  input.type="file";
-  input.accept="image/*";
-  input.multiple=true;
 
-  input.onchange=()=>{
-    const files=[...input.files].slice(0,3);
+     if(left===0){
 
-    if(!files.length){
       finish();
-      return;
-    }
 
-    let left=files.length;
+     }
 
-    files.forEach(file=>{
-      const rd=new FileReader();
-
-      rd.onload=()=>{
-        photos.push({
-          name:file.name,
-          data:rd.result
-        });
-
-        left--;
-
-        if(left===0){
-          finish();
-        }
-      };
-
-      rd.readAsDataURL(file);
-    });
-  };
-
-  document.body.appendChild(input);
-  input.click();
-  input.remove();
-}
+    };
 
 
-function finishEvolutionRecord(
- date,
- weight,
- waist,
- abdomen,
- photos
-){
+    rd.readAsDataURL(file);
 
- db.evolution.push({
+   }
 
-  id:uid(),
+  );
 
-  profileId:
-   getProfile().id,
-
-  date,
-
-  weight,
-
-  waist,
-
-  abdomen,
-
-  photos
-
- });
+ };
 
 
- saveDB();
+ document.body.appendChild(input);
 
- showEvolution();
+ input.click();
+
+ input.remove();
 
 }
 
@@ -3623,11 +3595,6 @@ function editLibraryMedia(id){
    .slice(0,3);
 
 
- /*
-  Atualiza as cópias do exercício
-  que já foram adicionadas às fichas.
- */
-
  db.profiles.forEach(
   p=>
    Object.values(
@@ -3914,10 +3881,14 @@ function addProfile(){
  db.currentProfile=id;
 
 
- localStorage.setItem(
-  "treinoRafaelDefaultProfile",
-  id
- );
+ try{
+
+  localStorage.setItem(
+   "treinoRafaelDefaultProfile",
+   id
+  );
+
+ }catch(e){}
 
 
  currentRoutine=null;
@@ -4152,17 +4123,6 @@ function importRoutine(){
 
  }
 
-
- /*
-  IMPORTAÇÃO:
-  copia somente a estrutura.
-
-  NÃO copia:
-  cargas,
-  repetições,
-  referências,
-  histórico.
- */
 
  current.routines[id]={
 
@@ -4587,4 +4547,4 @@ showTraining();
 </script>
 
 </body>
-</html>
+ </html>
