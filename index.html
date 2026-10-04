@@ -729,7 +729,26 @@ function readDB(){
 
 
 let db = readDB();
+if(!db.exerciseCategories){
+  db.exerciseCategories = [
+    "Peito",
+    "Costas",
+    "Bíceps",
+    "Tríceps",
+    "Ombros",
+    "Quadríceps",
+    "Glúteos",
+    "Adutores",
+    "Abdutores",
+    "Posteriores",
+    "Panturrilha",
+    "Abdômen",
+    "Lombar",
+      "Cardio"
+  ];
 
+  saveDB();
+}
 let currentRoutine = null;
 
 
