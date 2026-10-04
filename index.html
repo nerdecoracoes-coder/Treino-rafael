@@ -2592,13 +2592,11 @@ function renderExerciseLibrary(){
     db.exerciseLibrary || [];
 
   if(!library.length){
-
     return `
       <p class="muted">
         Nenhum exercício cadastrado ainda.
       </p>
     `;
-
   }
 
   const categories = [
@@ -2622,6 +2620,7 @@ function renderExerciseLibrary(){
         </h3>
 
         ${exercises.map(ex => `
+
           <div class="card"
                style="margin:8px 0">
 
@@ -2629,13 +2628,37 @@ function renderExerciseLibrary(){
               ${esc(ex.name)}
             </strong>
 
+            ${
+              ex.instructions
+              ? `
+                <p style="
+                  margin:8px 0 0;
+                  color:#6b7280;
+                  font-size:14px;
+                ">
+                  ${esc(ex.instructions)}
+                </p>
+              `
+              : `
+                <p style="
+                  margin:8px 0 0;
+                  color:#9ca3af;
+                  font-size:13px;
+                ">
+                  Sem instruções cadastradas.
+                </p>
+              `
+            }
+
           </div>
+
         `).join("")}
 
       </div>
     `;
 
   }).join("");
+}
 
 }function addLibraryExercise(){
 
@@ -2645,12 +2668,13 @@ function renderExerciseLibrary(){
 
   if(!name)return;
 
-  const cleanName = name.trim();
+  const instructions = prompt(
+  "Digite as instruções de execução do exercício:\n\n" +
+  "Exemplo: Mantenha a coluna reta, puxe a barra em direção ao peito e retorne lentamente."
+);
 
-  if(!cleanName){
-    alert("Digite o nome do exercício.");
-    return;
-  }
+const cleanInstructions =
+  instructions ? instructions.trim() : "";
 
   const categories =
     db.exerciseCategories || [];
@@ -2721,8 +2745,7 @@ function renderExerciseLibrary(){
 
     category: cleanCategory,
 
-    instructions: "",
-
+    instructions: cleanInstructions,
     image: "",
 
     images: []
