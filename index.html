@@ -10,34 +10,14 @@
 
 <style>
 :root{
- --bg:#05070b;
- --surface:#0d1118;
- --surface2:#131a24;
- --line:#263244;
- --text:#f8fafc;
- --muted:#94a3b8;
- --blue:#2563eb;
- --blue2:#3b82f6;
- --danger:#ef4444;
- --success:#22c55e;
+ --bg:#05070b;--surface:#0d1118;--surface2:#131a24;--line:#263244;
+ --text:#f8fafc;--muted:#94a3b8;--blue:#2563eb;--blue2:#3b82f6;
+ --danger:#ef4444;--success:#22c55e;
 }
-
 *{box-sizing:border-box}
-
-body{
- margin:0;
- font-family:Arial,sans-serif;
- background:var(--bg);
- color:var(--text)
-}
-
-button,input,select{
- font:inherit
-}
-
-button{
- cursor:pointer
-}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}
+button{cursor:pointer}
 
 header{
  background:#05070b;
@@ -55,10 +35,7 @@ header h1{
  text-align:center
 }
 
-.profile{
- max-width:700px;
- margin:auto
-}
+.profile{max-width:700px;margin:auto}
 
 .profile-selector{
  display:flex;
@@ -98,9 +75,7 @@ select,input{
  color:var(--text)
 }
 
-input::placeholder{
- color:#64748b
-}
+input::placeholder{color:#64748b}
 
 .exerciseSelect{
  font-size:14px;
@@ -170,9 +145,7 @@ main{
  margin:8px 0 12px
 }
 
-.target strong{
- color:#60a5fa
-}
+.target strong{color:#60a5fa}
 
 .grid{
  display:grid;
@@ -198,9 +171,7 @@ label{
  font-weight:bold
 }
 
-.primary:hover{
- background:var(--blue2)
-}
+.primary:hover{background:var(--blue2)}
 
 .secondary{
  padding:10px;
@@ -220,9 +191,7 @@ label{
  font-weight:bold
 }
 
-.success{
- text-align:center
-}
+.success{text-align:center}
 
 .history-item{
  border-top:1px solid var(--line);
@@ -235,9 +204,7 @@ label{
  align-items:center
 }
 
-.row>*{
- flex:1
-}
+.row>*{flex:1}
 
 .editor{
  border:1px solid var(--line);
@@ -252,9 +219,7 @@ label{
  margin-top:8px
 }
 
-.move button{
- flex:1
-}
+.move button{flex:1}
 
 hr{
  border:0;
@@ -323,9 +288,7 @@ hr{
  margin-left:6px
 }
 
-.timeline-item:last-child{
- padding-bottom:0
-}
+.timeline-item:last-child{padding-bottom:0}
 
 .timeline-date{
  font-weight:bold;
@@ -372,13 +335,8 @@ hr{
 }
 
 @media(max-width:430px){
- .grid,.metric-grid{
-  grid-template-columns:1fr 1fr
- }
-
- .photo-grid{
-  grid-template-columns:repeat(3,1fr)
- }
+ .grid,.metric-grid{grid-template-columns:1fr 1fr}
+ .photo-grid{grid-template-columns:repeat(3,1fr)}
 }
 </style>
 </head>
@@ -441,20 +399,20 @@ function clone(o){
 
 function esc(v){
  return String(v??"")
- .replace(/&/g,"&amp;")
- .replace(/</g,"&lt;")
- .replace(/>/g,"&gt;")
- .replace(/"/g,"&quot;")
- .replace(/'/g,"&#039;")
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;")
 }
 
 function slug(v){
  return String(v||"perfil")
- .normalize("NFD")
- .replace(/[\u0300-\u036f]/g,"")
- .replace(/[^a-zA-Z0-9]+/g,"-")
- .replace(/^-|-$/g,"")
- .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g,"")
+  .replace(/[^a-zA-Z0-9]+/g,"-")
+  .replace(/^-|-$/g,"")
+  .toLowerCase()
 }
 
 function today(){
@@ -542,7 +500,6 @@ function createInitialDB(){
     routines:{}
    }
   ],
-
   history:[],
   evolution:[],
   currentProfile:"rafael",
@@ -580,32 +537,32 @@ function readDB(){
  data.exerciseCategories=[
   ...new Map(
    data.exerciseCategories
-   .map(x=>[
-    String(x).trim().toLowerCase(),
-    String(x).trim()
-   ])
-   .filter(x=>x[1])
+    .map(x=>[
+     String(x).trim().toLowerCase(),
+     String(x).trim()
+    ])
+    .filter(x=>x[1])
   ).values()
  ];
 
  data.exerciseLibrary=data.exerciseLibrary
- .filter(Boolean)
- .map(x=>({
-  id:x.id||uid(),
-  name:x.name||"",
-  category:x.category||"",
-  image:x.image||"",
-  images:Array.isArray(x.images)?x.images:[],
-  video:x.video||""
- }));
+  .filter(Boolean)
+  .map(x=>({
+   id:x.id||uid(),
+   name:x.name||"",
+   category:x.category||"",
+   image:x.image||"",
+   images:Array.isArray(x.images)?x.images:[],
+   video:x.video||""
+  }));
 
  data.profiles.forEach(p=>{
   p.routines=p.routines&&typeof p.routines==="object"
-   ?p.routines
-   :{};
+   ?p.routines:{};
 
   Object.keys(p.routines).forEach(k=>{
    const r=p.routines[k];
+
    r.ex=Array.isArray(r.ex)
     ?r.ex.map(normalizeExercise)
     :[];
@@ -626,6 +583,7 @@ function readDB(){
   };
 
   data.profiles.unshift(rafael);
+
  }else{
 
   if(!rafael.routines.A)
@@ -637,14 +595,13 @@ function readDB(){
   rafael.ex&&delete rafael.ex;
  }
 
- if(!data.profiles.some(p=>p.id==="natielle")){
+ if(!data.profiles.some(p=>p.id==="natielle"))
   data.profiles.push({
    id:"natielle",
    name:"Natielle",
    photo:"",
    routines:{}
   });
- }
 
  if(
   !data.currentProfile ||
@@ -665,6 +622,7 @@ function readDB(){
   if(Array.isArray(old)&&!data._oldMigrated){
 
    old.forEach(item=>{
+
     data.history.push({
      id:uid(),
      profileId:"rafael",
@@ -675,6 +633,7 @@ function readDB(){
      calories:item.calories||"",
      exercises:item.exercises||[]
     });
+
    });
 
    data._oldMigrated=true;
@@ -704,6 +663,7 @@ function getRoutine(){
 }
 
 function setTab(id){
+
  ["btnT","btnH","btnE","btnC"].forEach(x=>{
   document.getElementById(x).classList.remove("active")
  });
@@ -718,17 +678,18 @@ function refreshProfiles(){
  if(!s)return;
 
  s.innerHTML=db.profiles.map(p=>
-  `<option value="${esc(p.id)}" ${p.id===db.currentProfile?"selected":""}>
-   ${esc(p.name)}
-  </option>`
+  `<option value="${esc(p.id)}" ${
+   p.id===db.currentProfile?"selected":""
+  }>${esc(p.name)}</option>`
  ).join("");
 
  const a=document.getElementById("profileAvatar");
  const p=getProfile();
 
- a.innerHTML=p&&p.photo
-  ?`<img src="${esc(p.photo)}" alt="">`
-  :"👤";
+ a.innerHTML=
+  p&&p.photo
+   ?`<img src="${esc(p.photo)}" alt="">`
+   :"👤";
 }
 
 function changeProfile(id){
@@ -760,14 +721,14 @@ function routineButtons(){
  const p=getProfile();
 
  return Object.keys(p.routines||{})
- .map(id=>
-  `<button class="${id===currentRoutine?"primary":"secondary"}"
-   style="width:auto"
-   onclick="chooseRoutine('${esc(id)}')">
-   ${esc(p.routines[id].name)}
-  </button>`
- )
- .join(" ");
+  .map(id=>
+   `<button
+    class="${id===currentRoutine?"primary":"secondary"}"
+    style="width:auto"
+    onclick="chooseRoutine('${esc(id)}')"
+   >${esc(p.routines[id].name)}</button>`
+  )
+  .join(" ");
 }
 
 function mediaHtml(e){
@@ -792,8 +753,8 @@ function mediaHtml(e){
     `<img
       src="${esc(x)}"
       alt="${esc(e.name)}"
-      onerror="this.style.display='none'">
-    `
+      onerror="this.style.display='none'"
+    >`
    ).join("")}
   </div>`;
  }
@@ -805,7 +766,8 @@ function mediaHtml(e){
    class="video-link"
    href="${esc(e.video)}"
    target="_blank"
-   rel="noopener">
+   rel="noopener"
+  >
    ▶️ Ver execução em vídeo
   </a>`;
  }
@@ -821,34 +783,31 @@ function showTraining(){
  const p=getProfile();
 
  if(!p){
+
   app.innerHTML=`
-   <div class="card">
-    <h2>Perfil não encontrado</h2>
-   </div>`;
+  <div class="card">
+   <h2>Perfil não encontrado</h2>
+  </div>`;
+
   return;
  }
 
- if(
-  !currentRoutine||
-  !p.routines[currentRoutine]
- ){
-
+ if(!currentRoutine||!p.routines[currentRoutine])
   currentRoutine=
    Object.keys(p.routines||{})[0]||null;
- }
 
  if(!currentRoutine){
 
   app.innerHTML=`
-   <div class="card">
-    <h2>Nenhuma ficha criada</h2>
-    <p class="muted">
-     Crie ou importe uma ficha em Configurar.
-    </p>
-    <button class="primary" onclick="showConfig()">
-     ⚙️ Configurar
-    </button>
-   </div>`;
+  <div class="card">
+   <h2>Nenhuma ficha criada</h2>
+   <p class="muted">
+    Crie ou importe uma ficha em Configurar.
+   </p>
+   <button class="primary" onclick="showConfig()">
+    ⚙️ Configurar
+   </button>
+  </div>`;
 
   return;
  }
@@ -916,13 +875,9 @@ function showTraining(){
 
    <div class="target">
 
-    <strong>
-     🎯 Meta para o próximo treino
-    </strong>
+    <strong>🎯 Meta para o próximo treino</strong>
 
-    <div
-     class="grid"
-     style="margin-top:7px">
+    <div class="grid" style="margin-top:7px">
 
      <div>
       <label>Carga alvo</label>
@@ -930,7 +885,8 @@ function showTraining(){
        id="tL${i}"
        type="number"
        step="0.5"
-       value="${esc(e.targetLoad??"")}">
+       value="${esc(e.targetLoad??"")}"
+      >
      </div>
 
      <div>
@@ -938,10 +894,12 @@ function showTraining(){
       <input
        id="tR${i}"
        type="number"
-       value="${esc(e.targetReps??"")}">
+       value="${esc(e.targetReps??"")}"
+      >
      </div>
 
     </div>
+
    </div>
 
    <div class="grid">
@@ -981,18 +939,18 @@ function showTraining(){
    <br>
 
    <label>Observação</label>
+
    <input
     id="o${i}"
     type="text"
-    placeholder="Opcional">
+    placeholder="Opcional"
+   >
 
   </div>`;
  });
 
  html+=`
- <button
-  class="primary"
-  onclick="saveWorkout()">
+ <button class="primary" onclick="saveWorkout()">
   ✅ Salvar treino
  </button>`;
 
@@ -1048,6 +1006,7 @@ function saveWorkout(){
    e.refLoad=sets[0].load;
    e.refReps=sets[0].reps;
   }
+
  });
 
  db.history.push(entry);
@@ -1055,9 +1014,7 @@ function saveWorkout(){
  if(entry.weight){
 
   const same=db.evolution.find(
-   x=>
-    x.profileId===p.id&&
-    x.date===entry.date
+   x=>x.profileId===p.id&&x.date===entry.date
   );
 
   if(same){
@@ -1075,6 +1032,7 @@ function saveWorkout(){
     abdomen:"",
     photos:[]
    });
+
   }
  }
 
@@ -1096,7 +1054,8 @@ function saveWorkout(){
 
   <button
    class="primary"
-   onclick="exportWorkout('${entry.id}')">
+   onclick="exportWorkout('${entry.id}')"
+  >
    📤 Exportar treino do dia
   </button>
 
@@ -1104,7 +1063,8 @@ function saveWorkout(){
 
   <button
    class="secondary"
-   onclick="showTraining()">
+   onclick="showTraining()"
+  >
    ↩️ Voltar ao treino
   </button>
 
@@ -1140,11 +1100,8 @@ function showHistory(){
  const p=getProfile();
 
  const list=db.history
- .filter(x=>x.profileId===p.id)
- .sort(
-  (a,b)=>
-   String(b.date).localeCompare(String(a.date))
- );
+  .filter(x=>x.profileId===p.id)
+  .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 
  let h=`
  <div class="card">
@@ -1168,9 +1125,7 @@ function showHistory(){
   h+=`
   <div class="history-item">
 
-   <strong>
-    ${esc(r?.name||e.workout)}
-   </strong>
+   <strong>${esc(r?.name||e.workout)}</strong>
 
    <div class="muted">
     ${formatDate(e.date)}
@@ -1183,13 +1138,15 @@ function showHistory(){
 
    <button
     class="secondary"
-    onclick="viewHistory('${e.id}')">
+    onclick="viewHistory('${e.id}')"
+   >
     Ver detalhes
    </button>
 
    <button
     class="secondary"
-    onclick="exportWorkout('${e.id}')">
+    onclick="exportWorkout('${e.id}')"
+   >
     Exportar
    </button>
 
@@ -1214,7 +1171,8 @@ function viewHistory(id){
 
   <button
    class="secondary"
-   onclick="showHistory()">
+   onclick="showHistory()"
+  >
    ← Voltar
   </button>
 
@@ -1235,9 +1193,7 @@ function viewHistory(id){
   h+=`
   <div class="editor">
 
-   <h3>
-    ${i+1}. ${esc(x.name)}
-   </h3>
+   <h3>${i+1}. ${esc(x.name)}</h3>
 
    <div class="muted">
     Referência anterior:
@@ -1254,24 +1210,18 @@ function viewHistory(id){
 
    <p>
     ${
-     x.sets
-      .map(
-       (s,n)=>
-        "S"+(n+1)+": "+
-        (s.load?esc(s.load)+" kg":"-")+
-        " × "+
-        (s.reps?esc(s.reps):"-")
-      )
-      .join("<br>")
+     x.sets.map((s,n)=>
+      "S"+(n+1)+": "+
+      (s.load?esc(s.load)+" kg":"-")+
+      " × "+
+      (s.reps?esc(s.reps):"-")
+     ).join("<br>")
     }
    </p>
 
    ${
     x.observation
-     ?`<p>
-        <strong>Obs.:</strong>
-        ${esc(x.observation)}
-       </p>`
+     ?`<p><strong>Obs.:</strong> ${esc(x.observation)}</p>`
      :""
    }
 
@@ -1281,19 +1231,9 @@ function viewHistory(id){
 
     <br>
 
-    ${
-     x.nextTarget.load
-      ?esc(x.nextTarget.load)+" kg"
-      :"-"
-    }
-
+    ${x.nextTarget.load?esc(x.nextTarget.load)+" kg":"-"}
     ×
-
-    ${
-     x.nextTarget.reps
-      ?esc(x.nextTarget.reps)+" reps"
-      :"-"
-    }
+    ${x.nextTarget.reps?esc(x.nextTarget.reps)+" reps":"-"}
 
    </div>
 
@@ -1303,7 +1243,8 @@ function viewHistory(id){
  h+=`
   <button
    class="primary"
-   onclick="exportWorkout('${e.id}')">
+   onclick="exportWorkout('${e.id}')"
+  >
    📤 Exportar este treino
   </button>
 
@@ -1320,11 +1261,8 @@ function showEvolution(){
  const p=getProfile();
 
  const records=db.evolution
- .filter(x=>x.profileId===p.id)
- .sort(
-  (a,b)=>
-   String(b.date).localeCompare(String(a.date))
- );
+  .filter(x=>x.profileId===p.id)
+  .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 
  let h=`
  <div class="card">
@@ -1332,7 +1270,6 @@ function showEvolution(){
   <div class="section-title">
 
    <div>
-
     <h2 style="margin:0">
      Evolução — ${esc(p.name)}
     </h2>
@@ -1340,14 +1277,14 @@ function showEvolution(){
     <p class="muted">
      Registre peso, medidas e fotos por data.
     </p>
-
    </div>
 
   </div>
 
   <button
    class="primary"
-   onclick="addEvolutionRecord()">
+   onclick="addEvolutionRecord()"
+  >
    ➕ Novo registro
   </button>
 
@@ -1393,7 +1330,8 @@ function showEvolution(){
        <div class="metric">
         <strong>Cintura</strong>
         ${esc(x.waist)} cm
-       </div>`
+       </div>
+      `
       :""
     }
 
@@ -1403,7 +1341,8 @@ function showEvolution(){
        <div class="metric">
         <strong>Abdômen</strong>
         ${esc(x.abdomen)} cm
-       </div>`
+       </div>
+      `
       :""
     }
 
@@ -1413,19 +1352,16 @@ function showEvolution(){
     x.photos?.length
      ?`
       <div class="photo-grid">
-
        ${
-        x.photos
-        .map(
-         ph=>
-          `<img
-           src="${esc(ph.data||ph)}"
-           alt="Evolução ${formatDate(x.date)}">`
-        )
-        .join("")
+        x.photos.map(ph=>
+         `<img
+          src="${esc(ph.data||ph)}"
+          alt="Evolução ${formatDate(x.date)}"
+         >`
+        ).join("")
        }
-
-      </div>`
+      </div>
+     `
      :""
    }
 
@@ -1433,8 +1369,16 @@ function showEvolution(){
 
    <button
     class="secondary"
-    onclick="viewEvolution('${x.id}')">
+    onclick="viewEvolution('${x.id}')"
+   >
     Ver registro completo
+   </button>
+
+   <button
+    class="secondary"
+    onclick="addEvolutionPhotos('${x.id}')"
+   >
+    📷 Adicionar fotos
    </button>
 
   </div>`;
@@ -1446,12 +1390,6 @@ function showEvolution(){
 
  app.innerHTML=h;
 }
-
-
-/* =========================================================
-   NOVO REGISTRO DE EVOLUÇÃO
-   O registro é salvo ANTES da escolha das fotos.
-   ========================================================= */
 
 function addEvolutionRecord(){
 
@@ -1483,12 +1421,6 @@ function addEvolutionRecord(){
 
  if(abdomen===null)return;
 
-
- /*
-  Criamos o registro imediatamente.
-  Assim ele não depende do seletor de fotos.
- */
-
  const record={
   id:uid(),
   profileId:getProfile().id,
@@ -1499,32 +1431,35 @@ function addEvolutionRecord(){
   photos:[]
  };
 
-
- /*
-  SALVA PRIMEIRO.
- */
-
  db.evolution.push(record);
 
  saveDB();
 
  showEvolution();
+}
 
+function addEvolutionPhotos(id){
 
- /*
-  Agora perguntamos sobre as fotos.
- */
-
- const addPhotos=confirm(
-  "Registro salvo! Deseja adicionar até 3 fotos de evolução agora?"
+ const record=db.evolution.find(
+  x=>x.id===id
  );
 
- if(!addPhotos)return;
+ if(!record)return;
 
+ const currentPhotos=Array.isArray(record.photos)
+  ?record.photos
+  :[];
 
- /*
-  Se o usuário quiser fotos, abrimos o seletor.
- */
+ if(currentPhotos.length>=3){
+
+  alert(
+   "Este registro já possui 3 fotos."
+  );
+
+  return;
+ }
+
+ const remaining=3-currentPhotos.length;
 
  const input=document.createElement("input");
 
@@ -1532,49 +1467,37 @@ function addEvolutionRecord(){
  input.accept="image/*";
  input.multiple=true;
 
-
  input.onchange=()=>{
 
   const files=[
    ...input.files
-  ].slice(0,3);
-
-  /*
-   Se nenhuma foto foi escolhida,
-   o registro já está salvo.
-  */
+  ].slice(0,remaining);
 
   if(!files.length)return;
 
-
-  const photos=[];
+  const newPhotos=[];
 
   let left=files.length;
-
 
   files.forEach(file=>{
 
    const rd=new FileReader();
 
-
    rd.onload=()=>{
 
-    photos.push({
+    newPhotos.push({
      name:file.name,
      data:rd.result
     });
 
     left--;
 
-
-    /*
-     Quando todas as fotos terminarem
-     de carregar, atualizamos o registro.
-    */
-
     if(left===0){
 
-     record.photos=photos;
+     record.photos=[
+      ...currentPhotos,
+      ...newPhotos
+     ].slice(0,3);
 
      saveDB();
 
@@ -1582,21 +1505,26 @@ function addEvolutionRecord(){
     }
    };
 
-
    rd.readAsDataURL(file);
-
   });
-
  };
-
 
  document.body.appendChild(input);
 
  input.click();
 
- input.remove();
-}
+ input.addEventListener(
+  "cancel",
+  ()=>{
+   input.remove();
+  }
+ );
 
+ setTimeout(()=>{
+  if(input.parentNode)
+   input.remove();
+ },60000);
+}
 
 function viewEvolution(id){
 
@@ -1611,13 +1539,12 @@ function viewEvolution(id){
 
   <button
    class="secondary"
-   onclick="showEvolution()">
+   onclick="showEvolution()"
+  >
    ← Voltar
   </button>
 
-  <h2>
-   ${formatDate(x.date)}
-  </h2>
+  <h2>${formatDate(x.date)}</h2>
 
   <div class="metric-grid">
 
@@ -1644,25 +1571,32 @@ function viewEvolution(id){
   <div class="photo-grid">
 
    ${
-    x.photos
-    .map(
-     ph=>
-      `<img
-       src="${esc(ph.data||ph)}"
-       alt="Foto de evolução">`
-    )
-    .join("")
+    x.photos.map(ph=>
+     `<img
+      src="${esc(ph.data||ph)}"
+      alt="Foto de evolução"
+     >`
+    ).join("")
    }
 
   </div>`;
+
  }
 
  h+=`
+  <br>
+
+  <button
+   class="primary"
+   onclick="addEvolutionPhotos('${x.id}')"
+  >
+   📷 Adicionar fotos
+  </button>
+
  </div>`;
 
  app.innerHTML=h;
 }
-
 
 function showConfig(){
 
@@ -1685,11 +1619,13 @@ function showConfig(){
 
    <input
     id="newProfile"
-    placeholder="Nome do novo perfil">
+    placeholder="Nome do novo perfil"
+   >
 
    <button
     class="secondary"
-    onclick="addProfile()">
+    onclick="addProfile()"
+   >
     + Perfil
    </button>
 
@@ -1702,18 +1638,19 @@ function showConfig(){
   <input
    type="file"
    id="profilePhotoInput"
-   accept="image/*">
+   accept="image/*"
+  >
 
   <br><br>
 
   <button
    class="secondary"
-   onclick="saveProfilePhoto()">
+   onclick="saveProfilePhoto()"
+  >
    📷 Salvar foto
   </button>
 
  </div>`;
-
 
  h+=`
  <div class="card">
@@ -1722,10 +1659,10 @@ function showConfig(){
 
   <button
    class="primary"
-   onclick="importRoutine()">
+   onclick="importRoutine()"
+  >
    📥 Importar ficha
   </button>`;
-
 
  Object.keys(p.routines||{}).forEach(id=>{
 
@@ -1734,21 +1671,21 @@ function showConfig(){
   h+=`
   <div class="editor">
 
-   <strong>
-    ${esc(r.name)}
-   </strong>
+   <strong>${esc(r.name)}</strong>
 
    <div class="move">
 
     <button
      class="secondary"
-     onclick="editRoutine('${esc(id)}')">
+     onclick="editRoutine('${esc(id)}')"
+    >
      ✏️ Renomear
     </button>
 
     <button
      class="danger"
-     onclick="deleteRoutine('${esc(id)}')">
+     onclick="deleteRoutine('${esc(id)}')"
+    >
      🗑️ Excluir
     </button>
 
@@ -1757,7 +1694,6 @@ function showConfig(){
    <hr>
 
    <strong>Exercícios</strong>`;
-
 
   r.ex.forEach((e,i)=>{
 
@@ -1768,11 +1704,13 @@ function showConfig(){
 
      <input
       id="ename_${id}_${i}"
-      value="${esc(e.name)}">
+      value="${esc(e.name)}"
+     >
 
      <button
       class="secondary"
-      onclick="renameExercise('${esc(id)}',${i})">
+      onclick="renameExercise('${esc(id)}',${i})"
+     >
       Salvar
      </button>
 
@@ -1780,33 +1718,32 @@ function showConfig(){
 
     <div
      class="small"
-     style="margin-top:7px">
-
+     style="margin-top:7px"
+    >
      ${esc(e.category||"Sem categoria")}
-
-     ${mediaHtml(e)
-      ?"• mídia disponível"
-      :""}
-
+     ${mediaHtml(e)?"• mídia disponível":""}
     </div>
 
     <div class="move">
 
      <button
       class="secondary"
-      onclick="moveExercise('${esc(id)}',${i},-1)">
+      onclick="moveExercise('${esc(id)}',${i},-1)"
+     >
       ↑
      </button>
 
      <button
       class="secondary"
-      onclick="moveExercise('${esc(id)}',${i},1)">
+      onclick="moveExercise('${esc(id)}',${i},1)"
+     >
       ↓
      </button>
 
      <button
       class="danger"
-      onclick="removeExercise('${esc(id)}',${i})">
+      onclick="removeExercise('${esc(id)}',${i})"
+     >
       🗑️
      </button>
 
@@ -1815,45 +1752,39 @@ function showConfig(){
    </div>`;
   });
 
-
   h+=`
    <div class="row">
 
     <select
      class="exerciseSelect"
      id="exerciseCategory_${id}"
-     onchange="updateExerciseOptions('${esc(id)}')">
-
-     <option value="">
-      Categorias
-     </option>
+     onchange="updateExerciseOptions('${esc(id)}')"
+    >
+     <option value="">Categorias</option>
 
      ${
-      db.exerciseCategories
-      .map(
-       c=>
-        `<option value="${esc(c)}">
-         ${esc(c)}
-        </option>`
-      )
-      .join("")
+      db.exerciseCategories.map(c=>
+       `<option value="${esc(c)}">
+        ${esc(c)}
+       </option>`
+      ).join("")
      }
 
     </select>
 
     <select
      class="exerciseSelect"
-     id="exerciseSelect_${id}">
-
+     id="exerciseSelect_${id}"
+    >
      <option value="">
       Exercícios
      </option>
-
     </select>
 
     <button
      class="secondary"
-     onclick="addExercise('${esc(id)}')">
+     onclick="addExercise('${esc(id)}')"
+    >
      + Exercício
     </button>
 
@@ -1862,29 +1793,28 @@ function showConfig(){
   </div>`;
  });
 
-
  h+=`
   <button
    class="primary"
-   onclick="addRoutine()">
+   onclick="addRoutine()"
+  >
    + Criar nova ficha
   </button>
 
  </div>`;
-
+ });
 
  h+=`
  <div class="card">
 
   <div class="section-title">
 
-   <h2>
-    📚 Biblioteca de exercícios
-   </h2>
+   <h2>📚 Biblioteca de exercícios</h2>
 
    <button
     class="secondary"
-    onclick="addLibraryExercise()">
+    onclick="addLibraryExercise()"
+   >
     ➕ Novo
    </button>
 
@@ -1900,7 +1830,6 @@ function showConfig(){
 
  </div>`;
 
-
  h+=`
  <div class="card">
 
@@ -1912,29 +1841,27 @@ function showConfig(){
 
   <button
    class="secondary"
-   onclick="addCategory()">
+   onclick="addCategory()"
+  >
    ➕ Nova categoria
   </button>
 
   <div style="margin-top:10px">
 
    ${
-    db.exerciseCategories
-    .map(
-     c=>
-      `<span
-       class="badge"
-       style="margin:3px">
-       ${esc(c)}
-      </span>`
-    )
-    .join("")
+    db.exerciseCategories.map(c=>
+     `<span
+      class="badge"
+      style="margin:3px"
+     >
+      ${esc(c)}
+     </span>`
+    ).join("")
    }
 
   </div>
 
  </div>`;
-
 
  h+=`
  <div class="card">
@@ -1948,7 +1875,8 @@ function showConfig(){
 
   <button
    class="primary"
-   onclick="exportAll()">
+   onclick="exportAll()"
+  >
    📦 Exportar backup completo
   </button>
 
@@ -1956,16 +1884,15 @@ function showConfig(){
 
   <button
    class="secondary"
-   onclick="exportProfile()">
+   onclick="exportProfile()"
+  >
    👤 Exportar perfil atual
   </button>
 
  </div>`;
 
-
  app.innerHTML=h;
 }
-
 
 function renderExerciseLibrary(){
 
@@ -1973,21 +1900,18 @@ function renderExerciseLibrary(){
 
  if(!lib.length)
   return`
-   <div class="empty">
-    Nenhum exercício cadastrado ainda.
-   </div>`;
+  <div class="empty">
+   Nenhum exercício cadastrado ainda.
+  </div>`;
 
  return lib.map(ex=>
-
   `<div class="editor">
 
    <div class="section-title">
 
     <div>
 
-     <strong>
-      ${esc(ex.name)}
-     </strong>
+     <strong>${esc(ex.name)}</strong>
 
      <div class="small">
       ${esc(ex.category)}
@@ -1997,7 +1921,8 @@ function renderExerciseLibrary(){
 
     <button
      class="danger"
-     onclick="removeLibraryExercise('${esc(ex.id)}')">
+     onclick="removeLibraryExercise('${esc(ex.id)}')"
+    >
      🗑️
     </button>
 
@@ -2007,7 +1932,8 @@ function renderExerciseLibrary(){
     mediaHtml(ex)||
     `<div
      class="small"
-     style="margin-top:8px">
+     style="margin-top:8px"
+    >
      Nenhuma mídia cadastrada.
     </div>`
    }
@@ -2016,7 +1942,8 @@ function renderExerciseLibrary(){
 
     <button
      class="secondary"
-     onclick="editLibraryMedia('${esc(ex.id)}')">
+     onclick="editLibraryMedia('${esc(ex.id)}')"
+    >
      🖼️/▶️ Mídia
     </button>
 
@@ -2025,7 +1952,6 @@ function renderExerciseLibrary(){
   </div>`
  ).join("");
 }
-
 
 function addLibraryExercise(){
 
@@ -2038,12 +1964,8 @@ function addLibraryExercise(){
  const categories=
   db.exerciseCategories||DEFAULT_CATEGORIES;
 
- const list=
-  categories
-  .map(
-   (c,i)=>
-    `${i+1} - ${c}`
-  )
+ const list=categories
+  .map((c,i)=>`${i+1} - ${c}`)
   .join("\n");
 
  const choice=prompt(
@@ -2054,8 +1976,7 @@ function addLibraryExercise(){
 
  if(!choice)return;
 
- let cat=
-  categories[Number(choice)-1];
+ let cat=categories[Number(choice)-1];
 
  if(!cat){
 
@@ -2067,34 +1988,29 @@ function addLibraryExercise(){
 
   cat=nc.trim();
 
-  if(
-   !categories.some(
-    c=>c.toLowerCase()===cat.toLowerCase()
-   )
-  )
+  if(!categories.some(
+   c=>c.toLowerCase()===cat.toLowerCase()
+  )){
    db.exerciseCategories.push(cat);
+  }
  }
 
- const image=
-  prompt(
-   "URL da imagem principal (opcional):",
-   ""
-  )||"";
+ const image=prompt(
+  "URL da imagem principal (opcional):",
+  ""
+ )||"";
 
- const video=
-  prompt(
-   "URL do vídeo de execução (opcional):",
-   ""
-  )||"";
+ const video=prompt(
+  "URL do vídeo de execução (opcional):",
+  ""
+ )||"";
 
- const extra=
-  prompt(
-   "URLs de outras imagens, separadas por | (opcional):",
-   ""
-  )||"";
+ const extra=prompt(
+  "URLs de outras imagens, separadas por | (opcional):",
+  ""
+ )||"";
 
- const images=
-  extra
+ const images=extra
   .split("|")
   .map(x=>x.trim())
   .filter(Boolean)
@@ -2110,10 +2026,8 @@ function addLibraryExercise(){
  });
 
  saveDB();
-
  showConfig();
 }
-
 
 function editLibraryMedia(id){
 
@@ -2145,28 +2059,28 @@ function editLibraryMedia(id){
  if(extra===null)return;
 
  ex.image=image.trim();
+
  ex.video=video.trim();
 
- ex.images=
-  extra
+ ex.images=extra
   .split("|")
   .map(x=>x.trim())
   .filter(Boolean)
   .slice(0,3);
 
  db.profiles.forEach(p=>
-  Object.values(p.routines||{})
-  .forEach(r=>
+  Object.values(p.routines||{}).forEach(r=>
    r.ex.forEach(e=>{
 
     if(
-     e.name===ex.name&&
+     e.name===ex.name &&
      e.category===ex.category
     ){
 
      e.image=ex.image;
      e.images=clone(ex.images);
      e.video=ex.video;
+
     }
 
    })
@@ -2174,18 +2088,14 @@ function editLibraryMedia(id){
  );
 
  saveDB();
-
  showConfig();
 }
 
-
 function removeLibraryExercise(id){
 
- if(
-  !confirm(
-   "Excluir este exercício da biblioteca? As cópias já adicionadas às fichas serão mantidas."
-  )
- )return;
+ if(!confirm(
+  "Excluir este exercício da biblioteca? As cópias já adicionadas às fichas serão mantidas."
+ ))return;
 
  db.exerciseLibrary=
   db.exerciseLibrary.filter(
@@ -2193,10 +2103,8 @@ function removeLibraryExercise(id){
   );
 
  saveDB();
-
  showConfig();
 }
-
 
 function addCategory(){
 
@@ -2206,11 +2114,9 @@ function addCategory(){
 
  if(!n?.trim())return;
 
- if(
-  db.exerciseCategories.some(
-   x=>x.toLowerCase()===n.trim().toLowerCase()
-  )
- ){
+ if(db.exerciseCategories.some(
+  x=>x.toLowerCase()===n.trim().toLowerCase()
+ )){
 
   alert(
    "Essa categoria já existe."
@@ -2224,55 +2130,43 @@ function addCategory(){
  );
 
  saveDB();
-
  showConfig();
 }
 
-
 function updateExerciseOptions(id){
 
- const c=
-  document.getElementById(
-   "exerciseCategory_"+id
-  );
+ const c=document.getElementById(
+  "exerciseCategory_"+id
+ );
 
- const s=
-  document.getElementById(
-   "exerciseSelect_"+id
-  );
+ const s=document.getElementById(
+  "exerciseSelect_"+id
+ );
 
  if(!c||!s)return;
 
- const list=
-  (db.exerciseLibrary||[])
-  .filter(
-   x=>x.category===c.value
-  );
+ const list=(db.exerciseLibrary||[])
+  .filter(x=>x.category===c.value);
 
  s.innerHTML=
   `<option value="">
    Selecione o exercício
   </option>`+
-  list
-  .map(
-   x=>
-    `<option value="${esc(x.id)}">
-     ${esc(x.name)}
-    </option>`
-  )
-  .join("");
+  list.map(x=>
+   `<option value="${esc(x.id)}">
+    ${esc(x.name)}
+   </option>`
+  ).join("");
 }
-
 
 function addExercise(id){
 
  const p=getProfile();
  const r=p.routines[id];
 
- const s=
-  document.getElementById(
-   "exerciseSelect_"+id
-  );
+ const s=document.getElementById(
+  "exerciseSelect_"+id
+ );
 
  if(!r||!s?.value){
 
@@ -2283,10 +2177,9 @@ function addExercise(id){
   return;
  }
 
- const ex=
-  db.exerciseLibrary.find(
-   x=>x.id===s.value
-  );
+ const ex=db.exerciseLibrary.find(
+  x=>x.id===s.value
+ );
 
  if(!ex)return;
 
@@ -2303,29 +2196,24 @@ function addExercise(id){
  });
 
  saveDB();
-
  showConfig();
 }
-
 
 function renameExercise(id,index){
 
  const r=getProfile().routines[id];
 
- const v=
-  document.getElementById(
-   "ename_"+id+"_"+index
-  )?.value.trim();
+ const v=document.getElementById(
+  "ename_"+id+"_"+index
+ )?.value.trim();
 
  if(!r||!r.ex[index]||!v)return;
 
  r.ex[index].name=v;
 
  saveDB();
-
  showConfig();
 }
-
 
 function removeExercise(id,index){
 
@@ -2341,10 +2229,8 @@ function removeExercise(id,index){
  r.ex.splice(index,1);
 
  saveDB();
-
  showConfig();
 }
-
 
 function moveExercise(id,index,d){
 
@@ -2362,17 +2248,14 @@ function moveExercise(id,index,d){
  [r.ex[n],r.ex[index]];
 
  saveDB();
-
  showConfig();
 }
 
-
 function addProfile(){
 
- const n=
-  document.getElementById(
-   "newProfile"
-  ).value.trim();
+ const n=document.getElementById(
+  "newProfile"
+ ).value.trim();
 
  if(!n){
 
@@ -2385,11 +2268,9 @@ function addProfile(){
 
  let id=slug(n);
 
- if(
-  db.profiles.some(
-   p=>p.id===id
-  )
- )
+ if(db.profiles.some(
+  p=>p.id===id
+ ))
   id+="-"+Date.now();
 
  db.profiles.push({
@@ -2409,17 +2290,14 @@ function addProfile(){
  currentRoutine=null;
 
  saveDB();
-
  showConfig();
 }
 
-
 function saveProfilePhoto(){
 
- const f=
-  document.getElementById(
-   "profilePhotoInput"
-  )?.files?.[0];
+ const f=document.getElementById(
+  "profilePhotoInput"
+ )?.files?.[0];
 
  if(!f){
 
@@ -2437,13 +2315,11 @@ function saveProfilePhoto(){
   getProfile().photo=rd.result;
 
   saveDB();
-
   showConfig();
  };
 
  rd.readAsDataURL(f);
 }
-
 
 function addRoutine(){
 
@@ -2469,19 +2345,16 @@ function addRoutine(){
  currentRoutine=id;
 
  saveDB();
-
  showConfig();
 }
-
 
 function importRoutine(){
 
  const current=getProfile();
 
- const others=
-  db.profiles.filter(
-   p=>p.id!==current.id
-  );
+ const others=db.profiles.filter(
+  p=>p.id!==current.id
+ );
 
  if(!others.length){
 
@@ -2495,17 +2368,15 @@ function importRoutine(){
  const pc=prompt(
   "De qual perfil você quer importar?\n\n"+
   others
-  .map(
-   (p,i)=>
-    `${i+1} - ${p.name}`
-  )
-  .join("\n")
+   .map((p,i)=>`${i+1} - ${p.name}`)
+   .join("\n")
  );
 
  if(!pc)return;
 
- const source=
-  others[Number(pc)-1];
+ const source=others[
+  Number(pc)-1
+ ];
 
  if(!source){
 
@@ -2517,9 +2388,7 @@ function importRoutine(){
  }
 
  const routines=
-  Object.values(
-   source.routines||{}
-  );
+  Object.values(source.routines||{});
 
  if(!routines.length){
 
@@ -2533,17 +2402,15 @@ function importRoutine(){
  const rc=prompt(
   "Qual ficha você deseja importar?\n\n"+
   routines
-  .map(
-   (r,i)=>
-    `${i+1} - ${r.name}`
-  )
-  .join("\n")
+   .map((r,i)=>`${i+1} - ${r.name}`)
+   .join("\n")
  );
 
  if(!rc)return;
 
- const sr=
-  routines[Number(rc)-1];
+ const sr=routines[
+  Number(rc)-1
+ ];
 
  if(!sr){
 
@@ -2554,8 +2421,7 @@ function importRoutine(){
   return;
  }
 
- let name=
-  sr.name+" (importada)";
+ let name=sr.name+" (importada)";
 
  let id=slug(name);
 
@@ -2581,14 +2447,12 @@ function importRoutine(){
  currentRoutine=id;
 
  saveDB();
-
  showConfig();
 
  alert(
   "Ficha importada com sucesso. As cargas, repetições e referências começaram em branco."
  );
 }
-
 
 function editRoutine(id){
 
@@ -2604,20 +2468,16 @@ function editRoutine(id){
  r.name=n.trim();
 
  saveDB();
-
  showConfig();
 }
-
 
 function deleteRoutine(id){
 
  const p=getProfile();
 
- if(
-  !confirm(
-   "Excluir esta ficha?"
-  )
- )return;
+ if(!confirm(
+  "Excluir esta ficha?"
+ ))return;
 
  delete p.routines[id];
 
@@ -2625,25 +2485,19 @@ function deleteRoutine(id){
   Object.keys(p.routines)[0]||null;
 
  saveDB();
-
  showConfig();
 }
-
 
 function downloadJSON(data,filename){
 
  const blob=new Blob(
   [JSON.stringify(data,null,2)],
-  {
-   type:"application/json"
-  }
+  {type:"application/json"}
  );
 
- const url=
-  URL.createObjectURL(blob);
+ const url=URL.createObjectURL(blob);
 
- const a=
-  document.createElement("a");
+ const a=document.createElement("a");
 
  a.href=url;
  a.download=filename;
@@ -2656,7 +2510,6 @@ function downloadJSON(data,filename){
 
  URL.revokeObjectURL(url);
 }
-
 
 function exportProfile(){
 
@@ -2678,7 +2531,6 @@ function exportProfile(){
  );
 }
 
-
 function exportAll(){
 
  downloadJSON(
@@ -2691,59 +2543,40 @@ function exportAll(){
  );
 }
 
-
-const app=
- document.getElementById("app");
-
+const app=document.getElementById("app");
 
 document.getElementById(
  "btnT"
 ).onclick=showTraining;
 
-
 document.getElementById(
  "btnH"
 ).onclick=showHistory;
-
 
 document.getElementById(
  "btnE"
 ).onclick=showEvolution;
 
-
 document.getElementById(
  "btnC"
 ).onclick=showConfig;
 
-
 document.getElementById(
  "profileSelect"
 ).onchange=function(){
-
- changeProfile(
-  this.value
- );
-
+ changeProfile(this.value)
 };
-
 
 refreshProfiles();
 
-
-const initial=
- getProfile();
-
+const initial=getProfile();
 
 if(initial)
  currentRoutine=
-  Object.keys(
-   initial.routines||{}
-  )[0]||null;
-
+  Object.keys(initial.routines||{})[0]||null;
 
 showTraining();
 
 </script>
-
 </body>
 </html>
