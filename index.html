@@ -2501,7 +2501,59 @@ function deleteRoutine(id){
 /* =====================================================
    ADICIONAR EXERCÍCIO
 ===================================================== */
-function addLibraryExercise(){
+function renderExerciseLibrary(){
+
+  const library =
+    db.exerciseLibrary || [];
+
+  if(!library.length){
+
+    return `
+      <p class="muted">
+        Nenhum exercício cadastrado ainda.
+      </p>
+    `;
+
+  }
+
+  const categories = [
+    ...new Set(
+      library.map(ex => ex.category)
+    )
+  ];
+
+  return categories.map(category => {
+
+    const exercises =
+      library.filter(
+        ex => ex.category === category
+      );
+
+    return `
+      <div style="margin-bottom:20px">
+
+        <h3>
+          ${esc(category)}
+        </h3>
+
+        ${exercises.map(ex => `
+          <div class="card"
+               style="margin:8px 0">
+
+            <strong>
+              ${esc(ex.name)}
+            </strong>
+
+          </div>
+        `).join("")}
+
+      </div>
+    `;
+
+  }).join("");
+
+}
+ function addLibraryExercise(){
 
   const name = prompt(
     "Digite o nome do exercício:"
