@@ -2202,7 +2202,136 @@ function addRoutine(){
  showConfig();
 
 }
+function importRoutine(){
 
+  const current=getProfile();
+
+  if(!current)return;
+
+  const otherProfiles=db.profiles.filter(
+    p=>p.id!==current.id
+  );
+
+  if(!otherProfiles.length){
+    alert("Não há outro perfil para importar uma ficha.");
+    return;
+  }
+
+  const profileList=otherProfiles
+    .map(
+      (p,i)=>`${i+1} - ${p.name}`
+    )
+    .join("\n");
+
+  const profileChoice=prompt(
+    "De qual perfil você quer importar a ficha?\n\n"+
+    profileList
+  );
+
+  if(!profileChoice)return;
+
+  const profileIndex=
+    Number(profileChoice)-1;
+
+  const source=
+    otherProfiles[profileIndex];
+
+  if(!source){
+    alert("Perfil inválido.");
+    return;
+  }
+
+  const routines=
+    Object.values(source.routines || {});
+
+  if(!routines.length){
+    alert(
+      "Esse perfil ainda não possui fichas."
+    );
+    return;
+  }
+
+  const routineList=routines
+    .map(
+      (r,i)=>`${i+1} - ${r.name}`
+    )
+    .join("\n");
+
+  const routineChoice=prompt(
+    "Qual ficha você deseja importar?\n\n"+
+    routineList
+  );
+
+  if(!routineChoice)return;
+
+  const routineIndex=
+    Number(routineChoice)-1;
+
+  const sourceRoutine=
+    routines[routineIndex];
+
+  if(!sourceRoutine){
+    alert("Ficha inválida.");
+    return;
+  }
+
+  let newName=
+    sourceRoutine.name + " (importada)";
+
+  let newId=
+    slug(newName);
+
+  if(current.routines[newId]){
+    newId += "_" + Date.now();
+  }
+
+  const importedExercises=
+    (sourceRoutine.ex || []).map(
+      ex=>({
+
+        name:ex.name || "",
+
+        category:ex.category || "",
+
+        instructions:
+          ex.instructions || "",
+
+        image:
+          ex.image || "",
+
+        images:
+          Array.isArray(ex.images)
+          ? [...ex.images]
+          : [],
+
+        targetLoad:"",
+
+        targetReps:"",
+
+        refLoad:"",
+
+        refReps:""
+
+      })
+    );
+
+  current.routines[newId]={
+    id:newId,
+    name:newName,
+    ex:importedExercises
+  };
+
+  currentRoutine=newId;
+
+  saveDB();
+
+  showConfig();
+
+  alert(
+    "Ficha importada com sucesso!\n\n"+
+    "Os exercícios foram importados sem cargas ou repetições."
+  );
+ }
 
 /* =====================================================
    RENOMEAR FICHA
