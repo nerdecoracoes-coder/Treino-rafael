@@ -33,6 +33,7 @@ body{
 }
 
 button,input,select{font:inherit}
+
 button{cursor:pointer}
 
 header{
@@ -383,12 +384,13 @@ Perfil
 👤
 </div>
 
-<select id="profileSelect"></select>
+<select id="profileSelect">
+<option value="">Carregando...</option>
+</select>
 
 </div>
 
 </div>
-
 </header>
 
 <nav>
@@ -417,12 +419,40 @@ Configurar
 "use strict";
 
 /* =========================================================
-   BANCO DE DADOS
-   NÃO ALTERAR ESTE DBKEY
-========================================================= */
+   BANCO
+   ========================================================= */
 
 const DBKEY="treinoRafaelDB_v7";
 const OLDKEY="treinoRafaelHistorico";
+
+/* =========================================================
+   ARMAZENAMENTO SEGURO
+   ========================================================= */
+
+function storageGet(key){
+
+ try{
+  return localStorage.getItem(key);
+ }catch(e){
+  return null;
+ }
+
+}
+
+function storageSet(key,value){
+
+ try{
+  localStorage.setItem(key,value);
+  return true;
+ }catch(e){
+  return false;
+ }
+
+}
+
+/* =========================================================
+   CATEGORIAS
+   ========================================================= */
 
 const DEFAULT_CATEGORIES=[
  "Peito",
@@ -443,39 +473,51 @@ const DEFAULT_CATEGORIES=[
 
 /* =========================================================
    FUNÇÕES BÁSICAS
-========================================================= */
+   ========================================================= */
 
 function uid(){
- return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+ return Date.now().toString(36)+
+ Math.random().toString(36).slice(2,8);
+
 }
 
 function clone(o){
+
  return JSON.parse(JSON.stringify(o));
+
 }
 
 function esc(v){
+
  return String(v??"")
   .replace(/&/g,"&amp;")
   .replace(/</g,"&lt;")
   .replace(/>/g,"&gt;")
   .replace(/"/g,"&quot;")
   .replace(/'/g,"&#039;");
+
 }
 
 function slug(v){
+
  return String(v||"perfil")
   .normalize("NFD")
   .replace(/[\u0300-\u036f]/g,"")
   .replace(/[^a-zA-Z0-9]+/g,"-")
   .replace(/^-|-$/g,"")
   .toLowerCase();
+
 }
 
 function today(){
+
  return new Date().toISOString().slice(0,10);
+
 }
 
 function formatDate(v){
+
  if(!v)return "-";
 
  const p=String(v).split("-");
@@ -483,55 +525,76 @@ function formatDate(v){
  return p.length===3
   ?p[2]+"/"+p[1]+"/"+p[0]
   :v;
-}
 
-function saveDB(){
- try{
-  localStorage.setItem(
-   DBKEY,
-   JSON.stringify(db)
-  );
- }catch(e){
-  alert(
-   "Não foi possível salvar no armazenamento do navegador."
-  );
- }
 }
 
 /* =========================================================
-   EXERCÍCIOS
-========================================================= */
+   SALVAR BANCO
+   ========================================================= */
+
+function saveDB(){
+
+ try{
+
+  const ok=storageSet(
+   DBKEY,
+   JSON.stringify(db)
+  );
+
+  if(!ok){
+
+   console.warn(
+    "Não foi possível salvar no armazenamento."
+   );
+
+  }
+
+ }catch(e){
+
+  console.error(e);
+
+ }
+
+}
+
+/* =========================================================
+   NORMALIZAÇÃO
+   ========================================================= */
 
 function normalizeExercise(e){
 
- e=e&&typeof e==="object"
-  ?e
-  :{};
+ e=e||{};
 
  return {
-  name:String(e.name||""),
-  category:String(e.category||""),
+
+  name:e.name||"",
+  category:e.category||"",
   refLoad:e.refLoad??"",
   refReps:e.refReps??"",
   targetLoad:e.targetLoad??"",
   targetReps:e.targetReps??"",
-  image:String(e.image||""),
+  image:e.image||"",
   images:Array.isArray(e.images)
-   ?e.images.filter(Boolean)
+   ?e.images
    :[],
-  video:String(e.video||"")
+  video:e.video||""
+
  };
+
 }
 
 /* =========================================================
-   TREINOS PADRÃO
-========================================================= */
+   TREINO PADRÃO A
+   ========================================================= */
 
 const defaultA={
+
  id:"A",
+
  name:"Treino A — Costas, Bíceps e Pernas",
 
  ex:[
+
   {
    name:"Agachamento",
    refLoad:18,
@@ -539,6 +602,7 @@ const defaultA={
    targetLoad:18,
    targetReps:20
   },
+
   {
    name:"Puxada aberta na polia",
    refLoad:52,
@@ -546,6 +610,7 @@ const defaultA={
    targetLoad:52,
    targetReps:15
   },
+
   {
    name:"Remada neutra máquina",
    refLoad:59,
@@ -553,6 +618,7 @@ const defaultA={
    targetLoad:59,
    targetReps:15
   },
+
   {
    name:"Leg press máquina",
    refLoad:117,
@@ -560,6 +626,7 @@ const defaultA={
    targetLoad:117,
    targetReps:20
   },
+
   {
    name:"Bíceps máquina",
    refLoad:36,
@@ -567,6 +634,7 @@ const defaultA={
    targetLoad:36,
    targetReps:15
   },
+
   {
    name:"Cadeira extensora",
    refLoad:59,
@@ -574,6 +642,7 @@ const defaultA={
    targetLoad:59,
    targetReps:15
   },
+
   {
    name:"Rosca martelo com halteres",
    refLoad:10,
@@ -581,6 +650,7 @@ const defaultA={
    targetLoad:10,
    targetReps:12
   },
+
   {
    name:"Supino inclinado com halteres",
    refLoad:"",
@@ -588,6 +658,7 @@ const defaultA={
    targetLoad:"",
    targetReps:""
   },
+
   {
    name:"Encolhimento com halteres",
    refLoad:"",
@@ -595,14 +666,23 @@ const defaultA={
    targetLoad:"",
    targetReps:""
   }
+
  ]
+
 };
 
+/* =========================================================
+   TREINO PADRÃO B
+   ========================================================= */
+
 const defaultB={
+
  id:"B",
+
  name:"Treino B — Peito, Tríceps, Ombros e Posterior",
 
  ex:[
+
   {
    name:"Crucifixo máquina",
    refLoad:100,
@@ -610,6 +690,7 @@ const defaultB={
    targetLoad:100,
    targetReps:15
   },
+
   {
    name:"Supino reto máquina",
    refLoad:50,
@@ -617,6 +698,7 @@ const defaultB={
    targetLoad:50,
    targetReps:15
   },
+
   {
    name:"Lombar na máquina",
    refLoad:59,
@@ -624,6 +706,7 @@ const defaultB={
    targetLoad:59,
    targetReps:20
   },
+
   {
    name:"Cadeira flexora",
    refLoad:36,
@@ -631,6 +714,7 @@ const defaultB={
    targetLoad:36,
    targetReps:20
   },
+
   {
    name:"Desenvolvimento máquina",
    refLoad:27,
@@ -638,6 +722,7 @@ const defaultB={
    targetLoad:27,
    targetReps:15
   },
+
   {
    name:"Cadeira abdutora",
    refLoad:45,
@@ -645,6 +730,7 @@ const defaultB={
    targetLoad:45,
    targetReps:""
   },
+
   {
    name:"Tríceps polia corda",
    refLoad:20,
@@ -652,6 +738,7 @@ const defaultB={
    targetLoad:20,
    targetReps:15
   },
+
   {
    name:"Tríceps francês corda",
    refLoad:17,
@@ -659,6 +746,7 @@ const defaultB={
    targetLoad:17,
    targetReps:12
   },
+
   {
    name:"Elevação lateral",
    refLoad:5,
@@ -666,17 +754,21 @@ const defaultB={
    targetLoad:5,
    targetReps:12
   }
+
  ]
+
 };
 
 /* =========================================================
    BANCO INICIAL
-========================================================= */
+   ========================================================= */
 
 function createInitialDB(){
 
  return {
+
   profiles:[
+
    {
     id:"rafael",
     name:"Rafael",
@@ -693,35 +785,44 @@ function createInitialDB(){
     photo:"",
     routines:{}
    }
+
   ],
 
   history:[],
   evolution:[],
-  currentProfile:"rafael",
+
+  currentProfile:
+   storageGet("treinoRafaelDefaultProfile")||
+   "rafael",
 
   exerciseCategories:
    clone(DEFAULT_CATEGORIES),
 
   exerciseLibrary:[]
+
  };
+
 }
 
 /* =========================================================
-   LEITURA E NORMALIZAÇÃO DO BANCO
-========================================================= */
+   LEITURA DO BANCO
+   ========================================================= */
 
 function readDB(){
 
  let data=null;
 
  try{
-  const raw=localStorage.getItem(DBKEY);
+
+  const raw=storageGet(DBKEY);
 
   if(raw)
    data=JSON.parse(raw);
 
  }catch(e){
+
   data=null;
+
  }
 
  if(!data||typeof data!=="object")
@@ -730,12 +831,9 @@ function readDB(){
  if(!Array.isArray(data.profiles))
   data.profiles=[];
 
-/*
- Remove perfis inválidos que eventualmente possam
- ter sido gravados por versões anteriores.
-*/
- data.profiles=data.profiles
-  .filter(p=>p&&typeof p==="object");
+ data.profiles=data.profiles.filter(
+  p=>p&&typeof p==="object"
+ );
 
  if(!Array.isArray(data.history))
   data.history=[];
@@ -744,357 +842,279 @@ function readDB(){
   data.evolution=[];
 
  if(!Array.isArray(data.exerciseCategories))
-  data.exerciseCategories=
-   clone(DEFAULT_CATEGORIES);
+  data.exerciseCategories=clone(DEFAULT_CATEGORIES);
 
-/*
- Normaliza categorias.
-*/
- const categories=[];
+ data.exerciseCategories=[
 
- data.exerciseCategories.forEach(x=>{
+  ...new Map(
 
-  const value=String(x||"").trim();
+   data.exerciseCategories
 
-  if(
-   value &&
-   !categories.some(
-    c=>c.toLowerCase()===value.toLowerCase()
-   )
-  ){
-   categories.push(value);
-  }
+    .map(x=>String(x||"").trim())
 
- });
+    .filter(x=>x)
 
- DEFAULT_CATEGORIES.forEach(x=>{
+    .map(x=>[
+     x.toLowerCase(),
+     x
+    ])
 
-  if(
-   !categories.some(
-    c=>c.toLowerCase()===x.toLowerCase()
-   )
-  ){
-   categories.push(x);
-  }
+  ).values()
 
- });
+ ];
 
- data.exerciseCategories=categories;
-
-/*
- Normaliza biblioteca.
-*/
  if(!Array.isArray(data.exerciseLibrary))
   data.exerciseLibrary=[];
 
- data.exerciseLibrary=
-  data.exerciseLibrary
-   .filter(x=>x&&typeof x==="object")
-   .map(x=>({
+ data.exerciseLibrary=data.exerciseLibrary
+  .filter(Boolean)
+  .map(x=>({
 
-    id:x.id||uid(),
+   id:x.id||uid(),
+   name:x.name||"",
+   category:x.category||"",
+   image:x.image||"",
+   images:Array.isArray(x.images)
+    ?x.images
+    :[],
+   video:x.video||""
 
-    name:String(x.name||""),
+  }));
 
-    category:String(x.category||""),
-
-    image:String(x.image||""),
-
-    images:Array.isArray(x.images)
-     ?x.images.filter(Boolean)
-     :[],
-
-    video:String(x.video||"")
-
-   }))
-   .filter(x=>x.name);
-
-/*
- Normaliza perfis.
-*/
  data.profiles.forEach(p=>{
 
-  if(!p.id)
-   p.id=slug(p.name||uid());
-
-  if(!p.name)
-   p.name="Perfil";
-
-  if(!p.photo)
-   p.photo="";
-
-  if(
-   !p.routines ||
-   typeof p.routines!=="object" ||
-   Array.isArray(p.routines)
-  ){
+  if(!p.routines||typeof p.routines!=="object")
    p.routines={};
-  }
 
   Object.keys(p.routines).forEach(k=>{
 
    const r=p.routines[k];
 
    if(!r||typeof r!=="object"){
+
     delete p.routines[k];
     return;
+
    }
 
-   if(!r.id)
-    r.id=k;
-
-   if(!r.name)
-    r.name=k;
-
-   if(!Array.isArray(r.ex))
-    r.ex=[];
-
-   r.ex=r.ex.map(normalizeExercise);
+   r.ex=Array.isArray(r.ex)
+    ?r.ex.map(normalizeExercise)
+    :[];
 
   });
 
  });
 
-/*
- Garante Rafael.
-*/
-let rafael=data.profiles.find(
- p=>p.id==="rafael"
-);
+ let rafael=data.profiles.find(
+  p=>p.id==="rafael"
+ );
 
-if(!rafael){
+ if(!rafael){
 
- rafael={
-  id:"rafael",
-  name:"Rafael",
-  photo:"",
-  routines:{
-   A:clone(defaultA),
-   B:clone(defaultB)
-  }
- };
+  rafael={
 
- data.profiles.unshift(rafael);
+   id:"rafael",
+   name:"Rafael",
+   photo:"",
 
-}else{
+   routines:{
+    A:clone(defaultA),
+    B:clone(defaultB)
+   }
 
- if(
-  !rafael.routines ||
-  typeof rafael.routines!=="object"
- ){
-  rafael.routines={};
+  };
+
+  data.profiles.unshift(rafael);
+
+ }else{
+
+  if(!rafael.routines.A)
+   rafael.routines.A=clone(defaultA);
+
+  if(!rafael.routines.B)
+   rafael.routines.B=clone(defaultB);
+
  }
 
- if(!rafael.routines.A)
-  rafael.routines.A=clone(defaultA);
+ if(!data.profiles.some(
+  p=>p.id==="natielle"
+ )){
 
- if(!rafael.routines.B)
-  rafael.routines.B=clone(defaultB);
+  data.profiles.push({
 
-}
+   id:"natielle",
+   name:"Natielle",
+   photo:"",
+   routines:{}
 
-/*
- Garante Natielle.
-*/
-if(!data.profiles.some(
- p=>p.id==="natielle"
-)){
+  });
 
- data.profiles.push({
-  id:"natielle",
-  name:"Natielle",
-  photo:"",
-  routines:{}
- });
+ }
 
-}
+ const savedDefault=
+  storageGet("treinoRafaelDefaultProfile");
 
-/*
- Recupera perfil padrão do dispositivo.
-*/
-const savedProfile=
- localStorage.getItem(
-  "treinoRafaelDefaultProfile"
-);
+ if(
+  !data.currentProfile ||
+  !data.profiles.some(
+   p=>p.id===data.currentProfile
+  )
+ ){
 
-if(
- savedProfile &&
- data.profiles.some(
-  p=>p.id===savedProfile
- )
-){
- data.currentProfile=savedProfile;
-}
+  data.currentProfile=
+   savedDefault||
+   "rafael";
 
-if(
- !data.currentProfile ||
- !data.profiles.some(
+ }
+
+ if(!data.profiles.some(
   p=>p.id===data.currentProfile
- )
-){
- data.currentProfile="rafael";
-}
+ )){
 
-/*
- Migração do histórico antigo.
-*/
-try{
+  data.currentProfile="rafael";
 
- const oldRaw=
-  localStorage.getItem(OLDKEY);
+ }
 
- const old=
-  oldRaw
+ /* MIGRAÇÃO ANTIGA */
+
+ try{
+
+  const oldRaw=storageGet(OLDKEY);
+
+  const old=oldRaw
    ?JSON.parse(oldRaw)
    :null;
 
- if(
-  Array.isArray(old) &&
-  !data._oldMigrated
- ){
+  if(
+   Array.isArray(old)&&
+   !data._oldMigrated
+  ){
 
-  old.forEach(item=>{
+   old.forEach(item=>{
 
-   if(!item||typeof item!=="object")
-    return;
+    data.history.push({
 
-   data.history.push({
+     id:uid(),
+     profileId:"rafael",
+     workout:item.workout||"A",
+     date:item.date||"",
+     weight:item.weight||"",
+     duration:item.duration||"",
+     calories:item.calories||"",
+     exercises:item.exercises||[]
 
-    id:uid(),
-
-    profileId:"rafael",
-
-    workout:item.workout||"A",
-
-    date:item.date||"",
-
-    weight:item.weight||"",
-
-    duration:item.duration||"",
-
-    calories:item.calories||"",
-
-    exercises:Array.isArray(item.exercises)
-     ?item.exercises
-     :[]
+    });
 
    });
 
-  });
+   data._oldMigrated=true;
 
-  data._oldMigrated=true;
+  }
+
+ }catch(e){
+
+  console.warn(
+   "Migração antiga não realizada.",
+   e
+  );
 
  }
 
-}catch(e){}
-
-/*
- Salva a versão normalizada.
-*/
-try{
-
- localStorage.setItem(
+ storageSet(
   DBKEY,
   JSON.stringify(data)
  );
 
-}catch(e){}
+ return data;
 
-return data;
 }
 
 /* =========================================================
    ESTADO
-========================================================= */
+   ========================================================= */
 
 let db=readDB();
 let currentRoutine=null;
 
-/* =========================================================
-   PERFIL
-========================================================= */
-
 function getProfile(){
 
- if(
-  !db ||
-  !Array.isArray(db.profiles)
- )
-  return null;
-
  return db.profiles.find(
-  p=>p&&p.id===db.currentProfile
- ) || db.profiles.find(Boolean) || null;
+  p=>p.id===db.currentProfile
+ )||db.profiles[0]||null;
+
 }
 
 function getRoutine(){
 
  const p=getProfile();
 
- if(
-  !p ||
-  !p.routines ||
-  !currentRoutine
- )
-  return null;
+ return p&&currentRoutine
+  ?p.routines[currentRoutine]||null
+  :null;
 
- return p.routines[currentRoutine]||null;
 }
 
 /* =========================================================
    NAVEGAÇÃO
-========================================================= */
+   ========================================================= */
 
 function setTab(id){
 
- ["btnT","btnH","btnE","btnC"]
-  .forEach(x=>{
+ ["btnT","btnH","btnE","btnC"].forEach(x=>{
 
-   const el=document.getElementById(x);
+  const el=document.getElementById(x);
 
-   if(el)
-    el.classList.remove("active");
+  if(el)
+   el.classList.remove("active");
 
-  });
+ });
 
- const selected=
-  document.getElementById(id);
+ const selected=document.getElementById(id);
 
  if(selected)
   selected.classList.add("active");
+
 }
 
 /* =========================================================
    PERFIS
-========================================================= */
+   ========================================================= */
 
 function refreshProfiles(){
 
- const s=
-  document.getElementById(
-   "profileSelect"
-  );
+ const s=document.getElementById(
+  "profileSelect"
+ );
 
- const a=
-  document.getElementById(
-   "profileAvatar"
-  );
+ const a=document.getElementById(
+  "profileAvatar"
+ );
 
  if(!s||!a)return;
 
- const profiles=
-  Array.isArray(db.profiles)
-   ?db.profiles.filter(Boolean)
-   :[];
+ const profiles=Array.isArray(db.profiles)
+  ?db.profiles
+  :[];
 
- s.innerHTML=
-  profiles.map(p=>
-   `<option value="${esc(p.id)}" ${
-    p.id===db.currentProfile
-     ?"selected"
-     :""
-   }>${esc(p.name)}</option>`
-  ).join("");
+ if(!profiles.length){
+
+  s.innerHTML=
+   `<option value="">Nenhum perfil</option>`;
+
+  a.innerHTML="👤";
+
+  return;
+
+ }
+
+ s.innerHTML=profiles.map(p=>
+
+  `<option value="${esc(p.id)}"
+   ${p.id===db.currentProfile?"selected":""}>
+   ${esc(p.name)}
+  </option>`
+
+ ).join("");
 
  const p=getProfile();
 
@@ -1102,20 +1122,16 @@ function refreshProfiles(){
   p&&p.photo
    ?`<img src="${esc(p.photo)}" alt="">`
    :"👤";
+
 }
 
 function changeProfile(id){
 
- if(
-  !db.profiles.some(
-   p=>p.id===id
-  )
- )
-  return;
+ if(!id)return;
 
  db.currentProfile=id;
 
- localStorage.setItem(
+ storageSet(
   "treinoRafaelDefaultProfile",
   id
  );
@@ -1123,50 +1139,55 @@ function changeProfile(id){
  const p=getProfile();
 
  currentRoutine=
-  Object.keys(
-   p?.routines||{}
-  )[0]||null;
+  p
+   ?Object.keys(p.routines||{})[0]||null
+   :null;
 
  saveDB();
 
  showTraining();
+
 }
+
+/* =========================================================
+   FICHAS
+   ========================================================= */
 
 function chooseRoutine(id){
 
  currentRoutine=id;
 
  showTraining();
+
 }
 
 function routineButtons(){
 
  const p=getProfile();
 
- if(!p)
-  return "";
+ if(!p)return "";
 
- return Object.keys(
-  p.routines||{}
- ).map(id=>
-  `<button
-   class="${id===currentRoutine?"primary":"secondary"}"
-   style="width:auto"
-   onclick="chooseRoutine('${esc(id)}')"
-  >
-   ${esc(p.routines[id].name)}
-  </button>`
- ).join(" ");
+ return Object.keys(p.routines||{})
+  .map(id=>
+
+   `<button
+    class="${id===currentRoutine?"primary":"secondary"}"
+    style="width:auto"
+    onclick="chooseRoutine('${esc(id)}')"
+   >
+    ${esc(p.routines[id].name)}
+   </button>`
+
+  )
+  .join(" ");
+
 }
 
 /* =========================================================
    MÍDIA
-========================================================= */
+   ========================================================= */
 
 function mediaHtml(e){
-
- if(!e)
-  return "";
 
  const imgs=[];
 
@@ -1175,10 +1196,7 @@ function mediaHtml(e){
 
  (e.images||[]).forEach(x=>{
 
-  if(
-   x &&
-   !imgs.includes(x)
-  )
+  if(x&&!imgs.includes(x))
    imgs.push(x);
 
  });
@@ -1188,17 +1206,18 @@ function mediaHtml(e){
  if(imgs.length){
 
   h+=`
+
   <div class="media-grid">
 
-   ${
-    imgs.slice(0,4).map(x=>
-     `<img
+   ${imgs.slice(0,4).map(x=>
+
+    `<img
       src="${esc(x)}"
       alt="${esc(e.name)}"
       onerror="this.style.display='none'"
-     >`
-    ).join("")
-   }
+    >`
+
+   ).join("")}
 
   </div>`;
 
@@ -1207,6 +1226,7 @@ function mediaHtml(e){
  if(e.video){
 
   h+=`
+
   <a
    class="video-link"
    href="${esc(e.video)}"
@@ -1219,11 +1239,12 @@ function mediaHtml(e){
  }
 
  return h;
+
 }
 
 /* =========================================================
    TREINO
-========================================================= */
+   ========================================================= */
 
 function showTraining(){
 
@@ -1235,28 +1256,31 @@ function showTraining(){
  if(!p){
 
   app.innerHTML=`
+
   <div class="card">
+
    <h2>Perfil não encontrado</h2>
+
   </div>`;
 
   return;
+
  }
 
  if(
-  !currentRoutine ||
+  !currentRoutine||
   !p.routines[currentRoutine]
  ){
 
   currentRoutine=
-   Object.keys(
-    p.routines||{}
-   )[0]||null;
+   Object.keys(p.routines||{})[0]||null;
 
  }
 
  if(!currentRoutine){
 
   app.innerHTML=`
+
   <div class="card">
 
    <h2>Nenhuma ficha criada</h2>
@@ -1275,27 +1299,20 @@ function showTraining(){
   </div>`;
 
   return;
+
  }
 
  const r=getRoutine();
  const d=today();
-
- if(!r){
-
-  app.innerHTML=`
-  <div class="card">
-   <h2>Ficha não encontrada</h2>
-  </div>`;
-
-  return;
- }
 
  let html=`
 
  <div class="card">
 
   <div class="row">
+
    ${routineButtons()}
+
   </div>
 
  </div>
@@ -1352,13 +1369,10 @@ function showTraining(){
     Última S1:
 
     ${
-     e.refLoad!=="" &&
-     e.refLoad!=null
+     e.refLoad!==""&&e.refLoad!=null
 
-      ?esc(e.refLoad)+
-       " kg × "+
-       esc(e.refReps||"-")+
-       " reps"
+      ?esc(e.refLoad)+" kg × "+
+       esc(e.refReps||"-")+" reps"
 
       :"sem registro"
     }
@@ -1409,32 +1423,53 @@ function showTraining(){
 
     <div>
      <label>Série 1 — carga</label>
-     <input id="c${i}1" type="number" step="0.5">
+     <input
+      id="c${i}1"
+      type="number"
+      step="0.5"
+     >
     </div>
 
     <div>
      <label>Série 1 — reps</label>
-     <input id="r${i}1" type="number">
+     <input
+      id="r${i}1"
+      type="number"
+     >
     </div>
 
     <div>
      <label>Série 2 — carga</label>
-     <input id="c${i}2" type="number" step="0.5">
+     <input
+      id="c${i}2"
+      type="number"
+      step="0.5"
+     >
     </div>
 
     <div>
      <label>Série 2 — reps</label>
-     <input id="r${i}2" type="number">
+     <input
+      id="r${i}2"
+      type="number"
+     >
     </div>
 
     <div>
      <label>Série 3 — carga</label>
-     <input id="c${i}3" type="number" step="0.5">
+     <input
+      id="c${i}3"
+      type="number"
+      step="0.5"
+     >
     </div>
 
     <div>
      <label>Série 3 — reps</label>
-     <input id="r${i}3" type="number">
+     <input
+      id="r${i}3"
+      type="number"
+     >
     </div>
 
    </div>
@@ -1463,11 +1498,12 @@ function showTraining(){
  </button>`;
 
  app.innerHTML=html;
+
 }
 
 /* =========================================================
    SALVAR TREINO
-========================================================= */
+   ========================================================= */
 
 function saveWorkout(){
 
@@ -1479,28 +1515,14 @@ function saveWorkout(){
  const entry={
 
   id:uid(),
-
   profileId:p.id,
-
   workout:currentRoutine,
-
-  date:
-   document.getElementById("data")?.value ||
-   today(),
-
-  weight:
-   document.getElementById("peso")?.value ||
-   "",
-
-  duration:
-   document.getElementById("duracao")?.value ||
-   "",
-
-  calories:
-   document.getElementById("calorias")?.value ||
-   "",
-
+  date:document.getElementById("data").value,
+  weight:document.getElementById("peso").value,
+  duration:document.getElementById("duracao").value,
+  calories:document.getElementById("calorias").value,
   exercises:[]
+
  };
 
  r.ex.forEach((e,i)=>{
@@ -1510,24 +1532,22 @@ function saveWorkout(){
    load:
     document.getElementById(
      "c"+i+n
-    )?.value||"",
+    ).value,
 
    reps:
     document.getElementById(
      "r"+i+n
-    )?.value||""
+    ).value
 
   }));
 
-  const tl=
-   document.getElementById(
-    "tL"+i
-   )?.value||"";
+  const tl=document.getElementById(
+   "tL"+i
+  ).value;
 
-  const tr=
-   document.getElementById(
-    "tR"+i
-   )?.value||"";
+  const tr=document.getElementById(
+   "tR"+i
+  ).value;
 
   entry.exercises.push({
 
@@ -1543,7 +1563,7 @@ function saveWorkout(){
    observation:
     document.getElementById(
      "o"+i
-    )?.value||"",
+    ).value,
 
    nextTarget:{
     load:tl,
@@ -1570,7 +1590,7 @@ function saveWorkout(){
 
   const same=db.evolution.find(
    x=>
-    x.profileId===p.id &&
+    x.profileId===p.id&&
     x.date===entry.date
   );
 
@@ -1583,17 +1603,11 @@ function saveWorkout(){
    db.evolution.push({
 
     id:uid(),
-
     profileId:p.id,
-
     date:entry.date,
-
     weight:entry.weight,
-
     waist:"",
-
     abdomen:"",
-
     photos:[]
 
    });
@@ -1636,11 +1650,12 @@ function saveWorkout(){
   </button>
 
  </div>`;
+
 }
 
 /* =========================================================
-   HISTÓRICO
-========================================================= */
+   EXPORTAR TREINO
+   ========================================================= */
 
 function exportWorkout(id){
 
@@ -1653,18 +1668,31 @@ function exportWorkout(id){
  const p=
   db.profiles.find(
    x=>x.id===e.profileId
-  )||getProfile();
+  )||
+  getProfile();
 
  downloadJSON(
+
   {
    tipo:"treino-do-dia",
    exportadoEm:new Date().toISOString(),
    perfil:p.name,
    treino:clone(e)
   },
-  "treino-"+e.date+"-"+slug(p.name)+".json"
+
+  "treino-"+
+  e.date+
+  "-"+
+  slug(p.name)+
+  ".json"
+
  );
+
 }
+
+/* =========================================================
+   HISTÓRICO
+   ========================================================= */
 
 function showHistory(){
 
@@ -1673,18 +1701,14 @@ function showHistory(){
 
  const p=getProfile();
 
- if(!p)return;
-
  const list=db.history
   .filter(
-   x=>x&&x.profileId===p.id
+   x=>x.profileId===p.id
   )
   .sort(
    (a,b)=>
     String(b.date)
-     .localeCompare(
-      String(a.date)
-     )
+    .localeCompare(String(a.date))
   );
 
  let h=`
@@ -1699,7 +1723,7 @@ function showHistory(){
    Aqui aparecem somente os treinos deste perfil.
   </p>`;
 
- if(!list.length){
+ if(!list.length)
 
   h+=`
 
@@ -1707,12 +1731,9 @@ function showHistory(){
    Nenhum treino registrado ainda.
   </div>`;
 
- }
-
  list.forEach(e=>{
 
-  const r=
-   p.routines?.[e.workout];
+  const r=p.routines[e.workout];
 
   h+=`
 
@@ -1726,23 +1747,17 @@ function showHistory(){
 
     ${formatDate(e.date)}
 
-    ${
-     e.weight
-      ?" • "+esc(e.weight)+" kg"
-      :""
-    }
+    ${e.weight
+     ?" • "+esc(e.weight)+" kg"
+     :""}
 
-    ${
-     e.duration
-      ?" • "+esc(e.duration)+" min"
-      :""
-    }
+    ${e.duration
+     ?" • "+esc(e.duration)+" min"
+     :""}
 
-    ${
-     e.calories
-      ?" • "+esc(e.calories)+" kcal"
-      :""
-    }
+    ${e.calories
+     ?" • "+esc(e.calories)+" kcal"
+     :""}
 
    </div>
 
@@ -1766,10 +1781,17 @@ function showHistory(){
 
  });
 
- h+=`</div>`;
+ h+=`
+
+ </div>`;
 
  app.innerHTML=h;
+
 }
+
+/* =========================================================
+   DETALHE DO HISTÓRICO
+   ========================================================= */
 
 function viewHistory(id){
 
@@ -1779,10 +1801,7 @@ function viewHistory(id){
 
  if(!e)return;
 
- const p=
-  db.profiles.find(
-   x=>x.id===e.profileId
-  )||getProfile();
+ const p=getProfile();
 
  let h=`
 
@@ -1805,30 +1824,21 @@ function viewHistory(id){
 
   <p class="muted">
 
-   ${
-    e.weight
-     ?"Peso: "+esc(e.weight)+" kg"
-     :""
-   }
+   ${e.weight
+    ?"Peso: "+esc(e.weight)+" kg"
+    :""}
 
-   ${
-    e.duration
-     ?" • Duração: "+esc(e.duration)+" min"
-     :""
-   }
+   ${e.duration
+    ?" • Duração: "+esc(e.duration)+" min"
+    :""}
 
-   ${
-    e.calories
-     ?" • Calorias: "+esc(e.calories)+" kcal"
-     :""
-   }
+   ${e.calories
+    ?" • Calorias: "+esc(e.calories)+" kcal"
+    :""}
 
   </p>`;
 
- (Array.isArray(e.exercises)
-  ?e.exercises
-  :[]
- ).forEach((x,i)=>{
+ e.exercises.forEach((x,i)=>{
 
   h+=`
 
@@ -1843,7 +1853,7 @@ function viewHistory(id){
     Referência anterior:
 
     ${
-     x.refBefore?.load
+     x.refBefore.load
       ?esc(x.refBefore.load)+
        " kg × "+
        esc(x.refBefore.reps||"-")
@@ -1861,23 +1871,16 @@ function viewHistory(id){
    <p>
 
     ${
-     (x.sets||[]).map((s,n)=>
+     x.sets.map((s,n)=>
 
       "S"+(n+1)+": "+
-
-      (
-       s.load
-        ?esc(s.load)+" kg"
-        :"-"
-      )+
-
+      (s.load
+       ?esc(s.load)+" kg"
+       :"-")+
       " × "+
-
-      (
-       s.reps
-        ?esc(s.reps)
-        :"-"
-      )
+      (s.reps
+       ?esc(s.reps)
+       :"-")
 
      ).join("<br>")
     }
@@ -1886,10 +1889,14 @@ function viewHistory(id){
 
    ${
     x.observation
-     ?`<p>
-        <strong>Obs.:</strong>
-        ${esc(x.observation)}
-       </p>`
+
+     ?`
+      <p>
+       <strong>Obs.:</strong>
+       ${esc(x.observation)}
+      </p>
+      `
+
      :""
    }
 
@@ -1902,7 +1909,7 @@ function viewHistory(id){
     <br>
 
     ${
-     x.nextTarget?.load
+     x.nextTarget.load
       ?esc(x.nextTarget.load)+" kg"
       :"-"
     }
@@ -1910,7 +1917,7 @@ function viewHistory(id){
     ×
 
     ${
-     x.nextTarget?.reps
+     x.nextTarget.reps
       ?esc(x.nextTarget.reps)+" reps"
       :"-"
     }
@@ -1933,11 +1940,12 @@ function viewHistory(id){
  </div>`;
 
  app.innerHTML=h;
+
 }
 
 /* =========================================================
    EVOLUÇÃO
-========================================================= */
+   ========================================================= */
 
 function showEvolution(){
 
@@ -1946,18 +1954,14 @@ function showEvolution(){
 
  const p=getProfile();
 
- if(!p)return;
-
  const records=db.evolution
   .filter(
-   x=>x&&x.profileId===p.id
+   x=>x.profileId===p.id
   )
   .sort(
    (a,b)=>
     String(b.date)
-     .localeCompare(
-      String(a.date)
-     )
+    .localeCompare(String(a.date))
   );
 
  let h=`
@@ -1989,15 +1993,13 @@ function showEvolution(){
 
  </div>`;
 
- if(!records.length){
+ if(!records.length)
 
   h+=`
 
   <div class="card empty">
    Nenhum registro de evolução ainda.
   </div>`;
-
- }
 
  h+=`
 
@@ -2035,43 +2037,58 @@ function showEvolution(){
 
     ${
      x.waist
+
       ?`
+
        <div class="metric">
+
         <strong>Cintura</strong>
+
         ${esc(x.waist)} cm
+
        </div>`
+
       :""
     }
 
     ${
      x.abdomen
+
       ?`
+
        <div class="metric">
+
         <strong>Abdômen</strong>
+
         ${esc(x.abdomen)} cm
+
        </div>`
+
       :""
     }
 
    </div>
 
    ${
-    Array.isArray(x.photos) &&
-    x.photos.length
+    x.photos?.length
+
      ?`
 
       <div class="photo-grid">
 
        ${
         x.photos.map(ph=>
+
          `<img
-          src="${esc(ph?.data||ph)}"
+          src="${esc(ph.data||ph)}"
           alt="Evolução ${formatDate(x.date)}"
          >`
+
         ).join("")
        }
 
       </div>`
+
      :""
    }
 
@@ -2098,14 +2115,16 @@ function showEvolution(){
  h+=`
 
   </div>
+
  </div>`;
 
  app.innerHTML=h;
+
 }
 
 /* =========================================================
    NOVO REGISTRO DE EVOLUÇÃO
-========================================================= */
+   ========================================================= */
 
 function addEvolutionRecord(){
 
@@ -2137,25 +2156,16 @@ function addEvolutionRecord(){
 
  if(abdomen===null)return;
 
- const p=getProfile();
-
- if(!p)return;
-
  const record={
 
   id:uid(),
-
-  profileId:p.id,
-
+  profileId:getProfile().id,
   date,
-
   weight,
-
   waist,
-
   abdomen,
-
   photos:[]
+
  };
 
  db.evolution.push(record);
@@ -2163,18 +2173,18 @@ function addEvolutionRecord(){
  saveDB();
 
  showEvolution();
+
 }
 
 /* =========================================================
-   ADICIONAR FOTOS DE EVOLUÇÃO
-========================================================= */
+   ADICIONAR FOTOS
+   ========================================================= */
 
 function addEvolutionPhotos(id){
 
- const record=
-  db.evolution.find(
-   x=>x&&x.id===id
-  );
+ const record=db.evolution.find(
+  x=>x.id===id
+ );
 
  if(!record)return;
 
@@ -2190,13 +2200,15 @@ function addEvolutionPhotos(id){
   );
 
   return;
+
  }
 
  const remaining=
   3-currentPhotos.length;
 
- const input=
-  document.createElement("input");
+ const input=document.createElement(
+  "input"
+ );
 
  input.type="file";
  input.accept="image/*";
@@ -2214,6 +2226,7 @@ function addEvolutionPhotos(id){
     input.remove();
 
    return;
+
   }
 
   const newPhotos=[];
@@ -2222,15 +2235,13 @@ function addEvolutionPhotos(id){
 
   files.forEach(file=>{
 
-   const rd=
-    new FileReader();
+   const rd=new FileReader();
 
    rd.onload=()=>{
 
     newPhotos.push({
 
      name:file.name,
-
      data:rd.result
 
     });
@@ -2240,8 +2251,10 @@ function addEvolutionPhotos(id){
     if(left===0){
 
      record.photos=[
+
       ...currentPhotos,
       ...newPhotos
+
      ].slice(0,3);
 
      saveDB();
@@ -2250,6 +2263,7 @@ function addEvolutionPhotos(id){
       input.remove();
 
      showEvolution();
+
     }
 
    };
@@ -2264,6 +2278,7 @@ function addEvolutionPhotos(id){
       input.remove();
 
      showEvolution();
+
     }
 
    };
@@ -2276,44 +2291,19 @@ function addEvolutionPhotos(id){
 
  document.body.appendChild(input);
 
- /*
- O picker só é aberto quando o usuário
- toca diretamente no botão "Adicionar fotos".
- */
-
  input.click();
 
- /*
- Em Android, alguns navegadores disparam
- "cancel" quando o usuário fecha o seletor.
- */
-
- input.addEventListener(
-  "cancel",
-  ()=>{
-   if(input.parentNode)
-    input.remove();
-  }
- );
-
- setTimeout(()=>{
-
-  if(input.parentNode)
-   input.remove();
-
- },60000);
 }
 
 /* =========================================================
-   VISUALIZAÇÃO DA EVOLUÇÃO
-========================================================= */
+   DETALHE DA EVOLUÇÃO
+   ========================================================= */
 
 function viewEvolution(id){
 
- const x=
-  db.evolution.find(
-   r=>r&&r.id===id
-  );
+ const x=db.evolution.find(
+  r=>r.id===id
+ );
 
  if(!x)return;
 
@@ -2372,10 +2362,7 @@ function viewEvolution(id){
 
   </div>`;
 
- if(
-  Array.isArray(x.photos) &&
-  x.photos.length
- ){
+ if(x.photos?.length){
 
   h+=`
 
@@ -2383,10 +2370,12 @@ function viewEvolution(id){
 
    ${
     x.photos.map(ph=>
+
      `<img
-      src="${esc(ph?.data||ph)}"
+      src="${esc(ph.data||ph)}"
       alt="Foto de evolução"
      >`
+
     ).join("")
    }
 
@@ -2408,11 +2397,12 @@ function viewEvolution(id){
  </div>`;
 
  app.innerHTML=h;
+
 }
 
 /* =========================================================
    CONFIGURAÇÕES
-========================================================= */
+   ========================================================= */
 
 function showConfig(){
 
@@ -2430,8 +2420,10 @@ function showConfig(){
   <h2>Perfis</h2>
 
   <p class="muted">
+
    O perfil padrão é salvo neste dispositivo.
    Você pode trocar de perfil quando quiser.
+
   </p>
 
   <div class="row">
@@ -2486,9 +2478,8 @@ function showConfig(){
    📥 Importar ficha
   </button>`;
 
- Object.keys(
-  p.routines||{}
- ).forEach(id=>{
+ Object.keys(p.routines||{})
+ .forEach(id=>{
 
   const r=p.routines[id];
 
@@ -2533,7 +2524,7 @@ function showConfig(){
     <div class="row">
 
      <input
-      id="ename_${esc(id)}_${i}"
+      id="ename_${id}_${i}"
       value="${esc(e.name)}"
      >
 
@@ -2553,11 +2544,9 @@ function showConfig(){
 
      ${esc(e.category||"Sem categoria")}
 
-     ${
-      mediaHtml(e)
-       ?" • mídia disponível"
-       :""
-     }
+     ${mediaHtml(e)
+      ?"• mídia disponível"
+      :""}
 
     </div>
 
@@ -2596,7 +2585,7 @@ function showConfig(){
 
     <select
      class="exerciseSelect"
-     id="exerciseCategory_${esc(id)}"
+     id="exerciseCategory_${id}"
      onchange="updateExerciseOptions('${esc(id)}')"
     >
 
@@ -2606,9 +2595,11 @@ function showConfig(){
 
      ${
       db.exerciseCategories.map(c=>
+
        `<option value="${esc(c)}">
         ${esc(c)}
        </option>`
+
       ).join("")
      }
 
@@ -2616,7 +2607,7 @@ function showConfig(){
 
     <select
      class="exerciseSelect"
-     id="exerciseSelect_${esc(id)}"
+     id="exerciseSelect_${id}"
     >
 
      <option value="">
@@ -2671,9 +2662,11 @@ function showConfig(){
   </div>
 
   <p class="muted">
-   A biblioteca é central. O exercício,
-   sua categoria e sua mídia podem ser
-   reutilizados em qualquer perfil e ficha.
+
+   A biblioteca é central.
+   O exercício, sua categoria e sua mídia
+   podem ser reutilizados em qualquer perfil e ficha.
+
   </p>
 
   ${renderExerciseLibrary()}
@@ -2687,7 +2680,10 @@ function showConfig(){
   <h2>Categorias</h2>
 
   <p class="muted">
-   Crie novas categorias para organizar a biblioteca.
+
+   Crie novas categorias para organizar
+   a biblioteca.
+
   </p>
 
   <button
@@ -2701,12 +2697,14 @@ function showConfig(){
 
    ${
     db.exerciseCategories.map(c=>
+
      `<span
       class="badge"
       style="margin:3px"
      >
       ${esc(c)}
      </span>`
+
     ).join("")
    }
 
@@ -2721,8 +2719,10 @@ function showConfig(){
   <h2>Backup</h2>
 
   <p class="muted">
+
    O backup completo inclui perfis,
    fichas, biblioteca, evolução e históricos.
+
   </p>
 
   <button
@@ -2744,28 +2744,24 @@ function showConfig(){
  </div>`;
 
  app.innerHTML=h;
+
 }
 
 /* =========================================================
    BIBLIOTECA
-========================================================= */
+   ========================================================= */
 
 function renderExerciseLibrary(){
 
- const lib=
-  Array.isArray(db.exerciseLibrary)
-   ?db.exerciseLibrary
-   :[];
+ const lib=db.exerciseLibrary||[];
 
- if(!lib.length){
+ if(!lib.length)
 
   return`
 
   <div class="empty">
    Nenhum exercício cadastrado ainda.
   </div>`;
-
- }
 
  return lib.map(ex=>
 
@@ -2819,6 +2815,7 @@ function renderExerciseLibrary(){
   </div>`
 
  ).join("");
+
 }
 
 function addLibraryExercise(){
@@ -2833,17 +2830,18 @@ function addLibraryExercise(){
   db.exerciseCategories||
   DEFAULT_CATEGORIES;
 
- const list=
-  categories
-   .map(
-    (c,i)=>`${i+1} - ${c}`
-   )
-   .join("\n");
+ const list=categories
+  .map(
+   (c,i)=>`${i+1} - ${c}`
+  )
+  .join("\n");
 
  const choice=prompt(
+
   "Escolha a categoria:\n\n"+
   list+
   "\n\nDigite o número."
+
  );
 
  if(!choice)return;
@@ -2890,40 +2888,33 @@ function addLibraryExercise(){
   ""
  )||"";
 
- const images=
-  extra
-   .split("|")
-   .map(x=>x.trim())
-   .filter(Boolean)
-   .slice(0,3);
+ const images=extra
+  .split("|")
+  .map(x=>x.trim())
+  .filter(Boolean)
+  .slice(0,3);
 
  db.exerciseLibrary.push({
 
   id:uid(),
-
   name:name.trim(),
-
   category:cat,
-
   image,
-
   images,
-
   video
 
  });
 
  saveDB();
-
  showConfig();
+
 }
 
 function editLibraryMedia(id){
 
- const ex=
-  db.exerciseLibrary.find(
-   x=>x.id===id
-  );
+ const ex=db.exerciseLibrary.find(
+  x=>x.id===id
+ );
 
  if(!ex)return;
 
@@ -2952,23 +2943,21 @@ function editLibraryMedia(id){
 
  ex.video=video.trim();
 
- ex.images=
-  extra
-   .split("|")
-   .map(x=>x.trim())
-   .filter(Boolean)
-   .slice(0,3);
+ ex.images=extra
+  .split("|")
+  .map(x=>x.trim())
+  .filter(Boolean)
+  .slice(0,3);
 
  db.profiles.forEach(p=>
 
-  Object.values(
-   p.routines||{}
-  ).forEach(r=>
+  Object.values(p.routines||{})
+  .forEach(r=>
 
-   (r.ex||[]).forEach(e=>{
+   r.ex.forEach(e=>{
 
     if(
-     e.name===ex.name &&
+     e.name===ex.name&&
      e.category===ex.category
     ){
 
@@ -2985,14 +2974,16 @@ function editLibraryMedia(id){
  );
 
  saveDB();
-
  showConfig();
+
 }
 
 function removeLibraryExercise(id){
 
  if(!confirm(
+
   "Excluir este exercício da biblioteca? As cópias já adicionadas às fichas serão mantidas."
+
  ))return;
 
  db.exerciseLibrary=
@@ -3001,9 +2992,13 @@ function removeLibraryExercise(id){
   );
 
  saveDB();
-
  showConfig();
+
 }
+
+/* =========================================================
+   CATEGORIAS
+   ========================================================= */
 
 function addCategory(){
 
@@ -3024,6 +3019,7 @@ function addCategory(){
   );
 
   return;
+
  }
 
  db.exerciseCategories.push(
@@ -3031,29 +3027,30 @@ function addCategory(){
  );
 
  saveDB();
-
  showConfig();
+
 }
+
+/* =========================================================
+   EXERCÍCIOS NAS FICHAS
+   ========================================================= */
 
 function updateExerciseOptions(id){
 
- const c=
-  document.getElementById(
-   "exerciseCategory_"+id
-  );
+ const c=document.getElementById(
+  "exerciseCategory_"+id
+ );
 
- const s=
-  document.getElementById(
-   "exerciseSelect_"+id
-  );
+ const s=document.getElementById(
+  "exerciseSelect_"+id
+ );
 
  if(!c||!s)return;
 
- const list=
-  (db.exerciseLibrary||[])
-   .filter(
-    x=>x.category===c.value
-   );
+ const list=(db.exerciseLibrary||[])
+  .filter(
+   x=>x.category===c.value
+  );
 
  s.innerHTML=
 
@@ -3062,23 +3059,24 @@ function updateExerciseOptions(id){
   </option>`+
 
   list.map(x=>
+
    `<option value="${esc(x.id)}">
     ${esc(x.name)}
    </option>`
+
   ).join("");
+
 }
 
 function addExercise(id){
 
  const p=getProfile();
 
- const r=
-  p?.routines?.[id];
+ const r=p?.routines?.[id];
 
- const s=
-  document.getElementById(
-   "exerciseSelect_"+id
-  );
+ const s=document.getElementById(
+  "exerciseSelect_"+id
+ );
 
  if(!r||!s?.value){
 
@@ -3087,96 +3085,72 @@ function addExercise(id){
   );
 
   return;
+
  }
 
- const ex=
-  db.exerciseLibrary.find(
-   x=>x.id===s.value
-  );
+ const ex=db.exerciseLibrary.find(
+  x=>x.id===s.value
+ );
 
  if(!ex)return;
 
  r.ex.push({
 
   name:ex.name,
-
   category:ex.category,
-
   image:ex.image||"",
-
-  images:clone(
-   ex.images||[]
-  ),
-
+  images:clone(ex.images||[]),
   video:ex.video||"",
-
   refLoad:"",
-
   refReps:"",
-
   targetLoad:"",
-
   targetReps:""
 
  });
 
  saveDB();
-
  showConfig();
-}
 
-/* =========================================================
-   EDIÇÃO DE EXERCÍCIOS
-========================================================= */
+}
 
 function renameExercise(id,index){
 
- const r=
-  getProfile()?.routines?.[id];
+ const r=getProfile().routines[id];
 
- const v=
-  document.getElementById(
-   "ename_"+id+"_"+index
-  )?.value.trim();
+ const v=document.getElementById(
+  "ename_"+id+"_"+index
+ )?.value.trim();
 
- if(
-  !r||
-  !r.ex[index]||
-  !v
- )
-  return;
+ if(!r||!r.ex[index]||!v)return;
 
  r.ex[index].name=v;
 
  saveDB();
-
  showConfig();
+
 }
 
 function removeExercise(id,index){
 
- const r=
-  getProfile()?.routines?.[id];
+ const r=getProfile().routines[id];
 
  if(
   !r||
   !confirm(
    "Excluir este exercício da ficha?"
   )
- )
-  return;
+ )return;
 
  r.ex.splice(index,1);
 
  saveDB();
-
  showConfig();
+
 }
 
 function moveExercise(id,index,d){
 
- const r=
-  getProfile()?.routines?.[id];
+ const r=getProfile().routines[id];
 
  const n=index+d;
 
@@ -3184,8 +3158,7 @@ function moveExercise(id,index,d){
   !r||
   n<0||
   n>=r.ex.length
- )
-  return;
+ )return;
 
  [
   r.ex[index],
@@ -3196,23 +3169,21 @@ function moveExercise(id,index,d){
  ];
 
  saveDB();
-
  showConfig();
+
 }
 
 /* =========================================================
    PERFIS
-========================================================= */
+   ========================================================= */
 
 function addProfile(){
 
- const input=
-  document.getElementById(
-   "newProfile"
-  );
+ const input=document.getElementById(
+  "newProfile"
+ );
 
- const n=
-  input?.value.trim();
+ const n=input?.value.trim();
 
  if(!n){
 
@@ -3221,6 +3192,7 @@ function addProfile(){
   );
 
   return;
+
  }
 
  let id=slug(n);
@@ -3233,18 +3205,15 @@ function addProfile(){
  db.profiles.push({
 
   id,
-
   name:n,
-
   photo:"",
-
   routines:{}
 
  });
 
  db.currentProfile=id;
 
- localStorage.setItem(
+ storageSet(
   "treinoRafaelDefaultProfile",
   id
  );
@@ -3252,16 +3221,15 @@ function addProfile(){
  currentRoutine=null;
 
  saveDB();
-
  showConfig();
+
 }
 
 function saveProfilePhoto(){
 
- const f=
-  document.getElementById(
-   "profilePhotoInput"
-  )?.files?.[0];
+ const f=document.getElementById(
+  "profilePhotoInput"
+ )?.files?.[0];
 
  if(!f){
 
@@ -3270,31 +3238,27 @@ function saveProfilePhoto(){
   );
 
   return;
+
  }
 
- const rd=
-  new FileReader();
+ const rd=new FileReader();
 
  rd.onload=()=>{
 
-  const p=getProfile();
-
-  if(!p)return;
-
-  p.photo=rd.result;
+  getProfile().photo=rd.result;
 
   saveDB();
-
   showConfig();
 
  };
 
  rd.readAsDataURL(f);
+
 }
 
 /* =========================================================
    FICHAS
-========================================================= */
+   ========================================================= */
 
 function addRoutine(){
 
@@ -3306,8 +3270,6 @@ function addRoutine(){
 
  const p=getProfile();
 
- if(!p)return;
-
  let id=slug(n);
 
  if(p.routines[id])
@@ -3316,9 +3278,7 @@ function addRoutine(){
  p.routines[id]={
 
   id,
-
   name:n.trim(),
-
   ex:[]
 
  };
@@ -3326,20 +3286,21 @@ function addRoutine(){
  currentRoutine=id;
 
  saveDB();
-
  showConfig();
+
 }
+
+/* =========================================================
+   IMPORTAR FICHA
+   ========================================================= */
 
 function importRoutine(){
 
  const current=getProfile();
 
- if(!current)return;
-
- const others=
-  db.profiles.filter(
-   p=>p.id!==current.id
-  );
+ const others=db.profiles.filter(
+  p=>p.id!==current.id
+ );
 
  if(!others.length){
 
@@ -3348,6 +3309,7 @@ function importRoutine(){
   );
 
   return;
+
  }
 
  const pc=prompt(
@@ -3376,6 +3338,7 @@ function importRoutine(){
   );
 
   return;
+
  }
 
  const routines=
@@ -3390,6 +3353,7 @@ function importRoutine(){
   );
 
   return;
+
  }
 
  const rc=prompt(
@@ -3418,6 +3382,7 @@ function importRoutine(){
   );
 
   return;
+
  }
 
  let name=
@@ -3431,29 +3396,18 @@ function importRoutine(){
  current.routines[id]={
 
   id,
-
   name,
 
   ex:(sr.ex||[]).map(e=>({
 
    name:e.name||"",
-
    category:e.category||"",
-
    image:e.image||"",
-
-   images:clone(
-    e.images||[]
-   ),
-
+   images:clone(e.images||[]),
    video:e.video||"",
-
    targetLoad:"",
-
    targetReps:"",
-
    refLoad:"",
-
    refReps:""
 
   }))
@@ -3463,18 +3417,17 @@ function importRoutine(){
  currentRoutine=id;
 
  saveDB();
-
  showConfig();
 
  alert(
   "Ficha importada com sucesso. As cargas, repetições e referências começaram em branco."
  );
+
 }
 
 function editRoutine(id){
 
- const r=
-  getProfile()?.routines?.[id];
+ const r=getProfile().routines[id];
 
  if(!r)return;
 
@@ -3488,52 +3441,49 @@ function editRoutine(id){
  r.name=n.trim();
 
  saveDB();
-
  showConfig();
+
 }
 
 function deleteRoutine(id){
 
  const p=getProfile();
 
- if(!p)return;
-
  if(!confirm(
   "Excluir esta ficha?"
- ))
-  return;
+ ))return;
 
  delete p.routines[id];
 
  currentRoutine=
-  Object.keys(
-   p.routines||{}
-  )[0]||null;
+  Object.keys(p.routines)[0]||null;
 
  saveDB();
-
  showConfig();
+
 }
 
 /* =========================================================
    BACKUP
-========================================================= */
+   ========================================================= */
 
 function downloadJSON(data,filename){
 
- const blob=
-  new Blob(
-   [
-    JSON.stringify(
-     data,
-     null,
-     2
-    )
-   ],
-   {
-    type:"application/json"
-   }
-  );
+ const blob=new Blob(
+
+  [
+   JSON.stringify(
+    data,
+    null,
+    2
+   )
+  ],
+
+  {
+   type:"application/json"
+  }
+
+ );
 
  const url=
   URL.createObjectURL(blob);
@@ -3554,6 +3504,7 @@ function downloadJSON(data,filename){
   ()=>URL.revokeObjectURL(url),
   1000
  );
+
 }
 
 function exportProfile(){
@@ -3585,9 +3536,12 @@ function exportProfile(){
 
   },
 
-  "backup-"+slug(p.name)+".json"
+  "backup-"+
+  slug(p.name)+
+  ".json"
 
  );
+
 }
 
 function exportAll(){
@@ -3608,11 +3562,12 @@ function exportAll(){
   "backup-treinos-completo.json"
 
  );
+
 }
 
 /* =========================================================
    INICIALIZAÇÃO
-========================================================= */
+   ========================================================= */
 
 const app=
  document.getElementById("app");
@@ -3643,9 +3598,8 @@ document.getElementById(
 
 };
 
-/*
- Define a ficha inicial.
-*/
+refreshProfiles();
+
 const initial=getProfile();
 
 if(initial){
@@ -3657,14 +3611,6 @@ if(initial){
 
 }
 
-/*
- Atualiza o seletor.
-*/
-refreshProfiles();
-
-/*
- Abre o treino.
-*/
 showTraining();
 
 </script>
