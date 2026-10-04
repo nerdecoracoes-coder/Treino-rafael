@@ -1869,7 +1869,22 @@ function showConfig(){
    <h2>
     Perfis
    </h2>
+   <div class="card">
 
+    <h2>
+     📚 Biblioteca de exercícios
+    </h2>
+
+    <p>
+     Cadastre exercícios para reutilizar
+     em qualquer ficha.
+    </p>
+
+    <button onclick="addLibraryExercise()">
+     ➕ Adicionar exercício à biblioteca
+    </button>
+
+   </div>
 
    <p class="muted">
     Cada perfil possui suas próprias fichas
@@ -2474,7 +2489,63 @@ function deleteRoutine(id){
 /* =====================================================
    ADICIONAR EXERCÍCIO
 ===================================================== */
+function addLibraryExercise(){
 
+  const name = prompt(
+    "Digite o nome do exercício:"
+  );
+
+  if(!name)return;
+
+  const cleanName = name.trim();
+
+  if(!cleanName){
+    alert("Digite o nome do exercício.");
+    return;
+  }
+
+  const categories =
+    db.exerciseCategories || [];
+
+  const category = prompt(
+    "Digite a categoria do exercício:\n\n" +
+    categories.join("\n")
+  );
+
+  if(!category)return;
+
+  const cleanCategory =
+    category.trim();
+
+  if(!cleanCategory)return;
+
+  if(
+    !db.exerciseCategories.includes(
+      cleanCategory
+    )
+  ){
+    db.exerciseCategories.push(
+      cleanCategory
+    );
+  }
+
+  db.exerciseLibrary.push({
+    id: Date.now().toString(),
+    name: cleanName,
+    category: cleanCategory,
+    instructions: "",
+    image: "",
+    images: []
+  });
+
+  saveDB();
+
+  alert(
+    "Exercício adicionado à biblioteca!"
+  );
+
+  showConfig();
+ }
 function addExercise(id){
 
  const p=getProfile();
