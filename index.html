@@ -2055,9 +2055,31 @@ html += `
 
      <div class="row">
 
-      <input
-       id="newex_${id}"
-       placeholder="Novo exercício">
+            <select
+       id="exerciseCategory_${id}"
+       onchange="updateExerciseOptions('${esc(id)}')">
+
+       <option value="">
+        Selecione a categoria
+       </option>
+
+       ${(db.exerciseCategories || []).map(category => `
+        <option value="${esc(category)}">
+         ${esc(category)}
+        </option>
+       `).join("")}
+
+      </select>
+
+
+      <select
+       id="exerciseSelect_${id}">
+
+       <option value="">
+        Selecione o exercício
+       </option>
+
+      </select>
 
 
       <button
@@ -2612,94 +2634,69 @@ function renderExerciseLibrary(){
  }
 function addExercise(id){
 
- const p=getProfile();
+  const p = getProfile();
 
- const r=p.routines[id];
+  const r = p.routines[id];
 
- if(!r)return;
+  if(!r)return;
 
+  const select =
+    document.getElementById(
+      "exerciseSelect_" + id
+    );
 
- const input =
-  document.getElementById(
-   "newex_"+id
-  );
+  if(!select)return;
 
+  const exerciseId =
+    select.value;
 
- const name =
-  input.value.trim();
+  if(!exerciseId){
 
+    alert(
+      "Selecione um exercício."
+    );
 
- if(!name){
+    return;
+  }
 
-  alert(
-   "Digite o nome do exercício."
-  );
+  const library =
+    db.exerciseLibrary || [];
 
-  return;
+  const exercise =
+    library.find(
+      ex => ex.id === exerciseId
+    );
 
- }
+  if(!exercise)return;
 
+  r.ex.push({
 
- const categories =
-  db.exerciseCategories || [];
+    name: exercise.name,
 
+    category: exercise.category || "",
 
- const category =
-  prompt(
-   "Digite a categoria do exercício:\n\n"+
-   categories.join("\n")
-  );
+    instructions:
+      exercise.instructions || "",
 
+    image:
+      exercise.image || "",
 
- if(!category)return;
+    images:
+      exercise.images || [],
 
+    refLoad: "",
 
- const cleanCategory =
-  category.trim();
+    refReps: "",
 
+    targetLoad: "",
 
- if(!cleanCategory)return;
+    targetReps: ""
 
+  });
 
- if(
-  !db.exerciseCategories.includes(
-   cleanCategory
-  )
- ){
+  saveDB();
 
-  db.exerciseCategories.push(
-   cleanCategory
-  );
-
- }
-
-
- r.ex.push({
-
-  name:name,
-
-  category:cleanCategory,
-
-  instructions:"",
-
-  image:"",
-
-  images:[],
-
-  refLoad:"",
-
-  refReps:"",
-
-  targetLoad:"",
-
-  targetReps:""
-
- });
-
-
- saveDB();
-
- showConfig();
+  showConfig();
 
 }
 
