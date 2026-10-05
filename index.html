@@ -148,15 +148,19 @@ main{
 }
 
 .exercise-main-row{
- display:grid;
- grid-template-columns:minmax(0,1fr) 74px 24px;
+ display:flex;
  align-items:center;
- column-gap:4px;
- margin-bottom:10px
+ gap:7px;
+ margin-bottom:10px;
+ position:relative;
+ padding-right:30px;
+ min-height:54px
 }
 
 .exercise-main-row h3{
  min-width:0;
+ flex:0 1 auto;
+ max-width:calc(100% - 82px);
  line-height:1.12;
  word-break:normal;
  overflow-wrap:anywhere
@@ -167,18 +171,25 @@ main{
 }
 
 .exercise-main-row .exercise-animation-card{
+ flex:0 0 74px;
  margin:0;
  width:74px;
  height:54px
 }
 
 .exercise-animation-placeholder{
+ flex:0 0 74px;
  width:74px;
  height:54px;
  visibility:hidden
 }
 
 .exercise-complete{
+ position:absolute;
+ top:0;
+ right:0;
+ width:24px;
+ height:24px;
  display:flex;
  align-items:center;
  justify-content:center;
