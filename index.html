@@ -1544,6 +1544,38 @@ function readDB(){
 
  }
 
+ /* GARANTIA DOS 4 PERFIS DA FAMÍLIA */
+ const familyProfiles=[
+  {id:"rafael",name:"Rafael",gender:"masculino",routines:getRafaelRoutines},
+  {id:"natielle",name:"Natielle",gender:"feminino",routines:getNatielleRoutines},
+  {id:"erick",name:"Erick",gender:"masculino",routines:getRafaelRoutines},
+  {id:"rafaelle",name:"Rafelle",gender:"feminino",routines:getNatielleRoutines}
+ ];
+
+ familyProfiles.forEach(spec=>{
+  let profile=data.profiles.find(p=>p.id===spec.id);
+
+  if(!profile){
+   profile={
+    id:spec.id,
+    name:spec.name,
+    photo:"",
+    gender:spec.gender,
+    routines:spec.routines()
+   };
+   data.profiles.push(profile);
+  }else{
+   profile.id=spec.id;
+   profile.name=spec.name;
+   profile.gender=spec.gender;
+   if(!profile.routines||typeof profile.routines!=="object"||!Object.keys(profile.routines).length)
+    profile.routines=spec.routines();
+  }
+ });
+
+ const familyIds=familyProfiles.map(x=>x.id);
+ data.profiles=data.profiles.filter(p=>familyIds.includes(p.id));
+
  storageSet(
   DBKEY,
   JSON.stringify(data)
