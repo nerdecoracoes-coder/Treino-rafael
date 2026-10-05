@@ -3,130 +3,252 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#05070b">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Treino Rafael</title>
 
 <style>
+:root{
+ --bg:#05070b;
+ --surface:#0d1118;
+ --surface2:#131a24;
+ --line:#263244;
+ --text:#f8fafc;
+ --muted:#94a3b8;
+ --blue:#2563eb;
+ --blue2:#3b82f6;
+ --danger:#ef4444;
+ --success:#22c55e;
+}
+
 *{box-sizing:border-box}
 
 body{
  margin:0;
  font-family:Arial,sans-serif;
- background:#f3f4f6;
- color:#111827;
+ background:var(--bg);
+ color:var(--text)
 }
 
+button,input,select{font:inherit}
+
+button{cursor:pointer}
+
 header{
- background:#111827;
+ background:#05070b;
  color:#fff;
- padding:15px 12px;
- text-align:center;
+ padding:14px 12px;
  position:sticky;
  top:0;
- z-index:5;
+ z-index:20;
+ border-bottom:1px solid var(--line)
 }
 
 header h1{
  margin:0 0 10px;
  font-size:21px;
+ text-align:center
 }
 
 .profile{
  max-width:700px;
- margin:auto;
+ margin:auto
+}
+
+.profile-selector{
+ display:flex;
+ align-items:center;
+ gap:10px
+}
+
+.profile-avatar{
+ width:44px;
+ height:44px;
+ min-width:44px;
+ border-radius:50%;
+ background:var(--blue);
+ color:#fff;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:22px;
+ font-weight:bold;
+ overflow:hidden;
+ border:2px solid #fff
+}
+
+.profile-avatar img{
+ width:100%;
+ height:100%;
+ object-fit:cover
 }
 
 select,input{
  width:100%;
- padding:10px;
- border:1px solid #d1d5db;
- border-radius:8px;
- font-size:16px;
- background:#fff;
+ padding:11px;
+ border:1px solid var(--line);
+ border-radius:9px;
+ font-size:14px;
+ background:var(--surface2);
+ color:var(--text)
+}
+
+input::placeholder{color:#64748b}
+
+.exerciseSelect{
+ font-size:14px;
+ font-weight:bold;
+ padding:10px 8px
 }
 
 nav{
  display:flex;
- background:#fff;
- border-bottom:1px solid #ddd;
+ background:#090d14;
+ border-bottom:1px solid var(--line);
  position:sticky;
- top:91px;
- z-index:4;
+ top:92px;
+ z-index:19
 }
 
 nav button{
  flex:1;
  padding:12px 4px;
  border:0;
- background:#fff;
+ background:transparent;
  font-weight:bold;
- color:#555;
+ color:var(--muted)
 }
 
 nav button.active{
- color:#2563eb;
- border-bottom:3px solid #2563eb;
+ color:#fff;
+ border-bottom:3px solid var(--blue2)
 }
 
 main{
  max-width:700px;
  margin:auto;
- padding:12px;
+ padding:12px 12px 90px
 }
 
 .card{
- background:#fff;
- border-radius:12px;
+ background:var(--surface);
+ border:1px solid var(--line);
+ border-radius:14px;
  padding:15px;
  margin-bottom:12px;
- box-shadow:0 1px 4px #0001;
+ box-shadow:0 4px 16px #0005
 }
 
 .exercise h3{
- margin:0 0 5px;
- font-size:17px;
+ margin:0;
+ font-size:20px;
+ line-height:1.2
 }
 
-.muted{
- color:#6b7280;
- font-size:13px;
+.exercise-main-row{
+ display:flex;
+ align-items:center;
+ gap:7px;
+ margin-bottom:10px;
+ position:relative;
+ padding-right:30px;
+ min-height:54px
+}
+
+.exercise-main-row h3{
+ min-width:0;
+ flex:0 1 auto;
+ max-width:calc(100% - 82px);
+ line-height:1.12;
+ word-break:normal;
+ overflow-wrap:anywhere
+}
+
+.exercise-name-line{
+ display:block
+}
+
+.exercise-main-row .exercise-animation-card{
+ flex:0 0 74px;
+ margin:0;
+ width:74px;
+ height:54px
+}
+
+.exercise-animation-placeholder{
+ flex:0 0 74px;
+ width:74px;
+ height:54px;
+ visibility:hidden
+}
+
+.exercise-complete{
+ position:absolute;
+ top:0;
+ right:0;
+ width:24px;
+ height:24px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ margin:0;
+ color:var(--muted);
+ cursor:pointer;
+ user-select:none
+}
+
+.exercise-complete span{
+ display:none
+}
+
+.exercise-complete input{
+ width:21px;
+ height:21px;
+ margin:0;
+ accent-color:#22c55e;
+ cursor:pointer
+}
+
+.exercise-complete.done{
+ color:#22c55e;
+ font-weight:bold
+}
+
+
+.muted,.small{
+ color:var(--muted);
+ font-size:13px
 }
 
 .last{
- color:#2563eb;
+ color:#60a5fa;
  font-size:13px;
- margin-bottom:10px;
+ margin-bottom:10px
 }
 
 .target{
- background:#eff6ff;
- border:1px solid #bfdbfe;
- border-radius:9px;
+ background:#0b1d3a;
+ border:1px solid #1d4ed8;
+ border-radius:10px;
  padding:10px;
- margin:8px 0 12px;
+ margin:8px 0 12px
 }
 
-.target strong{
- color:#1d4ed8;
-}
+.target strong{color:#60a5fa}
 
 .grid{
  display:grid;
  grid-template-columns:1fr 1fr;
- gap:8px;
+ gap:8px
 }
 
 label{
  display:block;
  font-size:12px;
- color:#666;
- margin-bottom:4px;
-}
-
-button{
- cursor:pointer;
+ color:var(--muted);
+ margin-bottom:4px
 }
 
 .primary{
@@ -134,74 +256,413 @@ button{
  padding:14px;
  border:0;
  border-radius:10px;
- background:#2563eb;
+ background:var(--blue);
  color:#fff;
  font-size:17px;
- font-weight:bold;
+ font-weight:bold
 }
+
+.primary:hover{background:var(--blue2)}
 
 .secondary{
  padding:10px;
- border:0;
+ border:1px solid var(--line);
  border-radius:8px;
- background:#e5e7eb;
- font-weight:bold;
+ background:var(--surface2);
+ color:var(--text);
+ font-weight:bold
 }
 
 .danger{
  padding:10px;
  border:0;
  border-radius:8px;
- background:#fee2e2;
- color:#991b1b;
- font-weight:bold;
+ background:#3a1216;
+ color:#fca5a5;
+ font-weight:bold
 }
 
-.success{
- text-align:center;
-}
+.success{text-align:center}
 
 .history-item{
- border-top:1px solid #eee;
- padding:12px 0;
+ border-top:1px solid var(--line);
+ padding:12px 0
 }
 
 .row{
  display:flex;
  gap:8px;
- align-items:center;
+ align-items:center
 }
 
-.row>*{
- flex:1;
-}
+.row>*{flex:1}
 
 .editor{
- border:1px solid #e5e7eb;
+ border:1px solid var(--line);
  border-radius:10px;
  padding:12px;
- margin:8px 0;
+ margin:8px 0
 }
 
 .move{
  display:flex;
  gap:5px;
- margin-top:8px;
+ margin-top:8px
 }
 
-.move button{
- flex:1;
-}
+.move button{flex:1}
 
 hr{
  border:0;
- border-top:1px solid #eee;
- margin:15px 0;
+ border-top:1px solid var(--line);
+ margin:15px 0
 }
 
-.small{
+.badge{
+ display:inline-block;
+ padding:5px 8px;
+ border-radius:999px;
+ background:#172033;
+ color:#93c5fd;
+ font-size:12px
+}
+
+ .developer-notifications{
+ border:1px solid #7c3aed;
+ background:rgba(124,58,237,.10);
+ border-radius:12px;
+ padding:14px;
+ margin-bottom:14px
+}
+
+.developer-notification{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ padding:10px 0;
+ border-bottom:1px solid var(--line)
+}
+
+.developer-notification:last-child{
+ border-bottom:0;
+ padding-bottom:0
+}
+
+.developer-notification:first-child{
+ padding-top:0
+}
+
+.developer-notification-title{
+ font-weight:bold
+}
+
+.developer-notification-meta{
+ margin-top:4px;
+ color:var(--muted);
+ font-size:12px
+}
+
+.library-media-status{
+ margin-top:8px;
+ color:var(--muted)
+}
+
+.media-grid{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:8px;
+ margin-top:10px
+}
+
+.media-grid img{
+ width:100%;
+ aspect-ratio:1/1;
+ object-fit:cover;
+ border-radius:9px;
+ border:1px solid var(--line);
+ background:#080b10
+}
+
+.exercise-animation-card{
+ position:relative;
+ display:block;
+ width:100px;
+ height:72px;
+ margin:6px auto 0;
+ border:1px solid var(--line);
+ border-radius:10px;
+ overflow:hidden;
+ background:#080b10;
+ cursor:pointer;
+ padding:0;
+}
+
+.exercise-animation{
+ display:block;
+ width:100%;
+ height:100%;
+ object-fit:cover;
+ background:#080b10
+}
+
+.exercise-animation-card::after{
+ content:"▶";
+ position:absolute;
+ left:50%;
+ top:50%;
+ transform:translate(-50%,-50%);
+ width:30px;
+ height:30px;
+ border-radius:50%;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ background:rgba(0,0,0,.62);
+ color:#fff;
+ font-size:15px;
+ pointer-events:none;
+}
+
+.exercise-animation-modal{
+ position:fixed;
+ inset:0;
+ z-index:9999;
+ display:none;
+ align-items:center;
+ justify-content:center;
+ padding:20px;
+ background:rgba(0,0,0,.88);
+}
+
+.exercise-animation-modal.open{
+ display:flex;
+}
+
+.exercise-animation-modal img{
+ display:block;
+ max-width:94vw;
+ max-height:84vh;
+ width:auto;
+ height:auto;
+ border-radius:14px;
+ border:1px solid var(--line);
+ background:#080b10;
+}
+
+.exercise-animation-modal-close{
+ position:absolute;
+ top:18px;
+ right:18px;
+ width:42px;
+ height:42px;
+ border:0;
+ border-radius:50%;
+ background:rgba(20,27,40,.95);
+ color:#fff;
+ font-size:24px;
+ cursor:pointer;
+}
+
+.exercise-animation-modal-title{
+ position:absolute;
+ left:20px;
+ right:20px;
+ bottom:18px;
+ text-align:center;
+ color:#fff;
+ font-size:14px;
+ font-weight:bold;
+ text-shadow:0 1px 3px #000;
+}
+
+.video-link{
+ display:block;
+ text-align:center;
+ padding:10px;
+ background:#172033;
+ border-radius:9px;
+ color:#bfdbfe;
+ text-decoration:none;
+ font-weight:bold;
+ margin-top:8px
+}
+
+.section-title{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:8px
+}
+
+.empty{
+ padding:18px;
+ text-align:center;
+ color:var(--muted)
+}
+
+.timeline{
+ position:relative;
+ margin-top:8px
+}
+
+.timeline-item{
+ border-left:3px solid var(--blue);
+ padding:0 0 18px 14px;
+ margin-left:6px
+}
+
+.timeline-item:last-child{padding-bottom:0}
+
+.timeline-date{
+ font-weight:bold;
+ color:#93c5fd
+}
+
+.metric-grid{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:8px;
+ margin-top:10px
+}
+
+.metric{
+ background:var(--surface2);
+ border-radius:9px;
+ padding:9px
+}
+
+.metric strong{
+ display:block;
  font-size:12px;
- color:#6b7280;
+ color:var(--muted);
+ margin-bottom:3px
+}
+
+.photo-grid{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:7px;
+ margin-top:10px
+}
+
+.photo-grid img{
+ width:100%;
+ aspect-ratio:1/1;
+ object-fit:cover;
+ border-radius:8px
+}
+
+.link{
+ color:#60a5fa;
+ text-decoration:none
+}
+
+
+.home-page{
+ max-width:700px;
+ margin:0 auto;
+ padding:18px 12px 40px
+}
+
+.home-profile-card{
+ background:var(--surface);
+ border:1px solid var(--line);
+ border-radius:18px;
+ padding:22px 16px;
+ margin-bottom:14px;
+ text-align:center;
+ box-shadow:0 4px 18px #0005
+}
+
+.home-avatar{
+ width:82px;
+ height:82px;
+ margin:0 auto 12px;
+ border-radius:50%;
+ background:var(--blue);
+ color:#fff;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ font-size:38px;
+ font-weight:bold;
+ overflow:hidden;
+ border:3px solid #fff
+}
+
+.home-avatar img{
+ width:100%;
+ height:100%;
+ object-fit:cover
+}
+
+.home-profile-name{
+ margin:0;
+ font-size:24px;
+ line-height:1.15
+}
+
+.home-subtitle{
+ margin:7px 0 0;
+ color:var(--muted);
+ font-size:14px
+}
+
+.home-menu{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:10px
+}
+
+.home-menu button{
+ min-height:88px;
+ border:1px solid var(--line);
+ border-radius:14px;
+ background:var(--surface);
+ color:var(--text);
+ font-weight:bold;
+ font-size:15px;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ box-shadow:0 3px 12px #0004
+}
+
+.home-menu button:hover{
+ background:var(--surface2);
+ border-color:#3b82f6
+}
+
+.home-menu .home-menu-icon{
+ font-size:25px;
+ line-height:1
+}
+
+.home-profile-actions{
+ margin-top:12px
+}
+
+.home-profile-actions select{
+ text-align:center
+}
+
+@media(max-width:430px){
+ .home-menu{
+  grid-template-columns:1fr 1fr
+ }
+}
+
+@media(max-width:430px){
+ .grid,.metric-grid{
+  grid-template-columns:1fr 1fr
+ }
+
+ .photo-grid{
+  grid-template-columns:repeat(3,1fr)
+ }
 }
 </style>
 </head>
@@ -214,62 +675,127 @@ hr{
 
 <div class="profile">
 
-<label style="color:#d1d5db;text-align:left">
+<label style="color:#cbd5e1;text-align:left">
 Perfil
 </label>
 
-<select id="profileSelect"></select>
+<div class="profile-selector">
+
+<div id="profileAvatar" class="profile-avatar">
+👤
+</div>
+
+<select id="profileSelect">
+<option value="">Carregando...</option>
+</select>
 
 </div>
 
+</div>
 </header>
 
 <nav>
 
-<button id="btnT">Treino</button>
-<button id="btnH">Histórico</button>
-<button id="btnC">Configurar</button>
+<button id="btnHome">
+Início
+</button>
+
+<button id="btnT">
+Treino
+</button>
+
+<button id="btnH">
+Histórico
+</button>
+
+<button id="btnE">
+Evolução
+</button>
+
+<button id="btnC">
+Configurar
+</button>
 
 </nav>
 
 <main id="app"></main>
 
 <script>
-
 "use strict";
 
-/* =====================================================
+/* =========================================================
    BANCO
-===================================================== */
+   ========================================================= */
 
-const DBKEY = "treinoRafaelDB_v7";
-const OLDKEY = "treinoRafaelHistorico";
+const DBKEY="treinoRafaelDB_v7";
+const OLDKEY="treinoRafaelHistorico";
 
+/* =========================================================
+   ARMAZENAMENTO SEGURO
+   ========================================================= */
 
-/* =====================================================
+function storageGet(key){
+
+ try{
+  return localStorage.getItem(key);
+ }catch(e){
+  return null;
+ }
+
+}
+
+function storageSet(key,value){
+
+ try{
+  localStorage.setItem(key,value);
+  return true;
+ }catch(e){
+  return false;
+ }
+
+}
+
+/* =========================================================
+   CATEGORIAS
+   ========================================================= */
+
+const DEFAULT_CATEGORIES=[
+ "Peito",
+ "Costas",
+ "Bíceps",
+ "Tríceps",
+ "Ombros",
+ "Quadríceps",
+ "Glúteos",
+ "Adutores",
+ "Abdutores",
+ "Posteriores",
+ "Panturrilha",
+ "Abdômen",
+ "Lombar",
+ "Cardio"
+];
+
+/* =========================================================
    FUNÇÕES BÁSICAS
-===================================================== */
+   ========================================================= */
 
 function uid(){
 
- return Date.now().toString(36) +
-        Math.random().toString(36).slice(2,8);
+ return Date.now().toString(36)+
+ Math.random().toString(36).slice(2,8);
 
 }
 
+function clone(o){
 
-function clone(obj){
-
- return JSON.parse(
-  JSON.stringify(obj)
- );
+ return JSON.parse(JSON.stringify(o));
 
 }
 
+function esc(v){
 
-function esc(value){
-
- return String(value ?? "")
+ return String(v??"")
   .replace(/&/g,"&amp;")
   .replace(/</g,"&lt;")
   .replace(/>/g,"&gt;")
@@ -278,10 +804,25 @@ function esc(value){
 
 }
 
+function formatExerciseName(name,index){
 
-function slug(value){
+ const words=String(name||"").trim().split(/\s+/).filter(Boolean);
 
- return String(value || "perfil")
+ if(words.length<=1)
+  return `<span class="exercise-name-line">${index+1}. ${esc(name)}</span>`;
+
+ const cut=Math.ceil(words.length/2);
+ const first=words.slice(0,cut).join(" ");
+ const second=words.slice(cut).join(" ");
+
+ return `<span class="exercise-name-line">${index+1}. ${esc(first)}</span>`+
+         `<span class="exercise-name-line">${esc(second)}</span>`;
+
+}
+
+function slug(v){
+
+ return String(v||"perfil")
   .normalize("NFD")
   .replace(/[\u0300-\u036f]/g,"")
   .replace(/[^a-zA-Z0-9]+/g,"-")
@@ -290,188 +831,243 @@ function slug(value){
 
 }
 
+function today(){
 
-/* =====================================================
-   TREINO A
-===================================================== */
+ return new Date().toISOString().slice(0,10);
 
-const defaultA = {
+}
 
+function formatDate(v){
+
+ if(!v)return "-";
+
+ const p=String(v).split("-");
+
+ return p.length===3
+  ?p[2]+"/"+p[1]+"/"+p[0]
+  :v;
+
+}
+
+/* =========================================================
+   SALVAR BANCO
+   ========================================================= */
+
+function saveDB(){
+
+ try{
+
+  const ok=storageSet(
+   DBKEY,
+   JSON.stringify(db)
+  );
+
+  if(!ok){
+
+   console.warn(
+    "Não foi possível salvar no armazenamento."
+   );
+
+  }
+
+ }catch(e){
+
+  console.error(e);
+
+ }
+
+}
+
+/* =========================================================
+   NORMALIZAÇÃO
+   ========================================================= */
+
+function normalizeExercise(e){
+
+ e=e||{};
+
+ return {
+
+  name:e.name||"",
+  category:e.category||"",
+  refLoad:e.refLoad??"",
+  refReps:e.refReps??"",
+  targetLoad:e.targetLoad??"",
+  targetReps:e.targetReps??"",
+  image:e.image||"",
+  images:Array.isArray(e.images)
+   ?e.images
+   :[],
+  video:e.video||""
+
+ };
+
+}
+
+/* =========================================================
+   TREINO PADRÃO A
+   ========================================================= */
+
+const ROUTINE_SET_VERSION="2026-10-05-v3";
+
+function routineExercise(name){
+ return normalizeExercise({name});
+}
+
+/* =========================================================
+   FICHAS PADRÃO — RAFAEL
+   ========================================================= */
+
+const defaultA={
  id:"A",
-
- name:"Treino A — Costas, Bíceps e Pernas",
-
+ name:"Treino A",
  ex:[
-
-  {
-   name:"Agachamento",
-   refLoad:18,
-   refReps:20,
-   targetLoad:18,
-   targetReps:20
-  },
-
-  {
-   name:"Puxada aberta na polia",
-   refLoad:52,
-   refReps:15,
-   targetLoad:52,
-   targetReps:15
-  },
-
-  {
-   name:"Remada neutra máquina",
-   refLoad:59,
-   refReps:15,
-   targetLoad:59,
-   targetReps:15
-  },
-
-  {
-   name:"Leg press máquina",
-   refLoad:117,
-   refReps:20,
-   targetLoad:117,
-   targetReps:20
-  },
-
-  {
-   name:"Bíceps máquina",
-   refLoad:36,
-   refReps:15,
-   targetLoad:36,
-   targetReps:15
-  },
-
-  {
-   name:"Cadeira extensora",
-   refLoad:59,
-   refReps:15,
-   targetLoad:59,
-   targetReps:15
-  },
-
-  {
-   name:"Rosca martelo com halteres",
-   refLoad:10,
-   refReps:12,
-   targetLoad:10,
-   targetReps:12
-  },
-
-  {
-   name:"Supino inclinado com halteres",
-   refLoad:"",
-   refReps:"",
-   targetLoad:"",
-   targetReps:""
-  },
-
-  {
-   name:"Encolhimento com halteres",
-   refLoad:"",
-   refReps:"",
-   targetLoad:"",
-   targetReps:""
-  }
-
+  routineExercise("Puxada aberta na polia"),
+  routineExercise("Remada neutra na máquina"),
+  routineExercise("Remada baixa triângulo"),
+  routineExercise("Crucifixo inverso na polia"),
+  routineExercise("Bíceps na máquina"),
+  routineExercise("Rosca martelo com halteres"),
+  routineExercise("Encolhimento com halteres")
  ]
-
 };
 
-
-/* =====================================================
-   TREINO B
-===================================================== */
-
-const defaultB = {
-
+const defaultB={
  id:"B",
-
- name:"Treino B — Peito, Tríceps, Ombros e Posterior",
-
+ name:"Treino B",
  ex:[
-
-  {
-   name:"Crucifixo máquina",
-   refLoad:100,
-   refReps:15,
-   targetLoad:100,
-   targetReps:15
-  },
-
-  {
-   name:"Supino reto máquina",
-   refLoad:50,
-   refReps:15,
-   targetLoad:50,
-   targetReps:15
-  },
-
-  {
-   name:"Lombar na máquina",
-   refLoad:59,
-   refReps:20,
-   targetLoad:59,
-   targetReps:20
-  },
-
-  {
-   name:"Cadeira flexora",
-   refLoad:36,
-   refReps:20,
-   targetLoad:36,
-   targetReps:20
-  },
-
-  {
-   name:"Desenvolvimento máquina",
-   refLoad:27,
-   refReps:15,
-   targetLoad:27,
-   targetReps:15
-  },
-
-  {
-   name:"Cadeira abdutora",
-   refLoad:45,
-   refReps:"",
-   targetLoad:45,
-   targetReps:""
-  },
-
-  {
-   name:"Tríceps polia corda",
-   refLoad:20,
-   refReps:15,
-   targetLoad:20,
-   targetReps:15
-  },
-
-  {
-   name:"Tríceps francês corda",
-   refLoad:17,
-   refReps:12,
-   targetLoad:17,
-   targetReps:12
-  },
-
-  {
-   name:"Elevação lateral",
-   refLoad:5,
-   refReps:12,
-   targetLoad:5,
-   targetReps:12
-  }
-
+  routineExercise("Crucifixo na máquina"),
+  routineExercise("Supino inclinado com halteres"),
+  routineExercise("Supino reto na máquina"),
+  routineExercise("Desenvolvimento máquina"),
+  routineExercise("Elevação lateral com halteres"),
+  routineExercise("Tríceps unilateral na polia"),
+  routineExercise("Tríceps francês unilateral na polia")
  ]
-
 };
 
+const defaultC={
+ id:"C",
+ name:"Treino C",
+ ex:[
+  routineExercise("Agachamento no Smith"),
+  routineExercise("Leg press horizontal"),
+  routineExercise("Cadeira extensora"),
+  routineExercise("Cadeira flexora"),
+  routineExercise("Panturrilha no leg press"),
+  routineExercise("Cadeira adutora")
+ ]
+};
 
-/* =====================================================
-   CRIAR BANCO
-===================================================== */
+const defaultD={
+ id:"D",
+ name:"Treino D",
+ ex:[
+  routineExercise("Crucifixo na máquina"),
+  routineExercise("Supino inclinado com halteres"),
+  routineExercise("Puxada alta neutra"),
+  routineExercise("Remada neutra na máquina"),
+  routineExercise("Elevação lateral com halteres"),
+  routineExercise("Crucifixo inverso na polia"),
+  routineExercise("Rosca alternada com halteres")
+ ]
+};
+
+/* =========================================================
+   FICHAS PADRÃO — NATIELLE
+   ========================================================= */
+
+const natielleA={
+ id:"A",
+ name:"Treino A",
+ ex:[
+  routineExercise("Agachamento no Smith"),
+  routineExercise("Leg press horizontal"),
+  routineExercise("Cadeira extensora"),
+  routineExercise("Afundo com halteres"),
+  routineExercise("Elevação pélvica na máquina"),
+  routineExercise("Cadeira adutora")
+ ]
+};
+
+const natielleB={
+ id:"B",
+ name:"Treino B",
+ ex:[
+  routineExercise("Stiff com barra"),
+  routineExercise("Mesa flexora"),
+  routineExercise("Cadeira flexora"),
+  routineExercise("RDL na polia baixa"),
+  routineExercise("Cadeira abdutora"),
+  routineExercise("Abdução com cabo"),
+  routineExercise("Panturrilha no leg press")
+ ]
+};
+
+const natielleC={
+ id:"C",
+ name:"Treino C",
+ ex:[
+  routineExercise("Puxada alta neutra"),
+  routineExercise("Remada baixa"),
+  routineExercise("Remada alta"),
+  routineExercise("Supino inclinado na máquina"),
+  routineExercise("Crucifixo na máquina"),
+  routineExercise("Desenvolvimento máquina"),
+  routineExercise("Elevação lateral")
+ ]
+};
+
+const natielleD={
+ id:"D",
+ name:"Treino D",
+ ex:[
+  routineExercise("Afundo no Smith"),
+  routineExercise("Leg press horizontal"),
+  routineExercise("Cadeira extensora"),
+  routineExercise("Flexão de joelho no cabo"),
+  routineExercise("Elevação pélvica"),
+  routineExercise("Cadeira adutora"),
+  routineExercise("Cadeira abdutora"),
+  routineExercise("Gêmeos no leg press")
+ ]
+};
+
+const natielleE={
+ id:"E",
+ name:"Treino E",
+ ex:[
+  routineExercise("Desenvolvimento com halteres"),
+  routineExercise("Elevação lateral com halteres"),
+  routineExercise("Crucifixo inverso na polia"),
+  routineExercise("Remada articulada"),
+  routineExercise("Supino reto na máquina"),
+  routineExercise("Tríceps testa na polia")
+ ]
+};
+
+function getRafaelRoutines(){
+ return {
+  A:clone(defaultA),
+  B:clone(defaultB),
+  C:clone(defaultC),
+  D:clone(defaultD)
+ };
+}
+
+function getNatielleRoutines(){
+ return {
+  A:clone(natielleA),
+  B:clone(natielleB),
+  C:clone(natielleC),
+  D:clone(natielleD),
+  E:clone(natielleE)
+ };
+}
+
+/* =========================================================
+   BANCO INICIAL
+   ========================================================= */
 
 function createInitialDB(){
 
@@ -482,135 +1078,249 @@ function createInitialDB(){
    {
     id:"rafael",
     name:"Rafael",
-    routines:{
-     A:clone(defaultA),
-     B:clone(defaultB)
-    }
+    photo:"",
+    gender:"masculino",
+    routines:getRafaelRoutines()
    },
 
    {
     id:"natielle",
     name:"Natielle",
-    routines:{}
+    photo:"",
+    gender:"feminino",
+    routines:getNatielleRoutines()
    }
 
   ],
 
   history:[],
+  evolution:[],
 
-  currentProfile:"rafael"
+  currentProfile:
+   storageGet("treinoRafaelDefaultProfile")||
+   "rafael",
+
+  exerciseCategories:
+   clone(DEFAULT_CATEGORIES),
+
+  exerciseLibrary:[],
+
+  developerNotifications:[]
 
  };
 
 }
 
-
-/* =====================================================
+/* =========================================================
    LEITURA DO BANCO
-===================================================== */
+   ========================================================= */
 
 function readDB(){
 
- let data = null;
+ let data=null;
 
  try{
 
-  data = JSON.parse(
-   localStorage.getItem(DBKEY)
-  );
+  const raw=storageGet(DBKEY);
 
- }catch(error){
+  if(raw)
+   data=JSON.parse(raw);
 
-  data = null;
+ }catch(e){
 
- }
-
-
- if(!data || typeof data !== "object"){
-
-  data = createInitialDB();
+  data=null;
 
  }
 
+ if(!data||typeof data!=="object")
+  data=createInitialDB();
 
- if(!Array.isArray(data.profiles)){
+ if(!Array.isArray(data.profiles))
+  data.profiles=[];
 
-  data.profiles = [];
-
- }
-
-
- if(!Array.isArray(data.history)){
-
-  data.history = [];
-
- }
-
-
- /* -----------------------------------------------
-    MIGRAÇÃO DO HISTÓRICO ANTIGO
- ------------------------------------------------ */
-
- try{
-
-  const old = JSON.parse(
-   localStorage.getItem(OLDKEY)
-  );
-
-  if(Array.isArray(old)){
-
-   old.forEach(item=>{
-
-    data.history.push({
-
-     id:uid(),
-
-     profileId:"rafael",
-
-     workout:item.workout || "A",
-
-     date:item.date || "",
-
-     weight:item.weight || "",
-
-     duration:item.duration || "",
-
-     calories:item.calories || "",
-
-     exercises:item.exercises || []
-
-    });
-
-   });
-
-  }
-
- }catch(error){}
-
-
- /* -----------------------------------------------
-    GARANTIR RAFAEL
- ------------------------------------------------ */
-
- let rafael = data.profiles.find(
-  p=>p && p.id==="rafael"
+ data.profiles=data.profiles.filter(
+  p=>p&&typeof p==="object"
  );
 
+ if(!Array.isArray(data.history))
+  data.history=[];
+
+ if(!Array.isArray(data.evolution))
+  data.evolution=[];
+
+ if(!Array.isArray(data.exerciseCategories))
+  data.exerciseCategories=clone(DEFAULT_CATEGORIES);
+
+ data.exerciseCategories=[
+
+  ...new Map(
+
+   data.exerciseCategories
+
+    .map(x=>String(x||"").trim())
+
+    .filter(x=>x)
+
+    .map(x=>[
+     x.toLowerCase(),
+     x
+    ])
+
+  ).values()
+
+ ];
+
+ if(!Array.isArray(data.exerciseLibrary))
+  data.exerciseLibrary=[];
+
+ data.exerciseLibrary=data.exerciseLibrary
+  .filter(Boolean)
+  .map(x=>({
+
+   id:x.id||uid(),
+   name:x.name||"",
+   category:x.category||"",
+   image:x.image||"",
+   images:Array.isArray(x.images)
+    ?x.images
+    :[],
+   video:x.video||""
+
+  }));
+
+ /* EXERCÍCIOS DAS FICHAS PADRÃO
+  * Mantém a biblioteca centralizada e acrescenta apenas
+  * os exercícios que ainda não estiverem cadastrados.
+  */
+ const standardLibraryExercises={
+  "Puxada aberta na polia":"Costas",
+  "Remada neutra na máquina":"Costas",
+  "Remada baixa triângulo":"Costas",
+  "Crucifixo inverso na polia":"Ombros",
+  "Bíceps na máquina":"Bíceps",
+  "Rosca martelo com halteres":"Bíceps",
+  "Encolhimento com halteres":"Ombros",
+  "Crucifixo na máquina":"Peito",
+  "Supino inclinado com halteres":"Peito",
+  "Supino reto na máquina":"Peito",
+  "Desenvolvimento máquina":"Ombros",
+  "Elevação lateral com halteres":"Ombros",
+  "Tríceps unilateral na polia":"Tríceps",
+  "Tríceps francês unilateral na polia":"Tríceps",
+  "Agachamento no Smith":"Quadríceps",
+  "Leg press horizontal":"Quadríceps",
+  "Cadeira extensora":"Quadríceps",
+  "Cadeira flexora":"Posteriores",
+  "Panturrilha no leg press":"Panturrilha",
+  "Cadeira adutora":"Adutores",
+  "Rosca alternada com halteres":"Bíceps",
+  "Puxada alta neutra":"Costas",
+  "Stiff com barra":"Posteriores",
+  "Mesa flexora":"Posteriores",
+  "RDL na polia baixa":"Posteriores",
+  "Cadeira abdutora":"Abdutores",
+  "Abdução com cabo":"Abdutores",
+  "Remada baixa":"Costas",
+  "Remada alta":"Ombros",
+  "Supino inclinado na máquina":"Peito",
+  "Elevação lateral":"Ombros",
+  "Afundo no Smith":"Quadríceps",
+  "Flexão de joelho no cabo":"Posteriores",
+  "Elevação pélvica":"Glúteos",
+  "Gêmeos no leg press":"Panturrilha",
+  "Desenvolvimento com halteres":"Ombros",
+  "Remada articulada":"Costas",
+  "Tríceps testa polia":"Tríceps",
+  "Afundo com halteres":"Quadríceps",
+  "Elevação pélvica na máquina":"Glúteos"
+ };
+
+ const libraryNames=new Set(
+  data.exerciseLibrary
+   .map(x=>String(x.name||"").trim().toLowerCase())
+ );
+
+ Object.entries(standardLibraryExercises).forEach(([name,category])=>{
+  const key=name.toLowerCase();
+  if(libraryNames.has(key))return;
+
+  data.exerciseLibrary.push({
+   id:uid(),
+   name,
+   category,
+   image:"",
+   images:[],
+   video:""
+  });
+
+  libraryNames.add(key);
+ });
+
+ if(!Array.isArray(data.developerNotifications))
+  data.developerNotifications=[];
+
+ data.developerNotifications=data.developerNotifications
+  .filter(Boolean)
+  .map(x=>({
+   id:x.id||uid(),
+   type:x.type||"novo_exercicio",
+   exerciseId:x.exerciseId||"",
+   name:x.name||"",
+   category:x.category||"",
+   createdAt:x.createdAt||new Date().toISOString(),
+   resolved:!!x.resolved
+  }));
+
+ data.profiles.forEach(p=>{
+
+  if(p.id==="natielle")
+   p.gender="feminino";
+  else if(p.id==="rafael"&&!p.gender)
+   p.gender="masculino";
+  else if(p.gender!=="feminino"&&p.gender!=="masculino")
+   p.gender="masculino";
+
+  if(!p.routines||typeof p.routines!=="object")
+   p.routines={};
+
+  Object.keys(p.routines).forEach(k=>{
+
+   const r=p.routines[k];
+
+   if(!r||typeof r!=="object"){
+
+    delete p.routines[k];
+    return;
+
+   }
+
+   r.ex=Array.isArray(r.ex)
+    ?r.ex.map(normalizeExercise).map(ex=>{
+       const n=String(ex.name||"").trim().toLowerCase();
+       if(n==="agachamento") ex.name="Agachamento no Smith";
+       if(n==="remada neutra máquina") ex.name="Remada neutra na máquina";
+       return ex;
+     })
+    :[];
+
+  });
+
+ });
+
+ let rafael=data.profiles.find(
+  p=>p.id==="rafael"
+ );
 
  if(!rafael){
 
   rafael={
 
    id:"rafael",
-
    name:"Rafael",
+   photo:"",
+   gender:"masculino",
 
-   routines:{
-
-    A:clone(defaultA),
-    B:clone(defaultB)
-
-   }
+   routines:getRafaelRoutines()
 
   };
 
@@ -618,54 +1328,43 @@ function readDB(){
 
  }else{
 
-  if(
-   !rafael.routines ||
-   typeof rafael.routines !== "object"
-  ){
-
+  if(!rafael.routines||typeof rafael.routines!=="object")
    rafael.routines={};
-
-  }
-
-  if(!rafael.routines.A){
-
-   rafael.routines.A=clone(defaultA);
-
-  }
-
-  if(!rafael.routines.B){
-
-   rafael.routines.B=clone(defaultB);
-
-  }
 
  }
 
-
- /* -----------------------------------------------
-    GARANTIR NATIELLE
- ------------------------------------------------ */
-
  if(!data.profiles.some(
-  p=>p && p.id==="natielle"
+  p=>p.id==="natielle"
  )){
 
   data.profiles.push({
 
    id:"natielle",
-
    name:"Natielle",
-
-   routines:{}
+   photo:"",
+   gender:"feminino",
+   routines:getNatielleRoutines()
 
   });
 
  }
 
+ /* SUBSTITUIÇÃO DAS FICHAS PADRÃO */
 
- /* -----------------------------------------------
-    PERFIL ATUAL
- ------------------------------------------------ */
+ if(data.routineSetVersion!==ROUTINE_SET_VERSION){
+
+  const r=data.profiles.find(p=>p.id==="rafael");
+  const n=data.profiles.find(p=>p.id==="natielle");
+
+  if(r) r.routines=getRafaelRoutines();
+  if(n) n.routines=getNatielleRoutines();
+
+  data.routineSetVersion=ROUTINE_SET_VERSION;
+
+ }
+
+ const savedDefault=
+  storageGet("treinoRafaelDefaultProfile");
 
  if(
   !data.currentProfile ||
@@ -674,145 +1373,320 @@ function readDB(){
   )
  ){
 
+  data.currentProfile=
+   savedDefault||
+   "rafael";
+
+ }
+
+ if(!data.profiles.some(
+  p=>p.id===data.currentProfile
+ )){
+
   data.currentProfile="rafael";
 
  }
 
+ /* MIGRAÇÃO ANTIGA */
 
  try{
 
-  localStorage.setItem(
-   DBKEY,
-   JSON.stringify(data)
+  const oldRaw=storageGet(OLDKEY);
+
+  const old=oldRaw
+   ?JSON.parse(oldRaw)
+   :null;
+
+  if(
+   Array.isArray(old)&&
+   !data._oldMigrated
+  ){
+
+   old.forEach(item=>{
+
+    data.history.push({
+
+     id:uid(),
+     profileId:"rafael",
+     workout:item.workout||"A",
+     date:item.date||"",
+     weight:item.weight||"",
+     duration:item.duration||"",
+     calories:item.calories||"",
+     exercises:item.exercises||[]
+
+    });
+
+   });
+
+   data._oldMigrated=true;
+
+  }
+
+ }catch(e){
+
+  console.warn(
+   "Migração antiga não realizada.",
+   e
   );
 
- }catch(error){}
+ }
 
+ storageSet(
+  DBKEY,
+  JSON.stringify(data)
+ );
 
  return data;
 
 }
 
+/* =========================================================
+   ESTADO
+   ========================================================= */
 
-let db = readDB();
-
-let currentRoutine = null;
-
-
-/* =====================================================
-   BANCO
-===================================================== */
-
-function saveDB(){
-
- try{
-
-  localStorage.setItem(
-   DBKEY,
-   JSON.stringify(db)
-  );
-
- }catch(error){
-
-  alert(
-   "Não foi possível salvar no armazenamento do navegador."
-  );
-
- }
-
-}
-
+let db=readDB();
+let currentRoutine=null;
 
 function getProfile(){
 
  return db.profiles.find(
   p=>p.id===db.currentProfile
- ) || db.profiles[0];
+ )||db.profiles[0]||null;
 
 }
-
 
 function getRoutine(){
 
- const p = getProfile();
+ const p=getProfile();
 
- if(!p || !currentRoutine){
-
-  return null;
-
- }
-
- return p.routines[currentRoutine] || null;
+ return p&&currentRoutine
+  ?p.routines[currentRoutine]||null
+  :null;
 
 }
 
+/* =========================================================
+   PÁGINA INICIAL / PERFIL
+   ========================================================= */
 
-/* =====================================================
-   ABAS
-===================================================== */
-
-function setTab(buttonId){
-
- ["btnT","btnH","btnC"].forEach(
-  id=>{
-
-   document
-    .getElementById(id)
-    .classList
-    .remove("active");
-
-  }
- );
-
- document
-  .getElementById(buttonId)
-  .classList
-  .add("active");
-
-}
-
-
-/* =====================================================
-   PERFIS
-===================================================== */
-
-function refreshProfiles(){
-
- const select =
-  document.getElementById(
-   "profileSelect"
-  );
-
- if(!select)return;
-
- select.innerHTML =
-  db.profiles.map(
-   p=>`
-
-    <option
-     value="${esc(p.id)}"
-     ${p.id===db.currentProfile?"selected":""}>
-
-     ${esc(p.name)}
-
-    </option>
-
-   `
-  ).join("");
-
-}
-
-
-function changeProfile(id){
-
- db.currentProfile=id;
+function showHome(){
 
  const p=getProfile();
 
- currentRoutine =
-  Object.keys(
-   p.routines || {}
-  )[0] || null;
+ if(!p){
+
+  app.innerHTML=`
+
+  <div class="home-page">
+
+   <div class="home-profile-card">
+
+    <div class="home-avatar">
+     👤
+    </div>
+
+    <h2 class="home-profile-name">
+     Nenhum perfil
+    </h2>
+
+    <p class="home-subtitle">
+     Crie um perfil para começar.
+    </p>
+
+    <button
+     class="primary"
+     style="margin-top:16px"
+     onclick="showConfig()"
+    >
+     ⚙️ Criar perfil
+    </button>
+
+   </div>
+
+  </div>`;
+
+  return;
+
+ }
+
+ setTab("");
+
+ const avatar=
+  p.photo
+   ?`<img src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">`
+   :"👤";
+
+ app.innerHTML=`
+
+ <div class="home-page">
+
+  <div class="home-profile-card">
+
+   <div class="home-avatar">
+    ${avatar}
+   </div>
+
+   <h2 class="home-profile-name">
+    ${esc(p.name)}
+   </h2>
+
+   <p class="home-subtitle">
+    O que você deseja acessar?
+   </p>
+
+   <div class="home-profile-actions">
+
+    <select
+     onchange="changeProfile(this.value)"
+     aria-label="Selecionar perfil"
+    >
+
+     ${
+      db.profiles.map(x=>
+       `<option
+        value="${esc(x.id)}"
+        ${x.id===p.id?"selected":""}
+       >
+        ${esc(x.name)}
+       </option>`
+      ).join("")
+     }
+
+    </select>
+
+   </div>
+
+  </div>
+
+  <div class="home-menu">
+
+   <button
+    type="button"
+    onclick="showTraining()"
+   >
+    <span class="home-menu-icon">🏋️</span>
+    <span>Treino</span>
+   </button>
+
+   <button
+    type="button"
+    onclick="showHistory()"
+   >
+    <span class="home-menu-icon">📋</span>
+    <span>Histórico</span>
+   </button>
+
+   <button
+    type="button"
+    onclick="showEvolution()"
+   >
+    <span class="home-menu-icon">📈</span>
+    <span>Evolução</span>
+   </button>
+
+   <button
+    type="button"
+    onclick="showConfig()"
+   >
+    <span class="home-menu-icon">⚙️</span>
+    <span>Configurações</span>
+   </button>
+
+  </div>
+
+ </div>`;
+
+}
+
+/* =========================================================
+   NAVEGAÇÃO
+   ========================================================= */
+
+function setTab(id){
+
+ ["btnHome","btnT","btnH","btnE","btnC"].forEach(x=>{
+
+  const el=document.getElementById(x);
+
+  if(el)
+   el.classList.remove("active");
+
+ });
+
+ const selected=document.getElementById(id);
+
+ if(selected)
+  selected.classList.add("active");
+
+}
+
+/* =========================================================
+   PERFIS
+   ========================================================= */
+
+function refreshProfiles(){
+
+ const s=document.getElementById(
+  "profileSelect"
+ );
+
+ const a=document.getElementById(
+  "profileAvatar"
+ );
+
+ if(!s||!a)return;
+
+ const profiles=Array.isArray(db.profiles)
+  ?db.profiles
+  :[];
+
+ if(!profiles.length){
+
+  s.innerHTML=
+   `<option value="">Nenhum perfil</option>`;
+
+  a.innerHTML="👤";
+
+  return;
+
+ }
+
+ s.innerHTML=profiles.map(p=>
+
+  `<option value="${esc(p.id)}"
+   ${p.id===db.currentProfile?"selected":""}>
+   ${esc(p.name)}
+  </option>`
+
+ ).join("");
+
+ const p=getProfile();
+
+ a.innerHTML=
+  p&&p.photo
+   ?`<img src="${esc(p.photo)}" alt="">`
+   :"👤";
+
+}
+
+function changeProfile(id){
+
+ if(!id)return;
+
+ db.currentProfile=id;
+
+ storageSet(
+  "treinoRafaelDefaultProfile",
+  id
+ );
+
+ const p=getProfile();
+
+ currentRoutine=
+  p
+   ?Object.keys(p.routines||{})[0]||null
+   :null;
 
  saveDB();
 
@@ -820,1240 +1694,2289 @@ function changeProfile(id){
 
 }
 
-
-/* =====================================================
-   ESCOLHER TREINO
-===================================================== */
+/* =========================================================
+   FICHAS
+   ========================================================= */
 
 function chooseRoutine(id){
 
  currentRoutine=id;
 
- saveDB();
-
  showTraining();
 
 }
-
 
 function routineButtons(){
 
  const p=getProfile();
 
- return Object.keys(
-  p.routines || {}
- ).map(
-  id=>`
+ if(!p)return "";
 
-   <button
-    class="${id===currentRoutine
-      ?"primary"
-      :"secondary"}"
+ return Object.keys(p.routines||{})
+  .map(id=>
+
+   `<button
+    class="${id===currentRoutine?"primary":"secondary"}"
     style="width:auto"
-    onclick="chooseRoutine('${esc(id)}')">
-
+    onclick="chooseRoutine('${esc(id)}')"
+   >
     ${esc(p.routines[id].name)}
+   </button>`
 
-   </button>
-
-  `
- ).join(" ");
+  )
+  .join(" ");
 
 }
 
+/* =========================================================
+   ANIMAÇÕES DOS EXERCÍCIOS
+   ========================================================= */
 
-/* =====================================================
-   TELA DE TREINO
-===================================================== */
+const EXERCISE_ANIMATIONS={
+ "agachamento no smith":null,
+ "agachamento":null,
+ "agachamento com barra livre":"agachamento_barra_livre",
+ "puxada aberta na polia":"puxada_aberta",
+ "puxada aberta na frente":"puxada_aberta",
+ "remada neutra na máquina":"remada_neutra_maquina",
+ "remada neutra máquina":"remada_neutra_maquina",
+ "leg press máquina":"leg_press_45",
+ "bíceps máquina":"biceps_maquina",
+ "cadeira extensora":"cadeira_extensora",
+ "rosca martelo com halteres":"rosca_martelo_halteres",
+ "supino inclinado com halteres":"supino_inclinado_halteres",
+ "encolhimento com halteres":"encolhimento_halteres",
+ "crucifixo máquina":null,
+ "supino reto máquina":"supino_maquina",
+ "lombar na máquina":null,
+ "cadeira flexora":"cadeira_flexora_corrigida",
+ "desenvolvimento máquina":"desenvolvimento_maquina",
+ "cadeira abdutora":"cadeira_abdutora",
+ "tríceps polia corda":"triceps_polia_corda",
+ "tríceps francês corda":"triceps_frances_corda",
+ "elevação lateral":"elevacao_lateral"
+};
+
+const ANIMATION_BASE_URL=
+ "https://raw.githubusercontent.com/nerdecoracoes-coder/Treino-rafael/Desenvolvimento/";
+
+function exerciseAnimationFile(name,gender){
+ const key=String(name||"").trim().toLowerCase();
+ const base=EXERCISE_ANIMATIONS[key];
+ if(!base)return "";
+ const sex=gender==="feminino"?"feminino":"masculino";
+ return ANIMATION_BASE_URL+base+"_"+sex+"_loop.gif";
+}
+
+function openExerciseAnimation(url,name){
+ let modal=document.getElementById("exerciseAnimationModal");
+
+ if(!modal){
+  modal=document.createElement("div");
+  modal.id="exerciseAnimationModal";
+  modal.className="exercise-animation-modal";
+  modal.innerHTML=`
+   <button class="exercise-animation-modal-close" type="button" onclick="closeExerciseAnimation()">×</button>
+   <img id="exerciseAnimationModalImg" src="" alt="">
+   <div id="exerciseAnimationModalTitle" class="exercise-animation-modal-title"></div>
+  `;
+
+  modal.addEventListener("click",function(ev){
+   if(ev.target===modal) closeExerciseAnimation();
+  });
+
+  document.body.appendChild(modal);
+ }
+
+ document.getElementById("exerciseAnimationModalImg").src=url;
+ document.getElementById("exerciseAnimationModalImg").alt="Execução de "+name;
+ document.getElementById("exerciseAnimationModalTitle").textContent=name;
+ modal.classList.add("open");
+}
+
+function closeExerciseAnimation(){
+ const modal=document.getElementById("exerciseAnimationModal");
+ if(modal) modal.classList.remove("open");
+}
+
+document.addEventListener("keydown",function(ev){
+ if(ev.key==="Escape") closeExerciseAnimation();
+});
+
+/* =========================================================
+   MÍDIA
+   ========================================================= */
+
+function exerciseAnimationHtml(e){
+
+ const animation=exerciseAnimationFile(
+  e.name,
+  getProfile()?.gender
+ );
+
+ if(!animation) return `<div class="exercise-animation-placeholder" aria-hidden="true"></div>`;
+
+ return `
+  <button
+   class="exercise-animation-card"
+   type="button"
+   onclick="openExerciseAnimation('${esc(animation)}','${esc(e.name)}')"
+   aria-label="Ampliar execução de ${esc(e.name)}"
+  >
+   <img
+    class="exercise-animation"
+    src="${esc(animation)}"
+    alt="Execução de ${esc(e.name)}"
+    loading="lazy"
+    onerror="this.closest('.exercise-animation-card').style.display='none'"
+   >
+  </button>`;
+}
+
+function mediaHtml(e){
+
+ const imgs=[];
+
+ if(e.image)
+  imgs.push(e.image);
+
+ (e.images||[]).forEach(x=>{
+
+  if(x&&!imgs.includes(x))
+   imgs.push(x);
+
+ });
+
+ let h="";
+
+ if(imgs.length){
+
+  h+=`
+
+  <div class="media-grid">
+
+   ${imgs.slice(0,4).map(x=>
+
+    `<img
+      src="${esc(x)}"
+      alt="${esc(e.name)}"
+      onerror="this.style.display='none'"
+    >`
+
+   ).join("")}
+
+  </div>`;
+
+ }
+
+ if(e.video){
+
+  h+=`
+
+  <a
+   class="video-link"
+   href="${esc(e.video)}"
+   target="_blank"
+   rel="noopener"
+  >
+   ▶️ Ver execução em vídeo
+  </a>`;
+
+ }
+
+ return h;
+
+}
+
+/* =========================================================
+   TREINO
+   ========================================================= */
+
+let completedExercisesSession={};
+let completedExercisesSessionKey="";
+
+function toggleExerciseDone(index){
+
+ const key=String(index);
+ completedExercisesSession[key]=!completedExercisesSession[key];
+
+ const checkbox=document.getElementById("done"+index);
+ const row=document.getElementById("doneRow"+index);
+
+ if(checkbox)
+  checkbox.checked=!!completedExercisesSession[key];
+
+ if(row)
+  row.classList.toggle("done",!!completedExercisesSession[key]);
+
+}
 
 function showTraining(){
 
  setTab("btnT");
-
  refreshProfiles();
 
  const p=getProfile();
 
  if(!p){
 
-  document.getElementById("app").innerHTML=`
-
-   <div class="card">
-
-    <h2>Perfil não encontrado</h2>
-
-   </div>
-
-  `;
-
-  return;
-
- }
-
-
- if(
-  !currentRoutine ||
-  !p.routines[currentRoutine]
- ){
-
-  currentRoutine =
-   Object.keys(
-    p.routines || {}
-   )[0] || null;
-
- }
-
-
- if(!currentRoutine){
-
-  document.getElementById("app").innerHTML=`
-
-   <div class="card">
-
-    <h2>Nenhuma ficha criada</h2>
-
-    <p class="muted">
-     Crie uma ficha para começar.
-    </p>
-
-    <button
-     class="primary"
-     onclick="showConfig()">
-
-     ⚙️ Configurar ficha
-
-    </button>
-
-   </div>
-
-  `;
-
-  return;
-
- }
-
-
- const r=getRoutine();
-
- const today =
-  new Date()
-   .toISOString()
-   .slice(0,10);
-
-
- let html=`
+  app.innerHTML=`
 
   <div class="card">
 
-   <div class="row">
+   <h2>Perfil não encontrado</h2>
 
-    ${routineButtons()}
+  </div>`;
 
+  return;
+
+ }
+
+ const sessionKey=p.id+"::"+(currentRoutine||"");
+
+ if(sessionKey!==completedExercisesSessionKey){
+  completedExercisesSession={};
+  completedExercisesSessionKey=sessionKey;
+ }
+
+ if(
+  !currentRoutine||
+  !p.routines[currentRoutine]
+ ){
+
+  currentRoutine=
+   Object.keys(p.routines||{})[0]||null;
+
+ }
+
+ if(!currentRoutine){
+
+  app.innerHTML=`
+
+  <div class="card">
+
+   <h2>Nenhuma ficha criada</h2>
+
+   <p class="muted">
+    Crie ou importe uma ficha em Configurar.
+   </p>
+
+   <button
+    class="primary"
+    onclick="showConfig()"
+   >
+    ⚙️ Configurar
+   </button>
+
+  </div>`;
+
+  return;
+
+ }
+
+ const r=getRoutine();
+ const d=today();
+
+ let html=`
+
+ <div class="card">
+
+  <div class="row">
+
+   ${routineButtons()}
+
+  </div>
+
+ </div>
+
+ <div class="card">
+
+  <h2>${esc(r.name)}</h2>
+
+  <p class="muted">
+   A referência azul é a última S1 registrada.
+   A meta é o que você pretende usar no próximo treino.
+  </p>
+
+  <div class="grid">
+
+   <div>
+    <label>Peso hoje (kg)</label>
+    <input id="peso" type="number" step="0.1">
+   </div>
+
+   <div>
+    <label>Duração (min)</label>
+    <input id="duracao" type="number">
+   </div>
+
+   <div>
+    <label>Calorias estimadas</label>
+    <input id="calorias" type="number">
+   </div>
+
+   <div>
+    <label>Data</label>
+    <input id="data" type="date" value="${d}">
    </div>
 
   </div>
 
+ </div>`;
 
-  <div class="card">
+ r.ex.forEach((e,i)=>{
 
-   <h2>
-    ${esc(r.name)}
-   </h2>
+  html+=`
 
-   <p class="muted">
+  <div class="card exercise">
 
-    A referência azul é a última S1 registrada.
-    A meta é o que você pretende usar no próximo treino.
+   <div class="exercise-main-row">
 
-   </p>
+    <h3>
+     ${formatExerciseName(e.name,i)}
+    </h3>
 
+    ${exerciseAnimationHtml(e)}
+
+    <label
+     id="doneRow${i}"
+     class="exercise-complete${completedExercisesSession[String(i)]?" done":""}"
+     title="Marcar exercício como concluído"
+    >
+     <input
+      id="done${i}"
+      type="checkbox"
+      ${completedExercisesSession[String(i)]?"checked":""}
+      onchange="toggleExerciseDone(${i})"
+     >
+     <span>Exercício concluído</span>
+    </label>
+
+   </div>
+
+   ${mediaHtml(e)}
+
+   <div class="last">
+
+    Última S1:
+
+    ${
+     e.refLoad!==""&&e.refLoad!=null
+
+      ?esc(e.refLoad)+" kg × "+
+       esc(e.refReps||"-")+" reps"
+
+      :"sem registro"
+    }
+
+   </div>
+
+   <div class="target">
+
+    <strong>
+     🎯 Meta para o próximo treino
+    </strong>
+
+    <div
+     class="grid"
+     style="margin-top:7px"
+    >
+
+     <div>
+
+      <label>Carga alvo</label>
+
+      <input
+       id="tL${i}"
+       type="number"
+       step="0.5"
+       value="${esc(e.targetLoad??"")}"
+      >
+
+     </div>
+
+     <div>
+
+      <label>Reps alvo</label>
+
+      <input
+       id="tR${i}"
+       type="number"
+       value="${esc(e.targetReps??"")}"
+      >
+
+     </div>
+
+    </div>
+
+   </div>
 
    <div class="grid">
 
     <div>
-
-     <label>
-      Peso hoje (kg)
-     </label>
-
+     <label>Série 1 — carga</label>
      <input
-      id="peso"
+      id="c${i}1"
       type="number"
-      step="0.1">
-
+      step="0.5"
+     >
     </div>
 
-
     <div>
-
-     <label>
-      Duração (min)
-     </label>
-
+     <label>Série 1 — reps</label>
      <input
-      id="duracao"
-      type="number">
-
+      id="r${i}1"
+      type="number"
+     >
     </div>
 
-
     <div>
-
-     <label>
-      Calorias estimadas
-     </label>
-
+     <label>Série 2 — carga</label>
      <input
-      id="calorias"
-      type="number">
-
+      id="c${i}2"
+      type="number"
+      step="0.5"
+     >
     </div>
 
+    <div>
+     <label>Série 2 — reps</label>
+     <input
+      id="r${i}2"
+      type="number"
+     >
+    </div>
 
     <div>
-
-     <label>
-      Data
-     </label>
-
+     <label>Série 3 — carga</label>
      <input
-      id="data"
-      type="date"
-      value="${today}">
+      id="c${i}3"
+      type="number"
+      step="0.5"
+     >
+    </div>
 
+    <div>
+     <label>Série 3 — reps</label>
+     <input
+      id="r${i}3"
+      type="number"
+     >
     </div>
 
    </div>
 
-  </div>
+   <br>
 
- `;
+   <label>Observação</label>
 
+   <input
+    id="o${i}"
+    type="text"
+    placeholder="Opcional"
+   >
 
- r.ex.forEach(
-  (e,i)=>{
+  </div>`;
 
-   html+=`
-
-    <div class="card exercise">
-
-     <h3>
-      ${i+1}. ${esc(e.name)}
-     </h3>
-
-
-     <div class="last">
-
-      Última S1:
-
-      ${
-       e.refLoad !== "" &&
-       e.refLoad != null
-
-       ? esc(e.refLoad)+" kg × "+
-         esc(e.refReps || "-")+" reps"
-
-       :"sem registro"
-      }
-
-     </div>
-
-
-     <div class="target">
-
-      <strong>
-       🎯 Meta para o próximo treino
-      </strong>
-
-
-      <div
-       class="grid"
-       style="margin-top:7px">
-
-       <div>
-
-        <label>
-         Carga alvo
-        </label>
-
-        <input
-         id="tL${i}"
-         type="number"
-         step="0.5"
-         value="${esc(e.targetLoad ?? "")}">
-
-       </div>
-
-
-       <div>
-
-        <label>
-         Reps alvo
-        </label>
-
-        <input
-         id="tR${i}"
-         type="number"
-         value="${esc(e.targetReps ?? "")}">
-
-       </div>
-
-      </div>
-
-     </div>
-
-
-     <div class="grid">
-
-      <div>
-
-       <label>
-        Série 1 — carga
-       </label>
-
-       <input
-        id="c${i}1"
-        type="number"
-        step="0.5">
-
-      </div>
-
-
-      <div>
-
-       <label>
-        Série 1 — reps
-       </label>
-
-       <input
-        id="r${i}1"
-        type="number">
-
-      </div>
-
-
-      <div>
-
-       <label>
-        Série 2 — carga
-       </label>
-
-       <input
-        id="c${i}2"
-        type="number"
-        step="0.5">
-
-      </div>
-
-
-      <div>
-
-       <label>
-        Série 2 — reps
-       </label>
-
-       <input
-        id="r${i}2"
-        type="number">
-
-      </div>
-
-
-      <div>
-
-       <label>
-        Série 3 — carga
-       </label>
-
-       <input
-        id="c${i}3"
-        type="number"
-        step="0.5">
-
-      </div>
-
-
-      <div>
-
-       <label>
-        Série 3 — reps
-       </label>
-
-       <input
-        id="r${i}3"
-        type="number">
-
-      </div>
-
-     </div>
-
-
-     <br>
-
-
-     <label>
-      Observação
-     </label>
-
-     <input
-      id="o${i}"
-      type="text"
-      placeholder="Opcional">
-
-    </div>
-
-   `;
-
-  }
- );
-
+ });
 
  html+=`
 
-  <button
-   class="primary"
-   onclick="saveWorkout()">
+ <button
+  class="primary"
+  onclick="saveWorkout()"
+ >
+  ✅ Salvar treino
+ </button>`;
 
-   ✅ Salvar treino
-
-  </button>
-
- `;
-
-
- document.getElementById(
-  "app"
- ).innerHTML=html;
+ app.innerHTML=html;
 
 }
 
-
-/* =====================================================
+/* =========================================================
    SALVAR TREINO
-===================================================== */
+   ========================================================= */
 
 function saveWorkout(){
 
  const p=getProfile();
-
  const r=getRoutine();
 
- if(!p || !r)return;
-
+ if(!p||!r)return;
 
  const entry={
 
   id:uid(),
-
   profileId:p.id,
-
   workout:currentRoutine,
-
-  date:
-   document.getElementById("data").value,
-
-  weight:
-   document.getElementById("peso").value,
-
-  duration:
-   document.getElementById("duracao").value,
-
-  calories:
-   document.getElementById("calorias").value,
-
+  date:document.getElementById("data").value,
+  weight:document.getElementById("peso").value,
+  duration:document.getElementById("duracao").value,
+  calories:document.getElementById("calorias").value,
   exercises:[]
 
  };
 
+ r.ex.forEach((e,i)=>{
 
- r.ex.forEach(
-  (e,i)=>{
+  const sets=[1,2,3].map(n=>({
 
-   const sets=[
-    1,2,3
-   ].map(
-    n=>({
-
-     load:
-      document.getElementById(
-       "c"+i+n
-      ).value,
-
-     reps:
-      document.getElementById(
-       "r"+i+n
-      ).value
-
-    })
-   );
-
-
-   const targetLoad =
+   load:
     document.getElementById(
-     "tL"+i
-    ).value;
+     "c"+i+n
+    ).value,
 
-
-   const targetReps =
+   reps:
     document.getElementById(
-     "tR"+i
-    ).value;
+     "r"+i+n
+    ).value
 
+  }));
 
-   entry.exercises.push({
+  const tl=document.getElementById(
+   "tL"+i
+  ).value;
 
-    name:e.name,
+  const tr=document.getElementById(
+   "tR"+i
+  ).value;
 
-    refBefore:{
+  entry.exercises.push({
 
-     load:e.refLoad ?? "",
+   name:e.name,
 
-     reps:e.refReps ?? ""
+   refBefore:{
+    load:e.refLoad??"",
+    reps:e.refReps??""
+   },
 
-    },
+   sets,
 
-    sets:sets,
+   observation:
+    document.getElementById(
+     "o"+i
+    ).value,
 
-    observation:
-     document.getElementById(
-      "o"+i
-     ).value,
-
-    nextTarget:{
-
-     load:targetLoad,
-
-     reps:targetReps
-
-    }
-
-   });
-
-
-   e.targetLoad=targetLoad;
-
-   e.targetReps=targetReps;
-
-
-   /*
-    A primeira série realizada passa a ser
-    a referência para o próximo treino.
-   */
-
-   if(sets[0].load !== ""){
-
-    e.refLoad=sets[0].load;
-
-    e.refReps=sets[0].reps;
-
+   nextTarget:{
+    load:tl,
+    reps:tr
    }
 
-  }
- );
+  });
 
+  e.targetLoad=tl;
+  e.targetReps=tr;
+
+  if(sets[0].load!==""){
+
+   e.refLoad=sets[0].load;
+   e.refReps=sets[0].reps;
+
+  }
+
+ });
 
  db.history.push(entry);
 
+ if(entry.weight){
+
+  const same=db.evolution.find(
+   x=>
+    x.profileId===p.id&&
+    x.date===entry.date
+  );
+
+  if(same){
+
+   same.weight=entry.weight;
+
+  }else{
+
+   db.evolution.push({
+
+    id:uid(),
+    profileId:p.id,
+    date:entry.date,
+    weight:entry.weight,
+    waist:"",
+    abdomen:"",
+    photos:[]
+
+   });
+
+  }
+
+ }
+
  saveDB();
 
+ app.innerHTML=`
 
- document.getElementById(
-  "app"
- ).innerHTML=`
+ <div class="card success">
 
-  <div class="card success">
+  <h2>Treino salvo! ✅</h2>
 
-   <h2>
-    Treino salvo! ✅
-   </h2>
+  <p>
+   Treino gravado no perfil
+   <strong>${esc(p.name)}</strong>.
+  </p>
 
-   <p>
-    Treino gravado no perfil
-    <strong>
-     ${esc(p.name)}
-    </strong>.
-   </p>
+  <p class="muted">
+   A referência e as metas foram atualizadas.
+  </p>
 
-   <p class="muted">
-    Os campos do treino foram limpos.
-    A referência e as metas foram atualizadas.
-   </p>
+  <button
+   class="primary"
+   onclick="exportWorkout('${entry.id}')"
+  >
+   📤 Exportar treino do dia
+  </button>
 
+  <br><br>
 
-   <button
-    class="primary"
-    onclick="exportWorkout('${entry.id}')">
+  <button
+   class="secondary"
+   onclick="showTraining()"
+  >
+   ↩️ Voltar ao treino
+  </button>
 
-    📤 Exportar treino do dia
-
-   </button>
-
-
-   <br><br>
-
-
-   <button
-    class="secondary"
-    onclick="showTraining()">
-
-    ↩️ Voltar ao treino
-
-   </button>
-
-  </div>
-
- `;
+ </div>`;
 
 }
 
-
-/* =====================================================
-   EXPORTAR TREINO DO DIA
-===================================================== */
+/* =========================================================
+   EXPORTAR TREINO
+   ========================================================= */
 
 function exportWorkout(id){
 
- const entry =
-  db.history.find(
-   x=>x.id===id
-  );
+ const e=db.history.find(
+  x=>x.id===id
+ );
 
- if(!entry)return;
+ if(!e)return;
 
-
- const p=getProfile();
-
-
- const data={
-
-  tipo:"treino-do-dia",
-
-  exportadoEm:
-   new Date().toISOString(),
-
-  perfil:p.name,
-
-  treino:clone(entry)
-
- };
-
+ const p=
+  db.profiles.find(
+   x=>x.id===e.profileId
+  )||
+  getProfile();
 
  downloadJSON(
 
-  data,
+  {
+   tipo:"treino-do-dia",
+   exportadoEm:new Date().toISOString(),
+   perfil:p.name,
+   treino:clone(e)
+  },
 
-  "treino-" +
-  entry.date +
-  "-" +
-  slug(p.name) +
+  "treino-"+
+  e.date+
+  "-"+
+  slug(p.name)+
   ".json"
 
  );
 
 }
 
-
-/* =====================================================
+/* =========================================================
    HISTÓRICO
-===================================================== */
+   ========================================================= */
 
 function showHistory(){
 
  setTab("btnH");
-
  refreshProfiles();
 
  const p=getProfile();
 
- const list =
-  db.history
-   .filter(
-    x=>x.profileId===p.id
-   )
-   .sort(
-    (a,b)=>
-     String(b.date)
-      .localeCompare(
-       String(a.date)
-      )
-   );
-
-
- let html=`
-
-  <div class="card">
-
-   <h2>
-    Histórico — ${esc(p.name)}
-   </h2>
-
-   <p class="muted">
-    Aqui aparecem somente os treinos deste perfil.
-   </p>
-
- `;
-
-
- if(!list.length){
-
-  html+=`
-
-   <p>
-    Nenhum treino registrado ainda.
-   </p>
-
-  `;
-
- }else{
-
-  list.forEach(
-   e=>{
-
-    const r =
-     p.routines[e.workout];
-
-
-    html+=`
-
-     <div class="history-item">
-
-      <strong>
-       ${esc(
-        r?.name ||
-        e.workout
-       )}
-      </strong>
-
-
-      <div class="muted">
-
-       ${esc(e.date)}
-
-       ${
-        e.weight
-         ? " • "+esc(e.weight)+" kg"
-         :""
-       }
-
-       ${
-        e.duration
-         ? " • "+esc(e.duration)+" min"
-         :""
-       }
-
-       ${
-        e.calories
-         ? " • "+esc(e.calories)+" kcal"
-         :""
-       }
-
-      </div>
-
-
-      <br>
-
-
-      <button
-       class="secondary"
-       onclick="viewHistory('${e.id}')">
-
-       Ver detalhes
-
-      </button>
-
-
-      <button
-       class="secondary"
-       onclick="exportWorkout('${e.id}')">
-
-       Exportar
-
-      </button>
-
-     </div>
-
-    `;
-
-   }
+ const list=db.history
+  .filter(
+   x=>x.profileId===p.id
+  )
+  .sort(
+   (a,b)=>
+    String(b.date)
+    .localeCompare(String(a.date))
   );
 
- }
+ let h=`
 
+ <div class="card">
 
- html+=`
+  <h2>
+   Histórico — ${esc(p.name)}
+  </h2>
 
-  </div>
+  <p class="muted">
+   Aqui aparecem somente os treinos deste perfil.
+  </p>`;
 
- `;
+ if(!list.length)
 
+  h+=`
 
- document.getElementById(
-  "app"
- ).innerHTML=html;
+  <div class="empty">
+   Nenhum treino registrado ainda.
+  </div>`;
 
-}
+ list.forEach(e=>{
 
+  const r=p.routines[e.workout];
 
-/* =====================================================
-   DETALHES
-===================================================== */
+  h+=`
 
-function viewHistory(id){
+  <div class="history-item">
 
- const e =
-  db.history.find(
-   x=>x.id===id
-  );
+   <strong>
+    ${esc(r?.name||e.workout)}
+   </strong>
 
- if(!e)return;
+   <div class="muted">
 
+    ${formatDate(e.date)}
 
- const p=getProfile();
+    ${e.weight
+     ?" • "+esc(e.weight)+" kg"
+     :""}
 
+    ${e.duration
+     ?" • "+esc(e.duration)+" min"
+     :""}
 
- let html=`
+    ${e.calories
+     ?" • "+esc(e.calories)+" kcal"
+     :""}
 
-  <div class="card">
+   </div>
+
+   <br>
 
    <button
     class="secondary"
-    onclick="showHistory()">
-
-    ← Voltar
-
+    onclick="viewHistory('${e.id}')"
+   >
+    Ver detalhes
    </button>
-
-
-   <h2>
-    ${esc(e.date)}
-   </h2>
-
-
-   <p>
-    <strong>
-     ${esc(p.name)}
-    </strong>
-   </p>
-
-
-   <p class="muted">
-
-    ${
-     e.weight
-      ? "Peso: "+esc(e.weight)+" kg"
-      :""
-    }
-
-    ${
-     e.duration
-      ? " • Duração: "+esc(e.duration)+" min"
-      :""
-    }
-
-    ${
-     e.calories
-      ? " • Calorias: "+esc(e.calories)+" kcal"
-      :""
-    }
-
-   </p>
-
- `;
-
-
- e.exercises.forEach(
-  (x,i)=>{
-
-   html+=`
-
-    <div class="editor">
-
-     <h3>
-      ${i+1}. ${esc(x.name)}
-     </h3>
-
-
-     <div class="muted">
-
-      Referência anterior:
-
-      ${
-       x.refBefore.load
-        ? esc(x.refBefore.load)+
-          " kg × "+
-          esc(x.refBefore.reps || "-")
-        :"sem registro"
-      }
-
-     </div>
-
-
-     <hr>
-
-
-     <strong>
-      Séries realizadas
-     </strong>
-
-
-     <p>
-
-      ${x.sets.map(
-       (s,n)=>
-        "S"+(n+1)+": "+
-        (
-         s.load
-          ? esc(s.load)+" kg"
-          : "-"
-        )+
-        " × "+
-        (
-         s.reps
-          ? esc(s.reps)
-          : "-"
-        )
-      ).join("<br>")}
-
-     </p>
-
-
-     ${
-      x.observation
-       ? "<p><strong>Obs.:</strong> "+
-         esc(x.observation)+
-         "</p>"
-       :""
-     }
-
-
-     <div class="target">
-
-      <strong>
-       🎯 Meta definida
-      </strong>
-
-      <br>
-
-      ${
-       x.nextTarget.load
-        ? esc(x.nextTarget.load)+" kg"
-        : "-"
-      }
-
-      ×
-
-      ${
-       x.nextTarget.reps
-        ? esc(x.nextTarget.reps)+" reps"
-        : "-"
-      }
-
-     </div>
-
-    </div>
-
-   `;
-
-  }
- );
-
-
- html+=`
 
    <button
-    class="primary"
-    onclick="exportWorkout('${e.id}')">
-
-    📤 Exportar este treino
-
+    class="secondary"
+    onclick="exportWorkout('${e.id}')"
+   >
+    Exportar
    </button>
 
-  </div>
+  </div>`;
 
- `;
+ });
 
+ h+=`
 
- document.getElementById(
-  "app"
- ).innerHTML=html;
+ </div>`;
+
+ app.innerHTML=h;
 
 }
 
+/* =========================================================
+   DETALHE DO HISTÓRICO
+   ========================================================= */
 
-/* =====================================================
-   CONFIGURAÇÕES
-===================================================== */
+function viewHistory(id){
 
-function showConfig(){
+ const e=db.history.find(
+  x=>x.id===id
+ );
 
- setTab("btnC");
+ if(!e)return;
 
+ const p=getProfile();
+
+ let h=`
+
+ <div class="card">
+
+  <button
+   class="secondary"
+   onclick="showHistory()"
+  >
+   ← Voltar
+  </button>
+
+  <h2>
+   ${formatDate(e.date)}
+  </h2>
+
+  <p>
+   <strong>${esc(p.name)}</strong>
+  </p>
+
+  <p class="muted">
+
+   ${e.weight
+    ?"Peso: "+esc(e.weight)+" kg"
+    :""}
+
+   ${e.duration
+    ?" • Duração: "+esc(e.duration)+" min"
+    :""}
+
+   ${e.calories
+    ?" • Calorias: "+esc(e.calories)+" kcal"
+    :""}
+
+  </p>`;
+
+ e.exercises.forEach((x,i)=>{
+
+  h+=`
+
+  <div class="editor">
+
+   <h3>
+    ${i+1}. ${esc(x.name)}
+   </h3>
+
+   <div class="muted">
+
+    Referência anterior:
+
+    ${
+     x.refBefore.load
+      ?esc(x.refBefore.load)+
+       " kg × "+
+       esc(x.refBefore.reps||"-")
+      :"sem registro"
+    }
+
+   </div>
+
+   <hr>
+
+   <strong>
+    Séries realizadas
+   </strong>
+
+   <p>
+
+    ${
+     x.sets.map((s,n)=>
+
+      "S"+(n+1)+": "+
+      (s.load
+       ?esc(s.load)+" kg"
+       :"-")+
+      " × "+
+      (s.reps
+       ?esc(s.reps)
+       :"-")
+
+     ).join("<br>")
+    }
+
+   </p>
+
+   ${
+    x.observation
+
+     ?`
+      <p>
+       <strong>Obs.:</strong>
+       ${esc(x.observation)}
+      </p>
+      `
+
+     :""
+   }
+
+   <div class="target">
+
+    <strong>
+     🎯 Meta definida
+    </strong>
+
+    <br>
+
+    ${
+     x.nextTarget.load
+      ?esc(x.nextTarget.load)+" kg"
+      :"-"
+    }
+
+    ×
+
+    ${
+     x.nextTarget.reps
+      ?esc(x.nextTarget.reps)+" reps"
+      :"-"
+    }
+
+   </div>
+
+  </div>`;
+
+ });
+
+ h+=`
+
+  <button
+   class="primary"
+   onclick="exportWorkout('${e.id}')"
+  >
+   📤 Exportar este treino
+  </button>
+
+ </div>`;
+
+ app.innerHTML=h;
+
+}
+
+/* =========================================================
+   EVOLUÇÃO
+   ========================================================= */
+
+function showEvolution(){
+
+ setTab("btnE");
  refreshProfiles();
 
  const p=getProfile();
 
+ const records=db.evolution
+  .filter(
+   x=>x.profileId===p.id
+  )
+  .sort(
+   (a,b)=>
+    String(b.date)
+    .localeCompare(String(a.date))
+  );
 
- let html=`
+ let h=`
 
-  <div class="card">
+ <div class="card">
 
-   <h2>
-    Perfis
-   </h2>
+  <div class="section-title">
 
+   <div>
 
-   <p class="muted">
-    Cada perfil possui suas próprias fichas
-    e seu próprio histórico.
-   </p>
+    <h2 style="margin:0">
+     Evolução — ${esc(p.name)}
+    </h2>
 
-
-   <div class="row">
-
-    <input
-     id="newProfile"
-     placeholder="Nome do novo perfil">
-
-
-    <button
-     class="secondary"
-     onclick="addProfile()">
-
-     + Perfil
-
-    </button>
+    <p class="muted">
+     Registre peso, medidas e fotos por data.
+    </p>
 
    </div>
 
   </div>
 
+  <button
+   class="primary"
+   onclick="addEvolutionRecord()"
+  >
+   ➕ Novo registro
+  </button>
 
-  <div class="card">
+ </div>`;
 
-   <h2>
-    Fichas de ${esc(p.name)}
-   </h2>
+ if(!records.length)
 
- `;
+  h+=`
 
+  <div class="card empty">
+   Nenhum registro de evolução ainda.
+  </div>`;
 
- Object.keys(
-  p.routines || {}
- ).forEach(
-  id=>{
+ h+=`
 
-   const r=p.routines[id];
+ <div class="card">
 
+  <div class="timeline">`;
 
-   html+=`
+ records.forEach(x=>{
 
-    <div class="editor">
+  h+=`
 
-     <strong>
-      ${esc(r.name)}
-     </strong>
+  <div class="timeline-item">
 
+   <div class="timeline-date">
+    ${formatDate(x.date)}
+   </div>
 
-     <div class="move">
+   <div style="margin-top:6px">
 
-      <button
-       class="secondary"
-       onclick="editRoutine('${esc(id)}')">
+    <span class="badge">
 
-       ✏️ Renomear
+     ⚖️
 
-      </button>
+     ${
+      x.weight
+       ?esc(x.weight)+" kg"
+       :"Peso não informado"
+     }
 
+    </span>
 
-      <button
-       class="danger"
-       onclick="deleteRoutine('${esc(id)}')">
+   </div>
 
-       🗑️ Excluir
+   <div class="metric-grid">
 
-      </button>
+    ${
+     x.waist
 
-     </div>
+      ?`
 
+       <div class="metric">
 
-     <hr>
+        <strong>Cintura</strong>
 
+        ${esc(x.waist)} cm
 
-     <strong>
-      Exercícios
-     </strong>
+       </div>`
 
-   `;
-
-
-   r.ex.forEach(
-    (e,i)=>{
-
-     html+=`
-
-      <div class="editor">
-
-       <div class="row">
-
-        <input
-         id="ename_${id}_${i}"
-         value="${esc(e.name)}">
-
-
-        <button
-         class="secondary"
-         onclick="renameExercise('${esc(id)}',${i})">
-
-         Salvar
-
-        </button>
-
-       </div>
-
-
-       <div class="move">
-
-        <button
-         class="secondary"
-         onclick="moveExercise('${esc(id)}',${i},-1)">
-
-         ↑
-
-        </button>
-
-
-        <button
-         class="secondary"
-         onclick="moveExercise('${esc(id)}',${i},1)">
-
-         ↓
-
-        </button>
-
-
-        <button
-         class="danger"
-         onclick="removeExercise('${esc(id)}',${i})">
-
-         🗑️
-
-        </button>
-
-       </div>
-
-      </div>
-
-     `;
-
+      :""
     }
-   );
 
+    ${
+     x.abdomen
 
-   html+=`
+      ?`
 
-     <div class="row">
+       <div class="metric">
 
-      <input
-       id="newex_${id}"
-       placeholder="Novo exercício">
+        <strong>Abdômen</strong>
 
+        ${esc(x.abdomen)} cm
 
-      <button
-       class="secondary"
-       onclick="addExercise('${esc(id)}')">
+       </div>`
 
-       + Exercício
+      :""
+    }
 
-      </button>
+   </div>
 
-     </div>
+   ${
+    x.photos?.length
 
+     ?`
 
-    </div>
+      <div class="photo-grid">
 
-   `;
+       ${
+        x.photos.map(ph=>
 
-  }
- );
+         `<img
+          src="${esc(ph.data||ph)}"
+          alt="Evolução ${formatDate(x.date)}"
+         >`
 
+        ).join("")
+       }
 
- html+=`
+      </div>`
 
-   <button
-    class="primary"
-    onclick="addRoutine()">
+     :""
+   }
 
-    + Criar nova ficha
-
-   </button>
-
-  </div>
-
-
-  <div class="card">
-
-   <h2>
-    Backup
-   </h2>
-
-
-   <p class="muted">
-
-    O backup completo inclui todos os perfis,
-    fichas e históricos.
-
-   </p>
-
-
-   <button
-    class="primary"
-    onclick="exportAll()">
-
-    📦 Exportar backup completo
-
-   </button>
-
-
-   <br><br>
-
+   <br>
 
    <button
     class="secondary"
-    onclick="exportProfile()">
+    onclick="viewEvolution('${x.id}')"
+   >
+    Ver registro completo
+   </button>
 
-    👤 Exportar perfil atual
+   <button
+    class="secondary"
+    onclick="addEvolutionPhotos('${x.id}')"
+   >
+    📷 Adicionar fotos
+   </button>
 
+  </div>`;
+
+ });
+
+ h+=`
+
+  </div>
+
+ </div>`;
+
+ app.innerHTML=h;
+
+}
+
+/* =========================================================
+   NOVO REGISTRO DE EVOLUÇÃO
+   ========================================================= */
+
+function addEvolutionRecord(){
+
+ const date=prompt(
+  "Data do registro (AAAA-MM-DD):",
+  today()
+ );
+
+ if(!date)return;
+
+ const weight=prompt(
+  "Peso (kg):",
+  ""
+ );
+
+ if(weight===null)return;
+
+ const waist=prompt(
+  "Cintura (cm):",
+  ""
+ );
+
+ if(waist===null)return;
+
+ const abdomen=prompt(
+  "Abdômen (cm):",
+  ""
+ );
+
+ if(abdomen===null)return;
+
+ const record={
+
+  id:uid(),
+  profileId:getProfile().id,
+  date,
+  weight,
+  waist,
+  abdomen,
+  photos:[]
+
+ };
+
+ db.evolution.push(record);
+
+ saveDB();
+
+ showEvolution();
+
+}
+
+/* =========================================================
+   ADICIONAR FOTOS
+   ========================================================= */
+
+function addEvolutionPhotos(id){
+
+ const record=db.evolution.find(
+  x=>x.id===id
+ );
+
+ if(!record)return;
+
+ const currentPhotos=
+  Array.isArray(record.photos)
+   ?record.photos
+   :[];
+
+ if(currentPhotos.length>=3){
+
+  alert(
+   "Este registro já possui 3 fotos."
+  );
+
+  return;
+
+ }
+
+ const remaining=
+  3-currentPhotos.length;
+
+ const input=document.createElement(
+  "input"
+ );
+
+ input.type="file";
+ input.accept="image/*";
+ input.multiple=true;
+
+ input.onchange=()=>{
+
+  const files=[
+   ...input.files
+  ].slice(0,remaining);
+
+  if(!files.length){
+
+   if(input.parentNode)
+    input.remove();
+
+   return;
+
+  }
+
+  const newPhotos=[];
+
+  let left=files.length;
+
+  files.forEach(file=>{
+
+   const rd=new FileReader();
+
+   rd.onload=()=>{
+
+    newPhotos.push({
+
+     name:file.name,
+     data:rd.result
+
+    });
+
+    left--;
+
+    if(left===0){
+
+     record.photos=[
+
+      ...currentPhotos,
+      ...newPhotos
+
+     ].slice(0,3);
+
+     saveDB();
+
+     if(input.parentNode)
+      input.remove();
+
+     showEvolution();
+
+    }
+
+   };
+
+   rd.onerror=()=>{
+
+    left--;
+
+    if(left===0){
+
+     if(input.parentNode)
+      input.remove();
+
+     showEvolution();
+
+    }
+
+   };
+
+   rd.readAsDataURL(file);
+
+  });
+
+ };
+
+ document.body.appendChild(input);
+
+ input.click();
+
+}
+
+/* =========================================================
+   DETALHE DA EVOLUÇÃO
+   ========================================================= */
+
+function viewEvolution(id){
+
+ const x=db.evolution.find(
+  r=>r.id===id
+ );
+
+ if(!x)return;
+
+ let h=`
+
+ <div class="card">
+
+  <button
+   class="secondary"
+   onclick="showEvolution()"
+  >
+   ← Voltar
+  </button>
+
+  <h2>
+   ${formatDate(x.date)}
+  </h2>
+
+  <div class="metric-grid">
+
+   <div class="metric">
+
+    <strong>Peso</strong>
+
+    ${
+     x.weight
+      ?esc(x.weight)+" kg"
+      :"-"
+    }
+
+   </div>
+
+   <div class="metric">
+
+    <strong>Cintura</strong>
+
+    ${
+     x.waist
+      ?esc(x.waist)+" cm"
+      :"-"
+    }
+
+   </div>
+
+   <div class="metric">
+
+    <strong>Abdômen</strong>
+
+    ${
+     x.abdomen
+      ?esc(x.abdomen)+" cm"
+      :"-"
+    }
+
+   </div>
+
+  </div>`;
+
+ if(x.photos?.length){
+
+  h+=`
+
+  <div class="photo-grid">
+
+   ${
+    x.photos.map(ph=>
+
+     `<img
+      src="${esc(ph.data||ph)}"
+      alt="Foto de evolução"
+     >`
+
+    ).join("")
+   }
+
+  </div>`;
+
+ }
+
+ h+=`
+
+  <br>
+
+  <button
+   class="primary"
+   onclick="addEvolutionPhotos('${x.id}')"
+  >
+   📷 Adicionar fotos
+  </button>
+
+ </div>`;
+
+ app.innerHTML=h;
+
+}
+
+/* =========================================================
+   NOTIFICAÇÕES DO DESENVOLVEDOR
+   ========================================================= */
+
+function getPendingDeveloperNotifications(){
+
+ return (db.developerNotifications||[])
+  .filter(x=>x&&!x.resolved);
+
+}
+
+function addDeveloperNotification(ex){
+
+ if(!ex)return;
+
+ if(!Array.isArray(db.developerNotifications))
+  db.developerNotifications=[];
+
+ const exists=db.developerNotifications.some(x=>
+  !x.resolved&&
+  x.exerciseId===ex.id
+ );
+
+ if(exists)return;
+
+ db.developerNotifications.unshift({
+  id:uid(),
+  type:"novo_exercicio",
+  exerciseId:ex.id,
+  name:ex.name,
+  category:ex.category,
+  createdAt:new Date().toISOString(),
+  resolved:false
+ });
+
+}
+
+function resolveDeveloperNotification(id){
+
+ const n=(db.developerNotifications||[])
+  .find(x=>x.id===id);
+
+ if(!n)return;
+
+ n.resolved=true;
+ saveDB();
+ showConfig();
+
+}
+
+function renderDeveloperNotifications(){
+
+ const list=getPendingDeveloperNotifications();
+
+ if(!list.length)return"";
+
+ return `
+ <div class="developer-notifications">
+
+  <div class="section-title">
+   <div>
+    <h2 style="margin:0">🔔 Avisos do desenvolvedor</h2>
+    <div class="small">${list.length} exercício${list.length===1?"":"s"} aguardando animação.</div>
+   </div>
+  </div>
+
+  ${list.map(n=>`
+   <div class="developer-notification">
+    <div>
+     <div class="developer-notification-title">
+      ${esc(n.name)}
+     </div>
+     <div class="developer-notification-meta">
+      ${esc(n.category||"Sem categoria")} • novo exercício sem animação
+     </div>
+    </div>
+
+    <button
+     class="secondary"
+     onclick="resolveDeveloperNotification('${esc(n.id)}')"
+    >
+     ✓ Resolvido
+    </button>
+   </div>
+  `).join("")}
+
+ </div>`;
+
+}
+
+/* =========================================================
+   CONFIGURAÇÕES
+   ========================================================= */
+
+function showConfig(){
+
+ setTab("btnC");
+ refreshProfiles();
+
+ const p=getProfile();
+
+ if(!p)return;
+
+ let h=renderDeveloperNotifications();
+
+ h+=`
+
+ <div class="card">
+
+  <h2>Perfis</h2>
+
+  <p class="muted">
+
+   O perfil padrão é salvo neste dispositivo.
+   Você pode trocar de perfil quando quiser.
+
+  </p>
+
+  <div class="row">
+
+   <input
+    id="newProfile"
+    placeholder="Nome do novo perfil"
+   >
+
+   <button
+    class="secondary"
+    onclick="addProfile()"
+   >
+    + Perfil
    </button>
 
   </div>
 
- `;
+  <br>
 
+  <label>Sexo do perfil</label>
 
- document.getElementById(
-  "app"
- ).innerHTML=html;
+  <select
+   id="profileGender"
+   onchange="saveProfileGender(this.value)"
+  >
+   <option value="masculino" ${p.gender!=="feminino"?"selected":""}>Masculino</option>
+   <option value="feminino" ${p.gender==="feminino"?"selected":""}>Feminino</option>
+  </select>
+
+  <br><br>
+
+  <label>Foto do perfil</label>
+
+  <input
+   type="file"
+   id="profilePhotoInput"
+   accept="image/*"
+  >
+
+  <br><br>
+
+  <button
+   class="secondary"
+   onclick="saveProfilePhoto()"
+  >
+   📷 Salvar foto
+  </button>
+
+ </div>`;
+
+ h+=`
+
+ <div class="card">
+
+  <h2>
+   Fichas de ${esc(p.name)}
+  </h2>
+
+  <button
+   class="primary"
+   onclick="importRoutine()"
+  >
+   📥 Importar ficha
+  </button>`;
+
+ Object.keys(p.routines||{})
+ .forEach(id=>{
+
+  const r=p.routines[id];
+
+  h+=`
+
+  <div class="editor">
+
+   <strong>
+    ${esc(r.name)}
+   </strong>
+
+   <div class="move">
+
+    <button
+     class="secondary"
+     onclick="editRoutine('${esc(id)}')"
+    >
+     ✏️ Renomear
+    </button>
+
+    <button
+     class="danger"
+     onclick="deleteRoutine('${esc(id)}')"
+    >
+     🗑️ Excluir
+    </button>
+
+   </div>
+
+   <hr>
+
+   <strong>
+    Exercícios
+   </strong>`;
+
+  r.ex.forEach((e,i)=>{
+
+   h+=`
+
+   <div class="editor">
+
+    <div class="row">
+
+     <input
+      id="ename_${id}_${i}"
+      value="${esc(e.name)}"
+     >
+
+     <button
+      class="secondary"
+      onclick="renameExercise('${esc(id)}',${i})"
+     >
+      Salvar
+     </button>
+
+    </div>
+
+    <div
+     class="small"
+     style="margin-top:7px"
+    >
+
+     ${esc(e.category||"Sem categoria")}
+
+     ${mediaHtml(e)
+      ?"• mídia disponível"
+      :""}
+
+    </div>
+
+    <div class="move">
+
+     <button
+      class="secondary"
+      onclick="moveExercise('${esc(id)}',${i},-1)"
+     >
+      ↑
+     </button>
+
+     <button
+      class="secondary"
+      onclick="moveExercise('${esc(id)}',${i},1)"
+     >
+      ↓
+     </button>
+
+     <button
+      class="danger"
+      onclick="removeExercise('${esc(id)}',${i})"
+     >
+      🗑️
+     </button>
+
+    </div>
+
+   </div>`;
+
+  });
+
+  h+=`
+
+   <div class="row">
+
+    <select
+     class="exerciseSelect"
+     id="exerciseCategory_${id}"
+     onchange="updateExerciseOptions('${esc(id)}')"
+    >
+
+     <option value="">
+      Categorias
+     </option>
+
+     ${
+      db.exerciseCategories.map(c=>
+
+       `<option value="${esc(c)}">
+        ${esc(c)}
+       </option>`
+
+      ).join("")
+     }
+
+    </select>
+
+    <select
+     class="exerciseSelect"
+     id="exerciseSelect_${id}"
+    >
+
+     <option value="">
+      Exercícios
+     </option>
+
+    </select>
+
+    <button
+     class="secondary"
+     onclick="addExercise('${esc(id)}')"
+    >
+     + Exercício
+    </button>
+
+   </div>
+
+  </div>`;
+
+ });
+
+ h+=`
+
+  <button
+   class="primary"
+   onclick="addRoutine()"
+  >
+   + Criar nova ficha
+  </button>
+
+ </div>`;
+
+ h+=`
+
+ <div class="card">
+
+  <div class="section-title">
+
+   <h2>
+    📚 Biblioteca de exercícios
+   </h2>
+
+   <button
+    class="secondary"
+    onclick="addLibraryExercise()"
+   >
+    ➕ Novo
+   </button>
+
+  </div>
+
+  <p class="muted">
+
+   A biblioteca é central.
+   O exercício, sua categoria e sua mídia
+   podem ser reutilizados em qualquer perfil e ficha.
+
+  </p>
+
+  ${renderExerciseLibrary()}
+
+ </div>`;
+
+ h+=`
+
+ <div class="card">
+
+  <h2>Categorias</h2>
+
+  <p class="muted">
+
+   Crie novas categorias para organizar
+   a biblioteca.
+
+  </p>
+
+  <button
+   class="secondary"
+   onclick="addCategory()"
+  >
+   ➕ Nova categoria
+  </button>
+
+  <div style="margin-top:10px">
+
+   ${
+    db.exerciseCategories.map(c=>
+
+     `<span
+      class="badge"
+      style="margin:3px"
+     >
+      ${esc(c)}
+     </span>`
+
+    ).join("")
+   }
+
+  </div>
+
+ </div>`;
+
+ h+=`
+
+ <div class="card">
+
+  <h2>Backup</h2>
+
+  <p class="muted">
+
+   O backup completo inclui perfis,
+   fichas, biblioteca, evolução e históricos.
+
+  </p>
+
+  <button
+   class="primary"
+   onclick="exportAll()"
+  >
+   📦 Exportar backup completo
+  </button>
+
+  <br><br>
+
+  <button
+   class="secondary"
+   onclick="exportProfile()"
+  >
+   👤 Exportar perfil atual
+  </button>
+
+ </div>`;
+
+ app.innerHTML=h;
 
 }
 
+/* =========================================================
+   BIBLIOTECA
+   ========================================================= */
 
-/* =====================================================
-   NOVO PERFIL
-===================================================== */
+function renderExerciseLibrary(){
+
+ const lib=db.exerciseLibrary||[];
+
+ if(!lib.length)
+
+  return`
+
+  <div class="empty">
+   Nenhum exercício cadastrado ainda.
+  </div>`;
+
+ return lib.map(ex=>
+
+  `<div class="editor">
+
+   <div class="section-title">
+
+    <div>
+
+     <strong>
+      ${esc(ex.name)}
+     </strong>
+
+     <div class="small">
+      ${esc(ex.category)}
+     </div>
+
+    </div>
+
+    <button
+     class="danger"
+     onclick="removeLibraryExercise('${esc(ex.id)}')"
+    >
+     🗑️
+    </button>
+
+   </div>
+
+   ${mediaHtml(ex)||
+    `<div
+     class="small"
+     style="margin-top:8px"
+    >
+     Nenhuma mídia cadastrada.
+    </div>`
+   }
+
+   <div class="small library-media-status">
+    ${
+     exerciseAnimationFile(ex.name,getProfile()?.gender)
+      ? "🎞️ Animação disponível"
+      : ((ex.image||ex.video||(ex.images||[]).length)
+        ? "🖼️ Mídia cadastrada"
+        : "⏳ Aguardando animação do desenvolvedor")
+    }
+   </div>
+
+   <div class="move">
+
+    <button
+     class="secondary"
+     onclick="editLibraryMedia('${esc(ex.id)}')"
+    >
+     🖼️/▶️ Mídia
+    </button>
+
+   </div>
+
+  </div>`
+
+ ).join("");
+
+}
+
+function addLibraryExercise(){
+
+ const name=prompt(
+  "Digite o nome do exercício:"
+ );
+
+ if(!name?.trim())return;
+
+ const categories=
+  db.exerciseCategories||
+  DEFAULT_CATEGORIES;
+
+ const list=categories
+  .map(
+   (c,i)=>`${i+1} - ${c}`
+  )
+  .join("\n");
+
+ const choice=prompt(
+
+  "Escolha a categoria:\n\n"+
+  list+
+  "\n\nDigite o número."
+
+ );
+
+ if(!choice)return;
+
+ let cat=
+  categories[
+   Number(choice)-1
+  ];
+
+ if(!cat){
+
+  const nc=prompt(
+   "Digite o nome da nova categoria:"
+  );
+
+  if(!nc?.trim())return;
+
+  cat=nc.trim();
+
+  if(!categories.some(
+   c=>
+    c.toLowerCase()===
+    cat.toLowerCase()
+  )){
+
+   db.exerciseCategories.push(cat);
+
+  }
+
+ }
+
+ /*
+  * O cadastro do exercício não pede instruções nem URLs de mídia.
+  * A animação é responsabilidade do desenvolvedor e será vinculada
+  * posteriormente à biblioteca de animações do aplicativo.
+  */
+ const newExercise={
+
+  id:uid(),
+  name:name.trim(),
+  category:cat,
+  image:"",
+  images:[],
+  video:""
+
+ };
+
+ db.exerciseLibrary.push(newExercise);
+
+ if(!EXERCISE_ANIMATIONS[String(newExercise.name||"").trim().toLowerCase()])
+  addDeveloperNotification(newExercise);
+
+ saveDB();
+ showConfig();
+
+}
+
+function editLibraryMedia(id){
+
+ const ex=db.exerciseLibrary.find(
+  x=>x.id===id
+ );
+
+ if(!ex)return;
+
+ const image=prompt(
+  "URL da imagem principal:",
+  ex.image||""
+ );
+
+ if(image===null)return;
+
+ const video=prompt(
+  "URL do vídeo de execução:",
+  ex.video||""
+ );
+
+ if(video===null)return;
+
+ const extra=prompt(
+  "URLs de outras imagens, separadas por |:",
+  (ex.images||[]).join("|")
+ );
+
+ if(extra===null)return;
+
+ ex.image=image.trim();
+
+ ex.video=video.trim();
+
+ ex.images=extra
+  .split("|")
+  .map(x=>x.trim())
+  .filter(Boolean)
+  .slice(0,3);
+
+ db.profiles.forEach(p=>
+
+  Object.values(p.routines||{})
+  .forEach(r=>
+
+   r.ex.forEach(e=>{
+
+    if(
+     e.name===ex.name&&
+     e.category===ex.category
+    ){
+
+     e.image=ex.image;
+     e.images=clone(ex.images);
+     e.video=ex.video;
+
+    }
+
+   })
+
+  )
+
+ );
+
+ saveDB();
+ showConfig();
+
+}
+
+function removeLibraryExercise(id){
+
+ if(!confirm(
+
+  "Excluir este exercício da biblioteca? As cópias já adicionadas às fichas serão mantidas."
+
+ ))return;
+
+ db.exerciseLibrary=
+  db.exerciseLibrary.filter(
+   x=>x.id!==id
+  );
+
+ saveDB();
+ showConfig();
+
+}
+
+/* =========================================================
+   CATEGORIAS
+   ========================================================= */
+
+function addCategory(){
+
+ const n=prompt(
+  "Nome da nova categoria:"
+ );
+
+ if(!n?.trim())return;
+
+ if(db.exerciseCategories.some(
+  x=>
+   x.toLowerCase()===
+   n.trim().toLowerCase()
+ )){
+
+  alert(
+   "Essa categoria já existe."
+  );
+
+  return;
+
+ }
+
+ db.exerciseCategories.push(
+  n.trim()
+ );
+
+ saveDB();
+ showConfig();
+
+}
+
+/* =========================================================
+   EXERCÍCIOS NAS FICHAS
+   ========================================================= */
+
+function updateExerciseOptions(id){
+
+ const c=document.getElementById(
+  "exerciseCategory_"+id
+ );
+
+ const s=document.getElementById(
+  "exerciseSelect_"+id
+ );
+
+ if(!c||!s)return;
+
+ const list=(db.exerciseLibrary||[])
+  .filter(
+   x=>x.category===c.value
+  );
+
+ s.innerHTML=
+
+  `<option value="">
+   Selecione o exercício
+  </option>`+
+
+  list.map(x=>
+
+   `<option value="${esc(x.id)}">
+    ${esc(x.name)}
+   </option>`
+
+  ).join("");
+
+}
+
+function addExercise(id){
+
+ const p=getProfile();
+
+ const r=p?.routines?.[id];
+
+ const s=document.getElementById(
+  "exerciseSelect_"+id
+ );
+
+ if(!r||!s?.value){
+
+  alert(
+   "Selecione um exercício."
+  );
+
+  return;
+
+ }
+
+ const ex=db.exerciseLibrary.find(
+  x=>x.id===s.value
+ );
+
+ if(!ex)return;
+
+ r.ex.push({
+
+  name:ex.name,
+  category:ex.category,
+  image:ex.image||"",
+  images:clone(ex.images||[]),
+  video:ex.video||"",
+  refLoad:"",
+  refReps:"",
+  targetLoad:"",
+  targetReps:""
+
+ });
+
+ saveDB();
+ showConfig();
+
+}
+
+function renameExercise(id,index){
+
+ const r=getProfile().routines[id];
+
+ const v=document.getElementById(
+  "ename_"+id+"_"+index
+ )?.value.trim();
+
+ if(!r||!r.ex[index]||!v)return;
+
+ r.ex[index].name=v;
+
+ saveDB();
+ showConfig();
+
+}
+
+function removeExercise(id,index){
+
+ const r=getProfile().routines[id];
+
+ if(
+  !r||
+  !confirm(
+   "Excluir este exercício da ficha?"
+  )
+ )return;
+
+ r.ex.splice(index,1);
+
+ saveDB();
+ showConfig();
+
+}
+
+function moveExercise(id,index,d){
+
+ const r=getProfile().routines[id];
+
+ const n=index+d;
+
+ if(
+  !r||
+  n<0||
+  n>=r.ex.length
+ )return;
+
+ [
+  r.ex[index],
+  r.ex[n]
+ ]=[
+  r.ex[n],
+  r.ex[index]
+ ];
+
+ saveDB();
+ showConfig();
+
+}
+
+/* =========================================================
+   PERFIS
+   ========================================================= */
 
 function addProfile(){
 
- const input =
-  document.getElementById(
-   "newProfile"
-  );
+ const input=document.getElementById(
+  "newProfile"
+ );
 
+ const n=input?.value.trim();
 
- const name =
-  input.value.trim();
-
-
- if(!name){
+ if(!n){
 
   alert(
    "Digite o nome do perfil."
@@ -2063,366 +3986,315 @@ function addProfile(){
 
  }
 
+ let id=slug(n);
 
- let id =
-  slug(name);
-
-
- if(
-  db.profiles.some(
-   p=>p.id===id
-  )
- ){
-
-  id += "-" + Date.now();
-
- }
-
+ if(db.profiles.some(
+  p=>p.id===id
+ ))
+  id+="-"+Date.now();
 
  db.profiles.push({
 
-  id:id,
-
-  name:name,
-
+  id,
+  name:n,
+  photo:"",
+  gender:"masculino",
   routines:{}
 
  });
 
-
  db.currentProfile=id;
+
+ storageSet(
+  "treinoRafaelDefaultProfile",
+  id
+ );
 
  currentRoutine=null;
 
  saveDB();
-
  showConfig();
 
 }
 
-
-/* =====================================================
-   NOVA FICHA
-===================================================== */
-
-function addRoutine(){
-
- const name =
-  prompt(
-   "Nome da nova ficha:"
-  );
-
-
- if(
-  !name ||
-  !name.trim()
- )return;
-
+function saveProfileGender(gender){
 
  const p=getProfile();
+ if(!p)return;
 
-
- let id=slug(name);
-
-
- if(p.routines[id]){
-
-  id += "-" + Date.now();
-
- }
-
-
- p.routines[id]={
-
-  id:id,
-
-  name:name.trim(),
-
-  ex:[]
-
- };
-
-
- currentRoutine=id;
+ p.gender=gender==="feminino"?"feminino":"masculino";
 
  saveDB();
-
  showConfig();
-
 }
 
+function saveProfilePhoto(){
 
-/* =====================================================
-   RENOMEAR FICHA
-===================================================== */
+ const f=document.getElementById(
+  "profilePhotoInput"
+ )?.files?.[0];
 
-function editRoutine(id){
-
- const p=getProfile();
-
- const r=p.routines[id];
-
- if(!r)return;
-
-
- const name =
-  prompt(
-   "Novo nome da ficha:",
-   r.name
-  );
-
-
- if(
-  !name ||
-  !name.trim()
- )return;
-
-
- r.name=name.trim();
-
- saveDB();
-
- showConfig();
-
-}
-
-
-/* =====================================================
-   EXCLUIR FICHA
-===================================================== */
-
-function deleteRoutine(id){
-
- const p=getProfile();
-
-
- if(
-  !confirm(
-   "Excluir esta ficha?"
-  )
- )return;
-
-
- delete p.routines[id];
-
-
- currentRoutine =
-  Object.keys(
-   p.routines
-  )[0] || null;
-
-
- saveDB();
-
- showConfig();
-
-}
-
-
-/* =====================================================
-   ADICIONAR EXERCÍCIO
-===================================================== */
-
-function addExercise(id){
-
- const p=getProfile();
-
- const r=p.routines[id];
-
- if(!r)return;
-
-
- const input =
-  document.getElementById(
-   "newex_"+id
-  );
-
-
- const name =
-  input.value.trim();
-
-
- if(!name){
+ if(!f){
 
   alert(
-   "Digite o nome do exercício."
+   "Selecione uma foto primeiro."
   );
 
   return;
 
  }
 
+ const rd=new FileReader();
 
- r.ex.push({
+ rd.onload=()=>{
 
-  name:name,
+  getProfile().photo=rd.result;
 
-  refLoad:"",
+  saveDB();
+  showConfig();
 
-  refReps:"",
+ };
 
-  targetLoad:"",
-
-  targetReps:""
-
- });
-
-
- saveDB();
-
- showConfig();
+ rd.readAsDataURL(f);
 
 }
 
+/* =========================================================
+   FICHAS
+   ========================================================= */
 
-/* =====================================================
-   RENOMEAR EXERCÍCIO
-===================================================== */
+function addRoutine(){
 
-function renameExercise(id,index){
-
- const p=getProfile();
-
- const r=p.routines[id];
-
- if(
-  !r ||
-  !r.ex[index]
- )return;
-
-
- const input =
-  document.getElementById(
-   "ename_"+id+"_"+index
-  );
-
-
- const name =
-  input.value.trim();
-
-
- if(!name)return;
-
-
- r.ex[index].name=name;
-
- saveDB();
-
- showConfig();
-
-}
-
-
-/* =====================================================
-   REMOVER EXERCÍCIO
-===================================================== */
-
-function removeExercise(id,index){
-
- const p=getProfile();
-
- const r=p.routines[id];
-
- if(!r)return;
-
-
- if(
-  !confirm(
-   "Excluir este exercício?"
-  )
- )return;
-
-
- r.ex.splice(
-  index,
-  1
+ const n=prompt(
+  "Nome da nova ficha:"
  );
 
-
- saveDB();
-
- showConfig();
-
-}
-
-
-/* =====================================================
-   REORDENAR EXERCÍCIO
-===================================================== */
-
-function moveExercise(id,index,direction){
+ if(!n?.trim())return;
 
  const p=getProfile();
 
- const r=p.routines[id];
+ let id=slug(n);
 
- if(!r)return;
+ if(p.routines[id])
+  id+="-"+Date.now();
 
+ p.routines[id]={
 
- const newIndex =
-  index + direction;
+  id,
+  name:n.trim(),
+  ex:[]
 
+ };
 
- if(
-  newIndex < 0 ||
-  newIndex >= r.ex.length
- )return;
-
-
- const temp =
-  r.ex[index];
-
-
- r.ex[index] =
-  r.ex[newIndex];
-
-
- r.ex[newIndex] =
-  temp;
-
+ currentRoutine=id;
 
  saveDB();
-
  showConfig();
 
 }
 
+/* =========================================================
+   IMPORTAR FICHA
+   ========================================================= */
 
-/* =====================================================
-   DOWNLOAD JSON
-===================================================== */
+function importRoutine(){
+
+ const current=getProfile();
+
+ const others=db.profiles.filter(
+  p=>p.id!==current.id
+ );
+
+ if(!others.length){
+
+  alert(
+   "Não há outro perfil para importar uma ficha."
+  );
+
+  return;
+
+ }
+
+ const pc=prompt(
+
+  "De qual perfil você quer importar?\n\n"+
+
+  others
+   .map(
+    (p,i)=>`${i+1} - ${p.name}`
+   )
+   .join("\n")
+
+ );
+
+ if(!pc)return;
+
+ const source=
+  others[
+   Number(pc)-1
+  ];
+
+ if(!source){
+
+  alert(
+   "Perfil inválido."
+  );
+
+  return;
+
+ }
+
+ const routines=
+  Object.values(
+   source.routines||{}
+  );
+
+ if(!routines.length){
+
+  alert(
+   "Esse perfil ainda não possui fichas."
+  );
+
+  return;
+
+ }
+
+ const rc=prompt(
+
+  "Qual ficha você deseja importar?\n\n"+
+
+  routines
+   .map(
+    (r,i)=>`${i+1} - ${r.name}`
+   )
+   .join("\n")
+
+ );
+
+ if(!rc)return;
+
+ const sr=
+  routines[
+   Number(rc)-1
+  ];
+
+ if(!sr){
+
+  alert(
+   "Ficha inválida."
+  );
+
+  return;
+
+ }
+
+ let name=
+  sr.name+" (importada)";
+
+ let id=slug(name);
+
+ if(current.routines[id])
+  id+="_"+Date.now();
+
+ current.routines[id]={
+
+  id,
+  name,
+
+  ex:(sr.ex||[]).map(e=>({
+
+   name:e.name||"",
+   category:e.category||"",
+   image:e.image||"",
+   images:clone(e.images||[]),
+   video:e.video||"",
+   targetLoad:"",
+   targetReps:"",
+   refLoad:"",
+   refReps:""
+
+  }))
+
+ };
+
+ currentRoutine=id;
+
+ saveDB();
+ showConfig();
+
+ alert(
+  "Ficha importada com sucesso. As cargas, repetições e referências começaram em branco."
+ );
+
+}
+
+function editRoutine(id){
+
+ const r=getProfile().routines[id];
+
+ if(!r)return;
+
+ const n=prompt(
+  "Novo nome da ficha:",
+  r.name||""
+ );
+
+ if(!n?.trim())return;
+
+ r.name=n.trim();
+
+ saveDB();
+ showConfig();
+
+}
+
+function deleteRoutine(id){
+
+ const p=getProfile();
+
+ if(!confirm(
+  "Excluir esta ficha?"
+ ))return;
+
+ delete p.routines[id];
+
+ currentRoutine=
+  Object.keys(p.routines)[0]||null;
+
+ saveDB();
+ showConfig();
+
+}
+
+/* =========================================================
+   BACKUP
+   ========================================================= */
 
 function downloadJSON(data,filename){
 
- const blob =
-  new Blob(
-   [
-    JSON.stringify(
-     data,
-     null,
-     2
-    )
-   ],
-   {
-    type:"application/json"
-   }
-  );
+ const blob=new Blob(
 
+  [
+   JSON.stringify(
+    data,
+    null,
+    2
+   )
+  ],
 
- const url =
-  URL.createObjectURL(
-   blob
-  );
+  {
+   type:"application/json"
+  }
 
+ );
 
- const a =
-  document.createElement(
-   "a"
-  );
+ const url=
+  URL.createObjectURL(blob);
 
+ const a=
+  document.createElement("a");
 
  a.href=url;
-
  a.download=filename;
 
  document.body.appendChild(a);
@@ -2431,73 +4303,64 @@ function downloadJSON(data,filename){
 
  a.remove();
 
- URL.revokeObjectURL(url);
+ setTimeout(
+  ()=>URL.revokeObjectURL(url),
+  1000
+ );
 
 }
-
-
-/* =====================================================
-   EXPORTAR PERFIL
-===================================================== */
 
 function exportProfile(){
 
  const p=getProfile();
 
-
- const data={
-
-  tipo:"perfil",
-
-  exportadoEm:
-   new Date().toISOString(),
-
-  profile:
-   clone(p),
-
-  history:
-   db.history.filter(
-    x=>x.profileId===p.id
-   )
-
- };
-
+ if(!p)return;
 
  downloadJSON(
 
-  data,
+  {
 
-  "backup-" +
-  slug(p.name) +
+   tipo:"perfil",
+
+   exportadoEm:
+    new Date().toISOString(),
+
+   profile:clone(p),
+
+   history:
+    db.history.filter(
+     x=>x.profileId===p.id
+    ),
+
+   evolution:
+    db.evolution.filter(
+     x=>x.profileId===p.id
+    )
+
+  },
+
+  "backup-"+
+  slug(p.name)+
   ".json"
 
  );
 
 }
 
-
-/* =====================================================
-   EXPORTAR TUDO
-===================================================== */
-
 function exportAll(){
-
- const data={
-
-  tipo:"backup-completo",
-
-  exportadoEm:
-   new Date().toISOString(),
-
-  database:
-   clone(db)
-
- };
-
 
  downloadJSON(
 
-  data,
+  {
+
+   tipo:"backup-completo",
+
+   exportadoEm:
+    new Date().toISOString(),
+
+   database:clone(db)
+
+  },
 
   "backup-treinos-completo.json"
 
@@ -2505,63 +4368,57 @@ function exportAll(){
 
 }
 
-
-/* =====================================================
-   BOTÕES
-===================================================== */
-
-document
- .getElementById("btnT")
- .onclick =
-  showTraining;
-
-
-document
- .getElementById("btnH")
- .onclick =
-  showHistory;
-
-
-document
- .getElementById("btnC")
- .onclick =
-  showConfig;
-
-
-document
- .getElementById("profileSelect")
- .onchange =
-  function(){
-
-   changeProfile(
-    this.value
-   );
-
-  };
-
-
-/* =====================================================
+/* =========================================================
    INICIALIZAÇÃO
-===================================================== */
+   ========================================================= */
+
+const app=
+ document.getElementById("app");
+
+document.getElementById(
+ "btnHome"
+).onclick=showHome;
+
+document.getElementById(
+ "btnT"
+).onclick=showTraining;
+
+document.getElementById(
+ "btnH"
+).onclick=showHistory;
+
+document.getElementById(
+ "btnE"
+).onclick=showEvolution;
+
+document.getElementById(
+ "btnC"
+).onclick=showConfig;
+
+document.getElementById(
+ "profileSelect"
+).onchange=function(){
+
+ changeProfile(
+  this.value
+ );
+
+};
 
 refreshProfiles();
 
+const initial=getProfile();
 
-const initialProfile =
- getProfile();
+if(initial){
 
-
-if(initialProfile){
-
- currentRoutine =
+ currentRoutine=
   Object.keys(
-   initialProfile.routines || {}
-  )[0] || null;
+   initial.routines||{}
+  )[0]||null;
 
 }
 
-
-showTraining();
+showHome();
 
 </script>
 
