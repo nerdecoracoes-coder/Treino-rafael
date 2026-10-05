@@ -1089,6 +1089,14 @@ function createInitialDB(){
     photo:"",
     gender:"feminino",
     routines:getNatielleRoutines()
+   },
+
+   {
+    id:"rafaelle",
+    name:"Rafaelle",
+    photo:"",
+    gender:"feminino",
+    routines:getNatielleRoutines()
    }
 
   ],
@@ -1349,6 +1357,36 @@ function readDB(){
 
  }
 
+ /* PERFIL DA RAFAELLE */
+
+ let rafaelle=data.profiles.find(
+  p=>p.id==="rafaelle"
+ );
+
+ if(!rafaelle){
+
+  rafaelle={
+
+   id:"rafaelle",
+   name:"Rafaelle",
+   photo:"",
+   gender:"feminino",
+   routines:getNatielleRoutines()
+
+  };
+
+  data.profiles.push(rafaelle);
+
+ }else{
+
+  rafaelle.name="Rafaelle";
+  rafaelle.gender="feminino";
+
+  if(!rafaelle.routines||typeof rafaelle.routines!=="object")
+   rafaelle.routines=getNatielleRoutines();
+
+ }
+
  /* SUBSTITUIÇÃO DAS FICHAS PADRÃO */
 
  if(data.routineSetVersion!==ROUTINE_SET_VERSION){
@@ -1362,6 +1400,43 @@ function readDB(){
   data.routineSetVersion=ROUTINE_SET_VERSION;
 
  }
+
+ /*
+  * FICHAS FAMILIARES
+  * Erick recebe uma cópia das fichas de Rafael.
+  * Rafaelle recebe uma cópia das fichas de Natielle.
+  * A cópia é estrutural: não compartilha o mesmo objeto em memória.
+  */
+
+ const rafaelProfile=data.profiles.find(
+  p=>p.id==="rafael"
+ );
+
+ const erickProfile=data.profiles.find(
+  p=>String(p.name||"").trim().toLowerCase()==="erick"
+ );
+
+ if(erickProfile&&rafaelProfile){
+
+  erickProfile.routines=clone(rafaelProfile.routines);
+
+  if(erickProfile.gender!=="feminino"&&erickProfile.gender!=="masculino")
+   erickProfile.gender="masculino";
+
+ }
+
+
+ const natielleProfile=data.profiles.find(
+  p=>p.id==="natielle"
+ );
+
+ if(rafaelle&&natielleProfile){
+
+  rafaelle.routines=clone(natielleProfile.routines);
+
+ }
+
+ data.routineFamilySetVersion="2026-10-05-v1";
 
  const savedDefault=
   storageGet("treinoRafaelDefaultProfile");
