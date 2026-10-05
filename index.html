@@ -1092,6 +1092,14 @@ function createInitialDB(){
    },
 
    {
+    id:"erick",
+    name:"Erick",
+    photo:"",
+    gender:"masculino",
+    routines:getRafaelRoutines()
+   },
+
+   {
     id:"rafaelle",
     name:"Rafaelle",
     photo:"",
@@ -1357,6 +1365,34 @@ function readDB(){
 
  }
 
+ /* PERFIL DO ERICK */
+
+ let erickProfile=data.profiles.find(
+  p=>p.id==="erick" || String(p.name||"").trim().toLowerCase()==="erick"
+ );
+
+ if(!erickProfile){
+
+  erickProfile={
+
+   id:"erick",
+   name:"Erick",
+   photo:"",
+   gender:"masculino",
+   routines:getRafaelRoutines()
+
+  };
+
+  data.profiles.push(erickProfile);
+
+ }else{
+
+  erickProfile.id="erick";
+  erickProfile.name="Erick";
+  erickProfile.gender="masculino";
+
+ }
+
  /* PERFIL DA RAFAELLE */
 
  let rafaelle=data.profiles.find(
@@ -1412,8 +1448,8 @@ function readDB(){
   p=>p.id==="rafael"
  );
 
- const erickProfile=data.profiles.find(
-  p=>String(p.name||"").trim().toLowerCase()==="erick"
+ erickProfile=data.profiles.find(
+  p=>p.id==="erick"
  );
 
  if(erickProfile&&rafaelProfile){
