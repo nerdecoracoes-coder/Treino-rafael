@@ -1225,8 +1225,14 @@ function readDB(){
 
  data.exerciseLibrary=data.exerciseLibrary.map(x=>{
 
-  if(String(x.name||"").trim().toLowerCase()==="agachamento")
+  const n=String(x.name||"").trim().toLowerCase();
+
+  if(n==="agachamento")
    x.name="Agachamento no Smith";
+  else if(n==="puxada aberta na frente")
+   x.name="Puxada aberta na polia";
+  else if(n==="remada neutra máquina")
+   x.name="Remada neutra na máquina";
 
   return x;
 
@@ -1260,8 +1266,14 @@ function readDB(){
     :[];
 
    r.ex.forEach(ex=>{
-    if(String(ex.name||"").trim().toLowerCase()==="agachamento")
-     ex.name="Agachamento no Smith";
+    const n=String(ex.name||"").trim().toLowerCase();
+
+   if(n==="agachamento")
+    ex.name="Agachamento no Smith";
+   else if(n==="puxada aberta na frente")
+    ex.name="Puxada aberta na polia";
+   else if(n==="remada neutra máquina")
+    ex.name="Remada neutra na máquina";
    });
 
   });
@@ -1688,7 +1700,9 @@ function routineButtons(){
 const EXERCISE_ANIMATIONS={
  "agachamento no smith":null,
  "puxada aberta na polia":"puxada_aberta_na_frente",
+ "puxada aberta na frente":"puxada_aberta_na_frente",
  "remada neutra máquina":"remada_neutra_na_maquina",
+ "remada neutra na máquina":"remada_neutra_na_maquina",
  "leg press máquina":"leg_press_45",
  "bíceps máquina":"biceps_maquina",
  "cadeira extensora":"cadeira_extensora",
