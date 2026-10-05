@@ -143,8 +143,35 @@ main{
 
 .exercise h3{
  margin:0 0 6px;
- font-size:17px
+ font-size:19px;
+ line-height:1.25
 }
+
+.exercise-complete{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ margin:6px auto 10px;
+ font-size:13px;
+ color:var(--muted);
+ cursor:pointer;
+ user-select:none
+}
+
+.exercise-complete input{
+ width:21px;
+ height:21px;
+ margin:0;
+ accent-color:#22c55e;
+ cursor:pointer
+}
+
+.exercise-complete.done{
+ color:#22c55e;
+ font-weight:bold
+}
+
 
 .muted,.small{
  color:var(--muted);
@@ -275,9 +302,9 @@ hr{
 .exercise-animation-card{
  position:relative;
  display:block;
- width:120px;
- height:90px;
- margin:10px auto 0;
+ width:100px;
+ height:72px;
+ margin:6px auto 0;
  border:1px solid var(--line);
  border-radius:10px;
  overflow:hidden;
@@ -300,8 +327,8 @@ hr{
  left:50%;
  top:50%;
  transform:translate(-50%,-50%);
- width:34px;
- height:34px;
+ width:30px;
+ height:30px;
  border-radius:50%;
  display:flex;
  align-items:center;
@@ -1443,6 +1470,25 @@ function mediaHtml(e){
    TREINO
    ========================================================= */
 
+let completedExercisesSession={};
+let completedExercisesSessionKey="";
+
+function toggleExerciseDone(index){
+
+ const key=String(index);
+ completedExercisesSession[key]=!completedExercisesSession[key];
+
+ const checkbox=document.getElementById("done"+index);
+ const row=document.getElementById("doneRow"+index);
+
+ if(checkbox)
+  checkbox.checked=!!completedExercisesSession[key];
+
+ if(row)
+  row.classList.toggle("done",!!completedExercisesSession[key]);
+
+}
+
 function showTraining(){
 
  setTab("btnT");
@@ -1462,6 +1508,13 @@ function showTraining(){
 
   return;
 
+ }
+
+ const sessionKey=p.id+"::"+(currentRoutine||"");
+
+ if(sessionKey!==completedExercisesSessionKey){
+  completedExercisesSession={};
+  completedExercisesSessionKey=sessionKey;
  }
 
  if(
@@ -1560,6 +1613,19 @@ function showTraining(){
    </h3>
 
    ${mediaHtml(e)}
+
+   <label
+    id="doneRow${i}"
+    class="exercise-complete${completedExercisesSession[String(i)]?" done":""}"
+   >
+    <input
+     id="done${i}"
+     type="checkbox"
+     ${completedExercisesSession[String(i)]?"checked":""}
+     onchange="toggleExerciseDone(${i})"
+    >
+    <span>Exercício concluído</span>
+   </label>
 
    <div class="last">
 
