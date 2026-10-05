@@ -908,177 +908,162 @@ function normalizeExercise(e){
    TREINO PADRÃO A
    ========================================================= */
 
+const ROUTINE_SET_VERSION="2026-10-05-v3";
+
+function routineExercise(name){
+ return normalizeExercise({name});
+}
+
+/* =========================================================
+   FICHAS PADRÃO — RAFAEL
+   ========================================================= */
+
 const defaultA={
-
  id:"A",
-
- name:"Treino A — Costas, Bíceps e Pernas",
-
+ name:"Treino A",
  ex:[
-
-  {
-   name:"Agachamento no Smith",
-   refLoad:18,
-   refReps:20,
-   targetLoad:18,
-   targetReps:20
-  },
-
-  {
-   name:"Puxada aberta na polia",
-   refLoad:52,
-   refReps:15,
-   targetLoad:52,
-   targetReps:15
-  },
-
-  {
-   name:"Remada neutra na máquina",
-   refLoad:59,
-   refReps:15,
-   targetLoad:59,
-   targetReps:15
-  },
-
-  {
-   name:"Leg press máquina",
-   refLoad:117,
-   refReps:20,
-   targetLoad:117,
-   targetReps:20
-  },
-
-  {
-   name:"Bíceps máquina",
-   refLoad:36,
-   refReps:15,
-   targetLoad:36,
-   targetReps:15
-  },
-
-  {
-   name:"Cadeira extensora",
-   refLoad:59,
-   refReps:15,
-   targetLoad:59,
-   targetReps:15
-  },
-
-  {
-   name:"Rosca martelo com halteres",
-   refLoad:10,
-   refReps:12,
-   targetLoad:10,
-   targetReps:12
-  },
-
-  {
-   name:"Supino inclinado com halteres",
-   refLoad:"",
-   refReps:"",
-   targetLoad:"",
-   targetReps:""
-  },
-
-  {
-   name:"Encolhimento com halteres",
-   refLoad:"",
-   refReps:"",
-   targetLoad:"",
-   targetReps:""
-  }
-
+  routineExercise("Puxada aberta na polia"),
+  routineExercise("Remada neutra na máquina"),
+  routineExercise("Remada baixa triângulo"),
+  routineExercise("Crucifixo inverso na polia"),
+  routineExercise("Bíceps na máquina"),
+  routineExercise("Rosca martelo com halteres"),
+  routineExercise("Encolhimento com halteres")
  ]
+};
 
+const defaultB={
+ id:"B",
+ name:"Treino B",
+ ex:[
+  routineExercise("Crucifixo na máquina"),
+  routineExercise("Supino inclinado com halteres"),
+  routineExercise("Supino reto na máquina"),
+  routineExercise("Desenvolvimento máquina"),
+  routineExercise("Elevação lateral com halteres"),
+  routineExercise("Tríceps unilateral na polia"),
+  routineExercise("Tríceps francês unilateral na polia")
+ ]
+};
+
+const defaultC={
+ id:"C",
+ name:"Treino C",
+ ex:[
+  routineExercise("Agachamento no Smith"),
+  routineExercise("Leg press horizontal"),
+  routineExercise("Cadeira extensora"),
+  routineExercise("Cadeira flexora"),
+  routineExercise("Panturrilha no leg press"),
+  routineExercise("Cadeira adutora")
+ ]
+};
+
+const defaultD={
+ id:"D",
+ name:"Treino D",
+ ex:[
+  routineExercise("Crucifixo na máquina"),
+  routineExercise("Supino inclinado com halteres"),
+  routineExercise("Puxada alta neutra"),
+  routineExercise("Remada neutra na máquina"),
+  routineExercise("Elevação lateral com halteres"),
+  routineExercise("Crucifixo inverso na polia"),
+  routineExercise("Rosca alternada com halteres")
+ ]
 };
 
 /* =========================================================
-   TREINO PADRÃO B
+   FICHAS PADRÃO — NATIELLE
    ========================================================= */
 
-const defaultB={
-
- id:"B",
-
- name:"Treino B — Peito, Tríceps, Ombros e Posterior",
-
+const natielleA={
+ id:"A",
+ name:"Treino A",
  ex:[
-
-  {
-   name:"Crucifixo máquina",
-   refLoad:100,
-   refReps:15,
-   targetLoad:100,
-   targetReps:15
-  },
-
-  {
-   name:"Supino reto máquina",
-   refLoad:50,
-   refReps:15,
-   targetLoad:50,
-   targetReps:15
-  },
-
-  {
-   name:"Lombar na máquina",
-   refLoad:59,
-   refReps:20,
-   targetLoad:59,
-   targetReps:20
-  },
-
-  {
-   name:"Cadeira flexora",
-   refLoad:36,
-   refReps:20,
-   targetLoad:36,
-   targetReps:20
-  },
-
-  {
-   name:"Desenvolvimento máquina",
-   refLoad:27,
-   refReps:15,
-   targetLoad:27,
-   targetReps:15
-  },
-
-  {
-   name:"Cadeira abdutora",
-   refLoad:45,
-   refReps:"",
-   targetLoad:45,
-   targetReps:""
-  },
-
-  {
-   name:"Tríceps polia corda",
-   refLoad:20,
-   refReps:15,
-   targetLoad:20,
-   targetReps:15
-  },
-
-  {
-   name:"Tríceps francês corda",
-   refLoad:17,
-   refReps:12,
-   targetLoad:17,
-   targetReps:12
-  },
-
-  {
-   name:"Elevação lateral",
-   refLoad:5,
-   refReps:12,
-   targetLoad:5,
-   targetReps:12
-  }
-
+  routineExercise("Agachamento no Smith"),
+  routineExercise("Leg press horizontal"),
+  routineExercise("Cadeira extensora"),
+  routineExercise("Afundo com halteres"),
+  routineExercise("Elevação pélvica na máquina"),
+  routineExercise("Cadeira adutora")
  ]
-
 };
+
+const natielleB={
+ id:"B",
+ name:"Treino B",
+ ex:[
+  routineExercise("Stiff com barra"),
+  routineExercise("Mesa flexora"),
+  routineExercise("Cadeira flexora"),
+  routineExercise("RDL na polia baixa"),
+  routineExercise("Cadeira abdutora"),
+  routineExercise("Abdução com cabo"),
+  routineExercise("Panturrilha no leg press")
+ ]
+};
+
+const natielleC={
+ id:"C",
+ name:"Treino C",
+ ex:[
+  routineExercise("Puxada alta neutra"),
+  routineExercise("Remada baixa"),
+  routineExercise("Remada alta"),
+  routineExercise("Supino inclinado na máquina"),
+  routineExercise("Crucifixo na máquina"),
+  routineExercise("Desenvolvimento máquina"),
+  routineExercise("Elevação lateral")
+ ]
+};
+
+const natielleD={
+ id:"D",
+ name:"Treino D",
+ ex:[
+  routineExercise("Afundo no Smith"),
+  routineExercise("Leg press horizontal"),
+  routineExercise("Cadeira extensora"),
+  routineExercise("Flexão de joelho no cabo"),
+  routineExercise("Elevação pélvica"),
+  routineExercise("Cadeira adutora"),
+  routineExercise("Cadeira abdutora"),
+  routineExercise("Gêmeos no leg press")
+ ]
+};
+
+const natielleE={
+ id:"E",
+ name:"Treino E",
+ ex:[
+  routineExercise("Desenvolvimento com halteres"),
+  routineExercise("Elevação lateral com halteres"),
+  routineExercise("Crucifixo inverso na polia"),
+  routineExercise("Remada articulada"),
+  routineExercise("Supino reto na máquina"),
+  routineExercise("Tríceps testa na polia")
+ ]
+};
+
+function getRafaelRoutines(){
+ return {
+  A:clone(defaultA),
+  B:clone(defaultB),
+  C:clone(defaultC),
+  D:clone(defaultD)
+ };
+}
+
+function getNatielleRoutines(){
+ return {
+  A:clone(natielleA),
+  B:clone(natielleB),
+  C:clone(natielleC),
+  D:clone(natielleD),
+  E:clone(natielleE)
+ };
+}
 
 /* =========================================================
    BANCO INICIAL
@@ -1095,10 +1080,7 @@ function createInitialDB(){
     name:"Rafael",
     photo:"",
     gender:"masculino",
-    routines:{
-     A:clone(defaultA),
-     B:clone(defaultB)
-    }
+    routines:getRafaelRoutines()
    },
 
    {
@@ -1106,7 +1088,7 @@ function createInitialDB(){
     name:"Natielle",
     photo:"",
     gender:"feminino",
-    routines:{}
+    routines:getNatielleRoutines()
    }
 
   ],
@@ -1206,6 +1188,74 @@ function readDB(){
 
   }));
 
+ /* EXERCÍCIOS DAS FICHAS PADRÃO
+  * Mantém a biblioteca centralizada e acrescenta apenas
+  * os exercícios que ainda não estiverem cadastrados.
+  */
+ const standardLibraryExercises={
+  "Puxada aberta na polia":"Costas",
+  "Remada neutra na máquina":"Costas",
+  "Remada baixa triângulo":"Costas",
+  "Crucifixo inverso na polia":"Ombros",
+  "Bíceps na máquina":"Bíceps",
+  "Rosca martelo com halteres":"Bíceps",
+  "Encolhimento com halteres":"Ombros",
+  "Crucifixo na máquina":"Peito",
+  "Supino inclinado com halteres":"Peito",
+  "Supino reto na máquina":"Peito",
+  "Desenvolvimento máquina":"Ombros",
+  "Elevação lateral com halteres":"Ombros",
+  "Tríceps unilateral na polia":"Tríceps",
+  "Tríceps francês unilateral na polia":"Tríceps",
+  "Agachamento no Smith":"Quadríceps",
+  "Leg press horizontal":"Quadríceps",
+  "Cadeira extensora":"Quadríceps",
+  "Cadeira flexora":"Posteriores",
+  "Panturrilha no leg press":"Panturrilha",
+  "Cadeira adutora":"Adutores",
+  "Rosca alternada com halteres":"Bíceps",
+  "Puxada alta neutra":"Costas",
+  "Stiff com barra":"Posteriores",
+  "Mesa flexora":"Posteriores",
+  "RDL na polia baixa":"Posteriores",
+  "Cadeira abdutora":"Abdutores",
+  "Abdução com cabo":"Abdutores",
+  "Remada baixa":"Costas",
+  "Remada alta":"Ombros",
+  "Supino inclinado na máquina":"Peito",
+  "Elevação lateral":"Ombros",
+  "Afundo no Smith":"Quadríceps",
+  "Flexão de joelho no cabo":"Posteriores",
+  "Elevação pélvica":"Glúteos",
+  "Gêmeos no leg press":"Panturrilha",
+  "Desenvolvimento com halteres":"Ombros",
+  "Remada articulada":"Costas",
+  "Tríceps testa polia":"Tríceps",
+  "Afundo com halteres":"Quadríceps",
+  "Elevação pélvica na máquina":"Glúteos"
+ };
+
+ const libraryNames=new Set(
+  data.exerciseLibrary
+   .map(x=>String(x.name||"").trim().toLowerCase())
+ );
+
+ Object.entries(standardLibraryExercises).forEach(([name,category])=>{
+  const key=name.toLowerCase();
+  if(libraryNames.has(key))return;
+
+  data.exerciseLibrary.push({
+   id:uid(),
+   name,
+   category,
+   image:"",
+   images:[],
+   video:""
+  });
+
+  libraryNames.add(key);
+ });
+
  if(!Array.isArray(data.developerNotifications))
   data.developerNotifications=[];
 
@@ -1270,10 +1320,7 @@ function readDB(){
    photo:"",
    gender:"masculino",
 
-   routines:{
-    A:clone(defaultA),
-    B:clone(defaultB)
-   }
+   routines:getRafaelRoutines()
 
   };
 
@@ -1281,11 +1328,8 @@ function readDB(){
 
  }else{
 
-  if(!rafael.routines.A)
-   rafael.routines.A=clone(defaultA);
-
-  if(!rafael.routines.B)
-   rafael.routines.B=clone(defaultB);
+  if(!rafael.routines||typeof rafael.routines!=="object")
+   rafael.routines={};
 
  }
 
@@ -1299,9 +1343,23 @@ function readDB(){
    name:"Natielle",
    photo:"",
    gender:"feminino",
-   routines:{}
+   routines:getNatielleRoutines()
 
   });
+
+ }
+
+ /* SUBSTITUIÇÃO DAS FICHAS PADRÃO */
+
+ if(data.routineSetVersion!==ROUTINE_SET_VERSION){
+
+  const r=data.profiles.find(p=>p.id==="rafael");
+  const n=data.profiles.find(p=>p.id==="natielle");
+
+  if(r) r.routines=getRafaelRoutines();
+  if(n) n.routines=getNatielleRoutines();
+
+  data.routineSetVersion=ROUTINE_SET_VERSION;
 
  }
 
