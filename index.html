@@ -272,6 +272,16 @@ hr{
  background:#080b10
 }
 
+.exercise-animation{
+ display:block;
+ width:100%;
+ max-width:420px;
+ margin:10px auto 0;
+ border-radius:12px;
+ border:1px solid var(--line);
+ background:#080b10
+}
+
 .video-link{
  display:block;
  text-align:center;
@@ -773,6 +783,7 @@ function createInitialDB(){
     id:"rafael",
     name:"Rafael",
     photo:"",
+    gender:"masculino",
     routines:{
      A:clone(defaultA),
      B:clone(defaultB)
@@ -783,6 +794,7 @@ function createInitialDB(){
     id:"natielle",
     name:"Natielle",
     photo:"",
+    gender:"feminino",
     routines:{}
    }
 
@@ -883,6 +895,13 @@ function readDB(){
 
  data.profiles.forEach(p=>{
 
+  if(p.id==="natielle")
+   p.gender="feminino";
+  else if(p.id==="rafael"&&!p.gender)
+   p.gender="masculino";
+  else if(p.gender!=="feminino"&&p.gender!=="masculino")
+   p.gender="masculino";
+
   if(!p.routines||typeof p.routines!=="object")
    p.routines={};
 
@@ -916,6 +935,7 @@ function readDB(){
    id:"rafael",
    name:"Rafael",
    photo:"",
+   gender:"masculino",
 
    routines:{
     A:clone(defaultA),
@@ -945,6 +965,7 @@ function readDB(){
    id:"natielle",
    name:"Natielle",
    photo:"",
+   gender:"feminino",
    routines:{}
 
   });
@@ -1184,10 +1205,51 @@ function routineButtons(){
 }
 
 /* =========================================================
+   ANIMAÇÕES DOS EXERCÍCIOS
+   ========================================================= */
+
+const EXERCISE_ANIMATIONS={
+ "agachamento":"agachamento_barra_livre",
+ "puxada aberta na polia":"puxada_aberta_na_frente",
+ "remada neutra máquina":"remada_neutra_na_maquina",
+ "leg press máquina":"leg_press_45",
+ "bíceps máquina":"biceps_maquina",
+ "cadeira extensora":"cadeira_extensora",
+ "rosca martelo com halteres":"rosca_martelo_halteres",
+ "supino inclinado com halteres":"supino_inclinado_halteres",
+ "encolhimento com halteres":"encolhimento_halteres",
+ "crucifixo máquina":null,
+ "supino reto máquina":"supino_maquina",
+ "lombar na máquina":null,
+ "cadeira flexora":"cadeira_flexora_corrigida",
+ "desenvolvimento máquina":"desenvolvimento_maquina",
+ "cadeira abdutora":"cadeira_abdutora",
+ "tríceps polia corda":"triceps_polia_corda",
+ "tríceps francês corda":"triceps_frances_corda",
+ "elevação lateral":"elevacao_lateral"
+};
+
+const ANIMATION_BASE_URL=
+ "https://raw.githubusercontent.com/nerdecoracoes-coder/Treino-rafael/Desenvolvimento/";
+
+function exerciseAnimationFile(name,gender){
+ const key=String(name||"").trim().toLowerCase();
+ const base=EXERCISE_ANIMATIONS[key];
+ if(!base)return "";
+ const sex=gender==="feminino"?"feminino":"masculino";
+ return ANIMATION_BASE_URL+base+"_"+sex+"_loop.gif";
+}
+
+/* =========================================================
    MÍDIA
    ========================================================= */
 
 function mediaHtml(e){
+
+ const animation=exerciseAnimationFile(
+  e.name,
+  getProfile()?.gender
+ );
 
  const imgs=[];
 
@@ -1202,6 +1264,17 @@ function mediaHtml(e){
  });
 
  let h="";
+
+ if(animation){
+  h+=`
+  <img
+   class="exercise-animation"
+   src="${esc(animation)}"
+   alt="Execução de ${esc(e.name)}"
+   loading="lazy"
+   onerror="this.style.display='none'"
+  >`;
+ }
 
  if(imgs.length){
 
@@ -2444,6 +2517,18 @@ function showConfig(){
 
   <br>
 
+  <label>Sexo do perfil</label>
+
+  <select
+   id="profileGender"
+   onchange="saveProfileGender(this.value)"
+  >
+   <option value="masculino" ${p.gender!=="feminino"?"selected":""}>Masculino</option>
+   <option value="feminino" ${p.gender==="feminino"?"selected":""}>Feminino</option>
+  </select>
+
+  <br><br>
+
   <label>Foto do perfil</label>
 
   <input
@@ -3205,6 +3290,7 @@ function addProfile(){
   id,
   name:n,
   photo:"",
+  gender:"masculino",
   routines:{}
 
  });
@@ -3221,6 +3307,17 @@ function addProfile(){
  saveDB();
  showConfig();
 
+}
+
+function saveProfileGender(gender){
+
+ const p=getProfile();
+ if(!p)return;
+
+ p.gender=gender==="feminino"?"feminino":"masculino";
+
+ saveDB();
+ showConfig();
 }
 
 function saveProfilePhoto(){
