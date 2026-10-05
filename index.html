@@ -327,6 +327,47 @@ hr{
  font-size:12px
 }
 
+ .developer-notifications{
+ border:1px solid #7c3aed;
+ background:rgba(124,58,237,.10);
+ border-radius:12px;
+ padding:14px;
+ margin-bottom:14px
+}
+
+.developer-notification{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ padding:10px 0;
+ border-bottom:1px solid var(--line)
+}
+
+.developer-notification:last-child{
+ border-bottom:0;
+ padding-bottom:0
+}
+
+.developer-notification:first-child{
+ padding-top:0
+}
+
+.developer-notification-title{
+ font-weight:bold
+}
+
+.developer-notification-meta{
+ margin-top:4px;
+ color:var(--muted);
+ font-size:12px
+}
+
+.library-media-status{
+ margin-top:8px;
+ color:var(--muted)
+}
+
 .media-grid{
  display:grid;
  grid-template-columns:repeat(2,1fr);
@@ -979,7 +1020,9 @@ function createInitialDB(){
   exerciseCategories:
    clone(DEFAULT_CATEGORIES),
 
-  exerciseLibrary:[]
+  exerciseLibrary:[],
+
+  developerNotifications:[]
 
  };
 
@@ -1060,6 +1103,21 @@ function readDB(){
     :[],
    video:x.video||""
 
+  }));
+
+ if(!Array.isArray(data.developerNotifications))
+  data.developerNotifications=[];
+
+ data.developerNotifications=data.developerNotifications
+  .filter(Boolean)
+  .map(x=>({
+   id:x.id||uid(),
+   type:x.type||"novo_exercicio",
+   exerciseId:x.exerciseId||"",
+   name:x.name||"",
+   category:x.category||"",
+   createdAt:x.createdAt||new Date().toISOString(),
+   resolved:!!x.resolved
   }));
 
  data.profiles.forEach(p=>{
@@ -2734,6 +2792,96 @@ function viewEvolution(id){
 }
 
 /* =========================================================
+   NOTIFICAÇÕES DO DESENVOLVEDOR
+   ========================================================= */
+
+function getPendingDeveloperNotifications(){
+
+ return (db.developerNotifications||[])
+  .filter(x=>x&&!x.resolved);
+
+}
+
+function addDeveloperNotification(ex){
+
+ if(!ex)return;
+
+ if(!Array.isArray(db.developerNotifications))
+  db.developerNotifications=[];
+
+ const exists=db.developerNotifications.some(x=>
+  !x.resolved&&
+  x.exerciseId===ex.id
+ );
+
+ if(exists)return;
+
+ db.developerNotifications.unshift({
+  id:uid(),
+  type:"novo_exercicio",
+  exerciseId:ex.id,
+  name:ex.name,
+  category:ex.category,
+  createdAt:new Date().toISOString(),
+  resolved:false
+ });
+
+}
+
+function resolveDeveloperNotification(id){
+
+ const n=(db.developerNotifications||[])
+  .find(x=>x.id===id);
+
+ if(!n)return;
+
+ n.resolved=true;
+ saveDB();
+ showConfig();
+
+}
+
+function renderDeveloperNotifications(){
+
+ const list=getPendingDeveloperNotifications();
+
+ if(!list.length)return"";
+
+ return `
+ <div class="developer-notifications">
+
+  <div class="section-title">
+   <div>
+    <h2 style="margin:0">🔔 Avisos do desenvolvedor</h2>
+    <div class="small">${list.length} exercício${list.length===1?"":"s"} aguardando animação.</div>
+   </div>
+  </div>
+
+  ${list.map(n=>`
+   <div class="developer-notification">
+    <div>
+     <div class="developer-notification-title">
+      ${esc(n.name)}
+     </div>
+     <div class="developer-notification-meta">
+      ${esc(n.category||"Sem categoria")} • novo exercício sem animação
+     </div>
+    </div>
+
+    <button
+     class="secondary"
+     onclick="resolveDeveloperNotification('${esc(n.id)}')"
+    >
+     ✓ Resolvido
+    </button>
+   </div>
+  `).join("")}
+
+ </div>`;
+
+}
+
+/* =========================================================
    CONFIGURAÇÕES
    ========================================================= */
 
@@ -2746,7 +2894,9 @@ function showConfig(){
 
  if(!p)return;
 
- let h=`
+ let h=renderDeveloperNotifications();
+
+ h+=`
 
  <div class="card">
 
@@ -3133,9 +3283,7 @@ function renderExerciseLibrary(){
 
    </div>
 
-   ${
-    mediaHtml(ex)||
-
+   ${mediaHtml(ex)||
     `<div
      class="small"
      style="margin-top:8px"
@@ -3143,6 +3291,16 @@ function renderExerciseLibrary(){
      Nenhuma mídia cadastrada.
     </div>`
    }
+
+   <div class="small library-media-status">
+    ${
+     exerciseAnimationFile(ex.name,getProfile()?.gender)
+      ? "🎞️ Animação disponível"
+      : ((ex.image||ex.video||(ex.images||[]).length)
+        ? "🖼️ Mídia cadastrada"
+        : "⏳ Aguardando animação do desenvolvedor")
+    }
+   </div>
 
    <div class="move">
 
@@ -3216,37 +3374,26 @@ function addLibraryExercise(){
 
  }
 
- const image=prompt(
-  "URL da imagem principal (opcional):",
-  ""
- )||"";
-
- const video=prompt(
-  "URL do vídeo de execução (opcional):",
-  ""
- )||"";
-
- const extra=prompt(
-  "URLs de outras imagens, separadas por | (opcional):",
-  ""
- )||"";
-
- const images=extra
-  .split("|")
-  .map(x=>x.trim())
-  .filter(Boolean)
-  .slice(0,3);
-
- db.exerciseLibrary.push({
+ /*
+  * O cadastro do exercício não pede instruções nem URLs de mídia.
+  * A animação é responsabilidade do desenvolvedor e será vinculada
+  * posteriormente à biblioteca de animações do aplicativo.
+  */
+ const newExercise={
 
   id:uid(),
   name:name.trim(),
   category:cat,
-  image,
-  images,
-  video
+  image:"",
+  images:[],
+  video:""
 
- });
+ };
+
+ db.exerciseLibrary.push(newExercise);
+
+ if(!EXERCISE_ANIMATIONS[String(newExercise.name||"").trim().toLowerCase()])
+  addDeveloperNotification(newExercise);
 
  saveDB();
  showConfig();
