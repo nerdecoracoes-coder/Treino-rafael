@@ -272,14 +272,96 @@ hr{
  background:#080b10
 }
 
+.exercise-animation-card{
+ position:relative;
+ display:block;
+ width:120px;
+ height:90px;
+ margin:10px auto 0;
+ border:1px solid var(--line);
+ border-radius:10px;
+ overflow:hidden;
+ background:#080b10;
+ cursor:pointer;
+ padding:0;
+}
+
 .exercise-animation{
  display:block;
  width:100%;
- max-width:420px;
- margin:10px auto 0;
- border-radius:12px;
- border:1px solid var(--line);
+ height:100%;
+ object-fit:cover;
  background:#080b10
+}
+
+.exercise-animation-card::after{
+ content:"▶";
+ position:absolute;
+ left:50%;
+ top:50%;
+ transform:translate(-50%,-50%);
+ width:34px;
+ height:34px;
+ border-radius:50%;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ background:rgba(0,0,0,.62);
+ color:#fff;
+ font-size:15px;
+ pointer-events:none;
+}
+
+.exercise-animation-modal{
+ position:fixed;
+ inset:0;
+ z-index:9999;
+ display:none;
+ align-items:center;
+ justify-content:center;
+ padding:20px;
+ background:rgba(0,0,0,.88);
+}
+
+.exercise-animation-modal.open{
+ display:flex;
+}
+
+.exercise-animation-modal img{
+ display:block;
+ max-width:94vw;
+ max-height:84vh;
+ width:auto;
+ height:auto;
+ border-radius:14px;
+ border:1px solid var(--line);
+ background:#080b10;
+}
+
+.exercise-animation-modal-close{
+ position:absolute;
+ top:18px;
+ right:18px;
+ width:42px;
+ height:42px;
+ border:0;
+ border-radius:50%;
+ background:rgba(20,27,40,.95);
+ color:#fff;
+ font-size:24px;
+ cursor:pointer;
+}
+
+.exercise-animation-modal-title{
+ position:absolute;
+ left:20px;
+ right:20px;
+ bottom:18px;
+ text-align:center;
+ color:#fff;
+ font-size:14px;
+ font-weight:bold;
+ text-shadow:0 1px 3px #000;
 }
 
 .video-link{
@@ -1240,6 +1322,41 @@ function exerciseAnimationFile(name,gender){
  return ANIMATION_BASE_URL+base+"_"+sex+"_loop.gif";
 }
 
+function openExerciseAnimation(url,name){
+ let modal=document.getElementById("exerciseAnimationModal");
+
+ if(!modal){
+  modal=document.createElement("div");
+  modal.id="exerciseAnimationModal";
+  modal.className="exercise-animation-modal";
+  modal.innerHTML=`
+   <button class="exercise-animation-modal-close" type="button" onclick="closeExerciseAnimation()">×</button>
+   <img id="exerciseAnimationModalImg" src="" alt="">
+   <div id="exerciseAnimationModalTitle" class="exercise-animation-modal-title"></div>
+  `;
+
+  modal.addEventListener("click",function(ev){
+   if(ev.target===modal) closeExerciseAnimation();
+  });
+
+  document.body.appendChild(modal);
+ }
+
+ document.getElementById("exerciseAnimationModalImg").src=url;
+ document.getElementById("exerciseAnimationModalImg").alt="Execução de "+name;
+ document.getElementById("exerciseAnimationModalTitle").textContent=name;
+ modal.classList.add("open");
+}
+
+function closeExerciseAnimation(){
+ const modal=document.getElementById("exerciseAnimationModal");
+ if(modal) modal.classList.remove("open");
+}
+
+document.addEventListener("keydown",function(ev){
+ if(ev.key==="Escape") closeExerciseAnimation();
+});
+
 /* =========================================================
    MÍDIA
    ========================================================= */
@@ -1267,13 +1384,20 @@ function mediaHtml(e){
 
  if(animation){
   h+=`
-  <img
-   class="exercise-animation"
-   src="${esc(animation)}"
-   alt="Execução de ${esc(e.name)}"
-   loading="lazy"
-   onerror="this.style.display='none'"
-  >`;
+  <button
+   class="exercise-animation-card"
+   type="button"
+   onclick="openExerciseAnimation('${esc(animation)}','${esc(e.name)}')"
+   aria-label="Ampliar execução de ${esc(e.name)}"
+  >
+   <img
+    class="exercise-animation"
+    src="${esc(animation)}"
+    alt="Execução de ${esc(e.name)}"
+    loading="lazy"
+    onerror="this.closest('.exercise-animation-card').style.display='none'"
+   >
+  </button>`;
  }
 
  if(imgs.length){
