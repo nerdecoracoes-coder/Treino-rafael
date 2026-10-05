@@ -149,16 +149,27 @@ main{
 
 .exercise-main-row{
  display:grid;
- grid-template-columns:minmax(0,1fr) 84px 28px;
+ grid-template-columns:minmax(0,1fr) 74px 24px;
  align-items:center;
- gap:10px;
+ column-gap:4px;
  margin-bottom:10px
+}
+
+.exercise-main-row h3{
+ min-width:0;
+ line-height:1.12;
+ word-break:normal;
+ overflow-wrap:anywhere
+}
+
+.exercise-name-line{
+ display:block
 }
 
 .exercise-main-row .exercise-animation-card{
  margin:0;
- width:84px;
- height:60px
+ width:74px;
+ height:54px
 }
 
 .exercise-complete{
@@ -631,6 +642,22 @@ function esc(v){
   .replace(/>/g,"&gt;")
   .replace(/"/g,"&quot;")
   .replace(/'/g,"&#039;");
+
+}
+
+function formatExerciseName(name,index){
+
+ const words=String(name||"").trim().split(/\s+/).filter(Boolean);
+
+ if(words.length<=1)
+  return `<span class="exercise-name-line">${index+1}. ${esc(name)}</span>`;
+
+ const cut=Math.ceil(words.length/2);
+ const first=words.slice(0,cut).join(" ");
+ const second=words.slice(cut).join(" ");
+
+ return `<span class="exercise-name-line">${index+1}. ${esc(first)}</span>`+
+         `<span class="exercise-name-line">${esc(second)}</span>`;
 
 }
 
@@ -1630,7 +1657,7 @@ function showTraining(){
    <div class="exercise-main-row">
 
     <h3>
-     ${i+1}. ${esc(e.name)}
+     ${formatExerciseName(e.name,i)}
     </h3>
 
     ${exerciseAnimationHtml(e)}
