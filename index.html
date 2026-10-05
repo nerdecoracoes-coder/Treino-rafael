@@ -172,6 +172,12 @@ main{
  height:54px
 }
 
+.exercise-animation-placeholder{
+ width:74px;
+ height:54px;
+ visibility:hidden
+}
+
 .exercise-complete{
  display:flex;
  align-items:center;
@@ -1438,7 +1444,7 @@ function exerciseAnimationHtml(e){
   getProfile()?.gender
  );
 
- if(!animation) return "";
+ if(!animation) return `<div class="exercise-animation-placeholder" aria-hidden="true"></div>`;
 
  return `
   <button
