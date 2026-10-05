@@ -1101,7 +1101,7 @@ function createInitialDB(){
 
    {
     id:"rafaelle",
-    name:"Rafaelle",
+    name:"Rafelle",
     photo:"",
     gender:"feminino",
     routines:getNatielleRoutines()
@@ -1396,7 +1396,7 @@ function readDB(){
  /* PERFIL DA RAFAELLE */
 
  let rafaelle=data.profiles.find(
-  p=>p.id==="rafaelle"
+  p=>p.id==="rafaelle" || String(p.name||"").trim().toLowerCase()==="rafelle" || String(p.name||"").trim().toLowerCase()==="rafaelle"
  );
 
  if(!rafaelle){
@@ -1404,7 +1404,7 @@ function readDB(){
   rafaelle={
 
    id:"rafaelle",
-   name:"Rafaelle",
+   name:"Rafelle",
    photo:"",
    gender:"feminino",
    routines:getNatielleRoutines()
@@ -1415,7 +1415,8 @@ function readDB(){
 
  }else{
 
-  rafaelle.name="Rafaelle";
+  rafaelle.id="rafaelle";
+  rafaelle.name="Rafelle";
   rafaelle.gender="feminino";
 
   if(!rafaelle.routines||typeof rafaelle.routines!=="object")
