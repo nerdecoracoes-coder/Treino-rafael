@@ -142,21 +142,37 @@ main{
 }
 
 .exercise h3{
- margin:0 0 6px;
- font-size:19px;
- line-height:1.25
+ margin:0;
+ font-size:20px;
+ line-height:1.2
+}
+
+.exercise-main-row{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) 84px 28px;
+ align-items:center;
+ gap:10px;
+ margin-bottom:10px
+}
+
+.exercise-main-row .exercise-animation-card{
+ margin:0;
+ width:84px;
+ height:60px
 }
 
 .exercise-complete{
  display:flex;
  align-items:center;
  justify-content:center;
- gap:8px;
- margin:6px auto 10px;
- font-size:13px;
+ margin:0;
  color:var(--muted);
  cursor:pointer;
  user-select:none
+}
+
+.exercise-complete span{
+ display:none
 }
 
 .exercise-complete input{
@@ -1388,29 +1404,16 @@ document.addEventListener("keydown",function(ev){
    MÍDIA
    ========================================================= */
 
-function mediaHtml(e){
+function exerciseAnimationHtml(e){
 
  const animation=exerciseAnimationFile(
   e.name,
   getProfile()?.gender
  );
 
- const imgs=[];
+ if(!animation) return "";
 
- if(e.image)
-  imgs.push(e.image);
-
- (e.images||[]).forEach(x=>{
-
-  if(x&&!imgs.includes(x))
-   imgs.push(x);
-
- });
-
- let h="";
-
- if(animation){
-  h+=`
+ return `
   <button
    class="exercise-animation-card"
    type="button"
@@ -1425,7 +1428,23 @@ function mediaHtml(e){
     onerror="this.closest('.exercise-animation-card').style.display='none'"
    >
   </button>`;
- }
+}
+
+function mediaHtml(e){
+
+ const imgs=[];
+
+ if(e.image)
+  imgs.push(e.image);
+
+ (e.images||[]).forEach(x=>{
+
+  if(x&&!imgs.includes(x))
+   imgs.push(x);
+
+ });
+
+ let h="";
 
  if(imgs.length){
 
@@ -1608,24 +1627,31 @@ function showTraining(){
 
   <div class="card exercise">
 
-   <h3>
-    ${i+1}. ${esc(e.name)}
-   </h3>
+   <div class="exercise-main-row">
+
+    <h3>
+     ${i+1}. ${esc(e.name)}
+    </h3>
+
+    ${exerciseAnimationHtml(e)}
+
+    <label
+     id="doneRow${i}"
+     class="exercise-complete${completedExercisesSession[String(i)]?" done":""}"
+     title="Marcar exercício como concluído"
+    >
+     <input
+      id="done${i}"
+      type="checkbox"
+      ${completedExercisesSession[String(i)]?"checked":""}
+      onchange="toggleExerciseDone(${i})"
+     >
+     <span>Exercício concluído</span>
+    </label>
+
+   </div>
 
    ${mediaHtml(e)}
-
-   <label
-    id="doneRow${i}"
-    class="exercise-complete${completedExercisesSession[String(i)]?" done":""}"
-   >
-    <input
-     id="done${i}"
-     type="checkbox"
-     ${completedExercisesSession[String(i)]?"checked":""}
-     onchange="toggleExerciseDone(${i})"
-    >
-    <span>Exercício concluído</span>
-   </label>
 
    <div class="last">
 
