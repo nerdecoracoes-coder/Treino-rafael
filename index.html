@@ -933,7 +933,7 @@ const defaultA={
   },
 
   {
-   name:"Remada neutra máquina",
+   name:"Remada neutra na máquina",
    refLoad:59,
    refReps:15,
    targetLoad:59,
@@ -1221,23 +1221,6 @@ function readDB(){
    resolved:!!x.resolved
   }));
 
- /* CORREÇÃO DE NOMES DE EXERCÍCIOS */
-
- data.exerciseLibrary=data.exerciseLibrary.map(x=>{
-
-  const n=String(x.name||"").trim().toLowerCase();
-
-  if(n==="agachamento")
-   x.name="Agachamento no Smith";
-  else if(n==="puxada aberta na frente")
-   x.name="Puxada aberta na polia";
-  else if(n==="remada neutra máquina")
-   x.name="Remada neutra na máquina";
-
-  return x;
-
- });
-
  data.profiles.forEach(p=>{
 
   if(p.id==="natielle")
@@ -1262,19 +1245,13 @@ function readDB(){
    }
 
    r.ex=Array.isArray(r.ex)
-    ?r.ex.map(normalizeExercise)
+    ?r.ex.map(normalizeExercise).map(ex=>{
+       const n=String(ex.name||"").trim().toLowerCase();
+       if(n==="agachamento") ex.name="Agachamento no Smith";
+       if(n==="remada neutra máquina") ex.name="Remada neutra na máquina";
+       return ex;
+     })
     :[];
-
-   r.ex.forEach(ex=>{
-    const n=String(ex.name||"").trim().toLowerCase();
-
-   if(n==="agachamento")
-    ex.name="Agachamento no Smith";
-   else if(n==="puxada aberta na frente")
-    ex.name="Puxada aberta na polia";
-   else if(n==="remada neutra máquina")
-    ex.name="Remada neutra na máquina";
-   });
 
   });
 
@@ -1699,10 +1676,12 @@ function routineButtons(){
 
 const EXERCISE_ANIMATIONS={
  "agachamento no smith":null,
- "puxada aberta na polia":"puxada_aberta_na_frente",
- "puxada aberta na frente":"puxada_aberta_na_frente",
- "remada neutra máquina":"remada_neutra_na_maquina",
- "remada neutra na máquina":"remada_neutra_na_maquina",
+ "agachamento":null,
+ "agachamento com barra livre":"agachamento_barra_livre",
+ "puxada aberta na polia":"puxada_aberta",
+ "puxada aberta na frente":"puxada_aberta",
+ "remada neutra na máquina":"remada_neutra_maquina",
+ "remada neutra máquina":"remada_neutra_maquina",
  "leg press máquina":"leg_press_45",
  "bíceps máquina":"biceps_maquina",
  "cadeira extensora":"cadeira_extensora",
