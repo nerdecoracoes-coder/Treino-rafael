@@ -2262,28 +2262,6 @@ function showHome(){
     Tenha um excelente treino! 💪
    </p>
 
-   <div class="home-profile-actions">
-
-    <select
-     onchange="changeProfile(this.value)"
-     aria-label="Selecionar perfil"
-    >
-
-     ${
-      db.profiles.map(x=>
-       `<option
-        value="${esc(x.id)}"
-        ${x.id===p.id?"selected":""}
-       >
-        ${esc(x.name)}
-       </option>`
-      ).join("")
-     }
-
-    </select>
-
-   </div>
-
   </div>
 
   ${(()=>{
@@ -2316,6 +2294,15 @@ function showHome(){
     }
     return `
     <div class="home-dashboard">
+      <div class="home-calendar-card">
+        <div class="home-calendar-head">
+          <h3>Calendário de treinos</h3>
+          <span class="home-calendar-month">${monthName}</span>
+        </div>
+        <div class="home-calendar-grid">${calendar}</div>
+        <div class="home-calendar-legend"><span class="home-calendar-legend-dot"></span> dia com treino realizado</div>
+      </div>
+
       <button type="button" class="home-training-panel" onclick="${next?`chooseRoutine('${esc(nextId)}')`:''}">
         <div class="home-training-head">
           <div>
@@ -2344,15 +2331,6 @@ function showHome(){
         </div>
         <div class="home-motivation">Constância hoje. Resultado amanhã. 💪</div>
       </button>
-
-      <div class="home-calendar-card">
-        <div class="home-calendar-head">
-          <h3>Calendário de treinos</h3>
-          <span class="home-calendar-month">${monthName}</span>
-        </div>
-        <div class="home-calendar-grid">${calendar}</div>
-        <div class="home-calendar-legend"><span class="home-calendar-legend-dot"></span> dia com treino realizado</div>
-      </div>
     </div>`;
   })()}
 
