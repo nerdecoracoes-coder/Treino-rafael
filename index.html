@@ -2313,7 +2313,8 @@ function showTraining(){
  const done=r.ex.map((e,i)=>({e,i})).filter(x=>d.exercises[x.i]?.completed);
 
  let html=`
- <div class="card">
+ <div class="card training-header-actions">
+  <button type="button" class="secondary" onclick="showRoutines()">← Voltar para Treinos</button>
   <div class="row">${routineButtons()}</div>
  </div>
  <div class="card">
@@ -4479,7 +4480,7 @@ document.getElementById(
 
 document.getElementById(
  "btnT"
-).onclick=showTraining;
+).onclick=showRoutines;
 
 document.getElementById(
  "btnH"
