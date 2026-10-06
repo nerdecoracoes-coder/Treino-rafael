@@ -2252,7 +2252,7 @@ function showTraining(){
  }
 
  if(done.length){
-  html+=`<div class="card"><div class="section-title"><h2>Concluídos</h2><span class="badge">${done.length}</span></div><p class="muted">Para alterar pesos ou repetições, desmarque o exercício.</p></div>`;
+  html+=`<div class="card completed-section-card"><div class="section-title"><h2>Concluídos</h2><span class="badge">${done.length}</span></div><p class="muted">Para alterar pesos ou repetições, desmarque o exercício.</p></div>`;
   done.forEach(x=>html+=renderExercise(x));
  }
 
