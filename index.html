@@ -141,6 +141,28 @@ main{
  box-shadow:0 4px 16px #0005
 }
 
+
+.back-to-routines{
+ display:inline-flex;
+ align-items:center;
+ gap:5px;
+ padding:4px 0;
+ margin:0 0 10px 2px;
+ border:0 !important;
+ outline:0 !important;
+ background:transparent !important;
+ color:#60a5fa;
+ font-size:14px;
+ font-weight:700;
+ text-transform:lowercase;
+ cursor:pointer;
+ box-shadow:none !important;
+ -webkit-appearance:none;
+ appearance:none
+}
+.back-to-routines:hover{color:#93c5fd}
+.back-to-routines:active{transform:translateX(-2px);color:#bfdbfe}
+
 /* Lista inicial de treinos: cards grandes, um abaixo do outro */
 .routines-page-title{
  margin:4px 0 6px;
@@ -2313,9 +2335,8 @@ function showTraining(){
  const done=r.ex.map((e,i)=>({e,i})).filter(x=>d.exercises[x.i]?.completed);
 
  let html=`
- <div class="card training-header-actions">
-  <button type="button" class="secondary" onclick="showRoutines()">← Voltar para Treinos</button>
-  <div class="row">${routineButtons()}</div>
+ <div class="training-back-wrap">
+  <button type="button" class="back-to-routines" onclick="showRoutines()">‹&nbsp; voltar para treinos</button>
  </div>
  <div class="card">
   <h2>${esc(r.name)}</h2>
