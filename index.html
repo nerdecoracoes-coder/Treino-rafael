@@ -236,7 +236,8 @@ main{
  min-width:100%;
  max-width:none;
  align-self:stretch;
- display:block;
+ display:flex;
+ flex-direction:column;
  box-sizing:border-box;
  margin:0 0 14px 0;
  padding:42px 18px 18px 18px;
@@ -255,17 +256,21 @@ main{
  background:#1e40af
 }
 .home-recommended-label{
- display:inline-flex;
- position:absolute !important;
- top:12px !important;
- right:12px !important;
- left:auto !important;
+ display:flex !important;
+ position:static !important;
+ width:max-content;
+ margin-left:auto !important;
+ margin-right:0 !important;
+ margin-bottom:10px;
  padding:4px 8px;
  border-radius:999px;
  background:#facc15;
  color:#111827;
  font-size:11px;
  font-weight:900;
+ line-height:1.2;
+ align-items:center;
+ justify-content:center;
 }
 .home-recommended-name{
  display:flex;
