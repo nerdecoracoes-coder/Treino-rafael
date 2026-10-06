@@ -774,6 +774,45 @@ input,select{
 .primary:hover{background:#ff8a24!important}
 
 </style>
+
+<style id="evolute-final-theme">
+:root{
+ --bg:#14191e;
+ --surface:#343b41;
+ --surface2:#20262b;
+ --line:#59636b;
+ --text:#f8fafc;
+ --muted:#c0c7cc;
+ --blue:#f26a00;
+ --blue2:#ff7a00;
+}
+html,body{min-height:100%;}
+body{
+ background:
+  radial-gradient(ellipse 70% 42% at 91% 13%, rgba(245,102,0,.48) 0%, rgba(245,102,0,.28) 30%, rgba(245,102,0,0) 68%),
+  radial-gradient(ellipse 62% 38% at 8% 86%, rgba(230,91,0,.34) 0%, rgba(230,91,0,.18) 34%, rgba(230,91,0,0) 72%),
+  linear-gradient(125deg,#11161b 0%,#2b3238 38%,#1b2228 64%,#0b1015 100%);
+ background-attachment:fixed;
+}
+header{
+ background:
+  radial-gradient(ellipse 70% 100% at 92% 15%,rgba(245,102,0,.50),rgba(245,102,0,0) 70%),
+  linear-gradient(110deg,#0d1217 0%,#252c32 48%,#1a2025 100%);
+}
+nav{
+ background:
+  linear-gradient(90deg,rgba(12,17,22,.98),rgba(43,49,54,.94) 48%,rgba(105,48,17,.92) 100%);
+}
+nav button.active{color:#fff;border-bottom-color:#ff7800}
+.card{
+ background:linear-gradient(145deg,#3a4147,#30373d);
+ border-color:#68727a;
+ box-shadow:0 5px 18px rgba(0,0,0,.32);
+}
+select,input{background:#20262b;border-color:#5b656d}
+.primary{background:#ed6500}
+.primary:hover{background:#ff7800}
+</style>
 </head>
 
 <body>
