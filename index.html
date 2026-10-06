@@ -233,6 +233,23 @@ main{
 .config-routine-summary strong{font-size:19px}
 .config-routine-summary small{font-size:13px;color:#94a3b8;line-height:1.35}
 .config-routine-summary.selected small{color:#bfdbfe}
+
+/* Tela exclusiva da ficha selecionada */
+.routine-detail-page{
+ width:100%;
+ max-width:700px;
+ margin:0 auto;
+}
+.routine-detail-page .routine-details-header{
+ margin:4px 0 18px;
+ padding-bottom:14px;
+ border-bottom:1px solid var(--line);
+}
+.routine-detail-page .routine-details-header h2{margin:0 0 5px;font-size:30px}
+.routine-detail-page .routine-details-info{color:var(--muted);font-size:15px;line-height:1.45}
+.routine-detail-page .routine-details-actions{display:flex;gap:10px;margin:0 0 18px}
+.routine-detail-page .routine-details-actions button{flex:1}
+.routine-detail-page .routine-exercises-title{font-size:20px;margin:18px 0 10px}
 .config-routine-summary-arrow{font-size:28px;color:#60a5fa;line-height:1}
 .config-routine-empty{padding:18px 4px;color:var(--muted);font-size:14px;text-align:center}
 .selected-routine-panel{margin-top:16px;padding:16px;border:1px solid #334155;border-radius:16px;background:#0b1018}
@@ -3661,31 +3678,34 @@ function showRoutineDetails(id){
  }
  const editing=!!configRoutineEditMode;
  app.innerHTML=`
-  <div class="card routine-details-screen">
+  <div class="routine-detail-page">
    <button type="button" class="back-to-routines" onclick="configSelectedRoutineId=null;configRoutineEditMode=false;showConfig()">‹&nbsp; voltar para fichas</button>
-   <div class="routine-details-title">
-    <div>
+
+   <div class="card">
+    <div class="routine-details-header">
      <h2>${esc(r.name)}</h2>
-     <div class="selected-routine-info">${esc(r.description||"Sem informações básicas cadastradas")}</div>
+     <div class="routine-details-info">${esc(r.description||"Sem informações básicas cadastradas")}</div>
     </div>
+
+    <div class="routine-details-actions">
+     <button class="secondary" onclick="enterRoutineEditMode()" ${editing?'disabled':''}>✏️ Editar</button>
+     <button class="danger" onclick="deleteRoutine('${esc(r.id)}')">🗑️ Excluir</button>
+    </div>
+
+    ${editing ? `<div class="routine-edit-banner">Modo de edição ativado. Você pode alterar o nome, as informações básicas e todos os exercícios desta ficha.</div>
+     <div class="move" style="margin-bottom:14px">
+      <button class="secondary" onclick="openRoutineForm('${esc(r.id)}')">✏️ Editar nome e informações básicas</button>
+      <button class="secondary" onclick="exitRoutineEditMode()">✓ Concluir edição</button>
+     </div>` : ''}
+
+    <div class="routine-exercises-title"><strong>Exercícios</strong></div>
+    ${r.ex?.length ? r.ex.map((e,i)=>renderConfigExerciseEditor(r,e,i,editing)).join('') : '<div class="empty" style="margin-top:12px">Nenhum exercício cadastrado nesta ficha.</div>'}
+    ${editing ? `<div class="row" style="margin-top:12px">
+     <select class="exerciseSelect" id="exerciseCategory_${r.id}" onchange="updateExerciseOptions('${esc(r.id)}')"><option value="">Categorias</option>${db.exerciseCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+     <select class="exerciseSelect" id="exerciseSelect_${r.id}"><option value="">Exercícios</option></select>
+     <button class="secondary" onclick="addExercise('${esc(r.id)}')">+ Exercício</button>
+    </div>` : ''}
    </div>
-   <div class="move selected-routine-actions">
-    <button class="secondary" onclick="enterRoutineEditMode()" ${editing?'disabled':''}>✏️ Editar</button>
-    <button class="danger" onclick="deleteRoutine('${esc(r.id)}')">🗑️ Excluir</button>
-   </div>
-   ${editing ? `<div class="routine-edit-banner">Modo de edição ativado. Você pode alterar o nome, as informações básicas e todos os exercícios desta ficha.</div>
-    <div class="move" style="margin-bottom:14px">
-     <button class="secondary" onclick="openRoutineForm('${esc(r.id)}')">✏️ Editar nome e informações básicas</button>
-     <button class="secondary" onclick="exitRoutineEditMode()">✓ Concluir edição</button>
-    </div>` : `<div class="small" style="margin:10px 0 14px">Os exercícios são somente para visualização. Toque em <strong>Editar</strong> para alterar a ficha.</div>`}
-   <hr>
-   <strong>Exercícios</strong>
-   ${r.ex?.length ? r.ex.map((e,i)=>renderConfigExerciseEditor(r,e,i,editing)).join('') : '<div class="empty" style="margin-top:12px">Nenhum exercício cadastrado nesta ficha.</div>'}
-   ${editing ? `<div class="row" style="margin-top:12px">
-    <select class="exerciseSelect" id="exerciseCategory_${r.id}" onchange="updateExerciseOptions('${esc(r.id)}')"><option value="">Categorias</option>${db.exerciseCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
-    <select class="exerciseSelect" id="exerciseSelect_${r.id}"><option value="">Exercícios</option></select>
-    <button class="secondary" onclick="addExercise('${esc(r.id)}')">+ Exercício</button>
-   </div>` : ''}
   </div>`;
 }
 
