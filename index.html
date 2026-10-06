@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#050505">
+<meta name="theme-color" content="#11161b">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -11,7 +11,7 @@
 
 <style>
 :root{
- --bg:#050505;
+ --bg:#0b0f13;
  --surface:#101214;
  --surface2:#17191c;
  --line:#2a2d32;
@@ -29,7 +29,10 @@
 body{
  margin:0;
  font-family:Arial,sans-serif;
- background:var(--bg);
+ background:
+  radial-gradient(900px 500px at 50% -10%, rgba(255,154,31,.10), transparent 58%),
+  linear-gradient(145deg,#0b0f13 0%,#171c22 46%,#0d1116 100%);
+ background-attachment:fixed;
  color:var(--text)
 }
 
@@ -38,7 +41,7 @@ button,input,select{font:inherit}
 button{cursor:pointer}
 
 header{
- background:#050505;
+ background:linear-gradient(145deg,#0b0f13 0%,#171c22 58%,#11161b 100%);
  color:#fff;
  padding:10px 12px 27px;
  position:sticky;
@@ -156,7 +159,7 @@ nav{
  align-items:stretch;
  gap:0;
  padding:0 4px 0 16px;
- background:#090d14;
+ background:linear-gradient(90deg,#0d1217 0%,#171c22 52%,#0e1318 100%);
  border-bottom:1px solid var(--line);
  position:sticky;
  top:92px;
