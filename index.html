@@ -127,6 +127,13 @@ nav button{
  text-overflow:clip
 }
 
+/* Distribui melhor as abas: a primeira ocupa menos espaço para dar mais área às demais. */
+nav #btnHome{flex:0 0 15%}
+nav #btnT,
+nav #btnH,
+nav #btnE,
+nav #btnC{flex:1 1 0}
+
 nav button.active{
  color:#fff;
  border-bottom:3px solid var(--blue2)
