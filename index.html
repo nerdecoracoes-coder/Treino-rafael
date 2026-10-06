@@ -183,29 +183,32 @@ nav button{
 }
 
 .nav-icon{
- font-size:14px;
+ font-size:15px;
  line-height:1;
  flex:0 0 auto;
+ color:#aebbd0;
 }
 
 .nav-svg{
- width:16px;
- height:16px;
+ width:20px;
+ height:20px;
  display:inline-flex;
  align-items:center;
  justify-content:center;
 }
 
 .nav-svg svg{
- width:16px;
- height:16px;
+ width:20px;
+ height:20px;
  display:block;
  fill:none;
  stroke:currentColor;
- stroke-width:1.9;
+ stroke-width:2.2;
  stroke-linecap:round;
  stroke-linejoin:round;
 }
+
+nav button.active .nav-icon{color:#fff;}
 
 /* As cinco abas ocupam exatamente o mesmo espaço. As margens laterais são iguais,
    deixando o conjunto visualmente centralizado e a última aba sem corte. */
@@ -1397,19 +1400,19 @@ hr{
 </button>
 
 <button id="btnT">
-<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M6 8v8"/><path d="M9 6v12"/><path d="M15 6v12"/><path d="M18 8v8"/><path d="M3 10h3"/><path d="M18 10h3"/><path d="M3 14h3"/><path d="M18 14h3"/></svg></span><span>Treinos</span>
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M4 9v6"/><path d="M7 7v10"/><path d="M17 7v10"/><path d="M20 9v6"/><path d="M7 12h10"/></svg></span><span>Treinos</span>
 </button>
 
 <button id="btnH">
-<span class="nav-icon" aria-hidden="true">📋</span><span>Histórico</span>
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M7 3h10v4H7z"/><path d="M6 5H5a2 2 0 0 0-2 2v14h18V7a2 2 0 0 0-2-2h-1"/><path d="M8 11h8"/><path d="M8 15h8"/></svg></span><span>Histórico</span>
 </button>
 
 <button id="btnE">
-<span class="nav-icon" aria-hidden="true">📈</span><span>Evolução</span>
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 4-4 3 2 6-7"/></svg></span><span>Evolução</span>
 </button>
 
 <button id="btnC">
-<span class="nav-icon" aria-hidden="true">⚙️</span><span>Configurações</span>
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M12 3v3"/><path d="M12 18v3"/><path d="m4.2 4.2 2.1 2.1"/><path d="m17.7 17.7 2.1 2.1"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="m4.2 19.8 2.1-2.1"/><path d="m17.7 6.3 2.1-2.1"/><circle cx="12" cy="12" r="4"/></svg></span><span>Configurações</span>
 </button>
 
 </nav>
