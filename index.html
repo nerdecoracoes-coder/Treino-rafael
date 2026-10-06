@@ -175,7 +175,36 @@ nav button{
  white-space:nowrap;
  overflow:visible;
  text-overflow:clip;
- text-align:center
+ text-align:center;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:5px
+}
+
+.nav-icon{
+ font-size:14px;
+ line-height:1;
+ flex:0 0 auto;
+}
+
+.nav-svg{
+ width:16px;
+ height:16px;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.nav-svg svg{
+ width:16px;
+ height:16px;
+ display:block;
+ fill:none;
+ stroke:currentColor;
+ stroke-width:1.9;
+ stroke-linecap:round;
+ stroke-linejoin:round;
 }
 
 /* As cinco abas ocupam exatamente o mesmo espaço. As margens laterais são iguais,
@@ -1364,23 +1393,23 @@ hr{
 <nav>
 
 <button id="btnHome">
-Início
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span><span>Início</span>
 </button>
 
 <button id="btnT">
-Treinos
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M6 8v8"/><path d="M9 6v12"/><path d="M15 6v12"/><path d="M18 8v8"/><path d="M3 10h3"/><path d="M18 10h3"/><path d="M3 14h3"/><path d="M18 14h3"/></svg></span><span>Treinos</span>
 </button>
 
 <button id="btnH">
-Histórico
+<span class="nav-icon" aria-hidden="true">📋</span><span>Histórico</span>
 </button>
 
 <button id="btnE">
-Evolução
+<span class="nav-icon" aria-hidden="true">📈</span><span>Evolução</span>
 </button>
 
 <button id="btnC">
-Configurações
+<span class="nav-icon" aria-hidden="true">⚙️</span><span>Configurações</span>
 </button>
 
 </nav>
