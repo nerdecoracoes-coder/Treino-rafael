@@ -217,8 +217,32 @@ main{
 }
 
 
-.completed-exercise{opacity:1;background:var(--surface);}
-.completed-slide-target{will-change:transform,opacity;z-index:50}
+.completed-exercise{
+ opacity:1 !important;
+ background:#1b1b1b !important;
+ border-color:#303030 !important;
+ color:#777 !important;
+}
+.completed-exercise h3,
+.completed-exercise .last,
+.completed-exercise .small,
+.completed-exercise label{
+ color:#777 !important;
+}
+.completed-exercise .exercise-animation-card{
+ filter:grayscale(1) brightness(.58);
+ opacity:1 !important;
+}
+.completed-exercise input:disabled{
+ background:#151515 !important;
+ color:#666 !important;
+}
+.completed-slide-target{
+ will-change:transform;
+ z-index:50;
+ background:#1b1b1b !important;
+ opacity:1 !important;
+}
 .completed-lock{color:#86efac;font-size:12px;margin:6px 0 10px}
 .rep-low{border-color:#ef4444!important;box-shadow:0 0 0 1px #ef4444 inset}
 .rep-ok{border-color:#22c55e!important;box-shadow:0 0 0 1px #22c55e inset}
@@ -2143,7 +2167,7 @@ function toggleExerciseDone(index){
    moved.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;
    moved.style.opacity='1';
    moved.offsetHeight;
-   moved.style.transition='transform 1400ms cubic-bezier(.22,.61,.36,1), opacity 1400ms ease';
+   moved.style.transition='transform 2200ms cubic-bezier(.22,.61,.36,1)';
    moved.style.transform='translate(0,0) scale(1,1)';
    moved.addEventListener('transitionend',()=>{
     moved.style.transition='';
@@ -2201,7 +2225,6 @@ function showTraining(){
      <input id="done${i}" type="checkbox" ${locked?'checked':''} onchange="toggleExerciseDone(${i})">
     </label>
    </div>
-   ${locked?'<div class="completed-lock">🔒 Exercício concluído — cargas e repetições bloqueadas</div>':''}
    <div class="last">Última S1: ${e.refLoad!==""&&e.refLoad!=null?esc(e.refLoad)+" kg × "+esc(e.refReps||"-")+" reps":"sem registro"}</div>
    <div class="target">
     <strong>🎯 Meta para o próximo treino</strong>
