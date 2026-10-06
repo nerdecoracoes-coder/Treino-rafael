@@ -105,6 +105,10 @@ input::placeholder{color:#64748b}
 
 nav{
  display:flex;
+ align-items:stretch;
+ justify-content:center;
+ gap:0;
+ padding:0 8px;
  background:#090d14;
  border-bottom:1px solid var(--line);
  position:sticky;
@@ -114,25 +118,27 @@ nav{
 
 nav button{
  flex:1 1 0;
+ width:20%;
  min-width:0;
- padding:12px 2px;
+ padding:12px 0;
  border:0;
  background:transparent;
  font-weight:bold;
  color:var(--muted);
- font-size:clamp(11px,3.15vw,16px);
+ font-size:clamp(11px,2.75vw,15px);
  line-height:1.2;
  white-space:nowrap;
- overflow:hidden;
- text-overflow:clip
+ overflow:visible;
+ text-overflow:clip;
+ text-align:center
 }
 
-/* Distribui melhor as abas: a primeira ocupa menos espaço para dar mais área às demais. */
-nav #btnHome{flex:0 0 15%}
+/* As cinco abas ocupam o mesmo espaço, mantendo o conjunto centralizado e evitando que a última seja cortada. */
+nav #btnHome,
 nav #btnT,
 nav #btnH,
 nav #btnE,
-nav #btnC{flex:1 1 0}
+nav #btnC{flex:1 1 20%;}
 
 nav button.active{
  color:#fff;
