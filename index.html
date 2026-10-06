@@ -206,6 +206,16 @@ main{
  box-shadow:0 8px 22px rgba(37,99,235,.36), inset 0 1px 0 rgba(255,255,255,.14)
 }
 
+/* Menu de Configurações */
+.settings-menu{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.settings-menu-card{position:relative;width:100%;min-height:92px;padding:20px 54px 20px 20px;border:1px solid #263449;border-radius:18px;background:#111923;color:#f8fafc;text-align:left;cursor:pointer;transition:.18s ease;box-sizing:border-box}
+.settings-menu-card:hover{border-color:#3b82f6;background:#152033;transform:translateY(-1px)}
+.settings-menu-card:active{transform:scale(.99)}
+.settings-menu-card strong{display:block;font-size:20px;line-height:1.2}
+.settings-menu-card span{display:block;margin-top:7px;color:#94a3b8;font-size:14px;line-height:1.4}
+.settings-menu-card b{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:30px;font-weight:400;color:#60a5fa}
+.settings-menu-backup{border-color:#334155}
+.settings-section-head>h1{margin-top:20px}
 /* Fichas na configuração: primeiro apenas resumo; detalhes somente após seleção */
 .config-routine-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;margin-bottom:14px}
 .config-routine-summary{
@@ -1078,7 +1088,7 @@ Evolução
 </button>
 
 <button id="btnC">
-Configurar
+Configurações
 </button>
 
 </nav>
@@ -2238,7 +2248,7 @@ function showRoutines(){
    <div class="card">
     <h2 class="routines-page-title">Treinos</h2>
     <p class="routines-page-subtitle">Nenhum treino criado para este perfil.</p>
-    <button class="primary" onclick="showConfig()">⚙️ Configurar treinos</button>
+    <button class="primary" onclick="showConfig()">⚙️ Configurações</button>
    </div>`;
   return;
  }
@@ -3551,100 +3561,89 @@ function renderDeveloperNotifications(){
    ========================================================= */
 
 function showConfig(){
-
  setTab("btnC");
  refreshProfiles();
+ const h=`
+ <div class="card settings-home">
+  <h1>Configurações</h1>
+  <p class="muted">Gerencie perfis, fichas, exercícios, categorias e seus backups.</p>
+  <div class="settings-menu">
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('profiles')">
+    <strong>Perfis</strong>
+    <span>Gerencie os perfis e suas informações básicas.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('routines')">
+    <strong>Minhas fichas</strong>
+    <span>Crie, organize e edite suas fichas de treino.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('library')">
+    <strong>Biblioteca de exercícios</strong>
+    <span>Gerencie exercícios, categorias e mídias reutilizáveis.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('categories')">
+    <strong>Categorias de exercícios</strong>
+    <span>Organize os exercícios por categorias.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card settings-menu-backup" onclick="showConfigSection('backup')">
+    <strong>Backup</strong>
+    <span>Exporte seus dados para manter uma cópia de segurança.</span>
+    <b>›</b>
+   </button>
+  </div>
+ </div>`;
+ app.innerHTML=h;
+ window.scrollTo(0,0);
+}
 
+function showConfigSection(section){
+ setTab("btnC");
+ refreshProfiles();
  const p=getProfile();
  if(!p)return;
-
- let h=renderDeveloperNotifications();
-
- h+=`
- <div class="card">
-  <h2>Perfis</h2>
-  <p class="muted">O perfil padrão é salvo neste dispositivo. Você pode trocar de perfil quando quiser.</p>
-  <div class="row">
-   <input id="newProfile" placeholder="Nome do novo perfil">
-   <button class="secondary" onclick="addProfile()">+ Perfil</button>
-  </div>
-  <br>
-  <label>Sexo do perfil</label>
-  <select id="profileGender" onchange="saveProfileGender(this.value)">
-   <option value="masculino" ${p.gender!=="feminino"?"selected":""}>Masculino</option>
-   <option value="feminino" ${p.gender==="feminino"?"selected":""}>Feminino</option>
-  </select>
-  <br><br>
-  <label>Foto do perfil</label>
-  <input type="file" id="profilePhotoInput" accept="image/*">
-  <br><br>
-  <button class="secondary" onclick="saveProfilePhoto()">📷 Salvar foto</button>
- </div>`;
-
- const routines=Object.values(p.routines||{});
- const selectedId=configSelectedRoutineId && p.routines?.[configSelectedRoutineId]
-  ? configSelectedRoutineId
-  : null;
- const selected=selectedId?p.routines[selectedId]:null;
- const editing=!!(selected && configRoutineEditMode);
-
- h+=`
- <div class="card">
-  <h2>Fichas de ${esc(p.name)}</h2>
-  <button class="primary" onclick="importRoutine()">📥 Importar ficha</button>
-
-  <div class="config-routine-list">
-   ${routines.length ? routines.map(r=>`
-    <button type="button" class="config-routine-summary ${selectedId===r.id?'selected':''}" onclick="selectConfigRoutine('${esc(r.id)}')">
-     <span>
-      <strong>${esc(r.name)}</strong>
-      ${r.description?`<small>${esc(r.description)}</small>`:`<small>Sem informações básicas cadastradas</small>`}
-     </span>
-     <span class="config-routine-summary-arrow">›</span>
-    </button>
-   `).join('') : `<div class="empty">Nenhuma ficha cadastrada ainda.</div>`}
-  </div>
-
-  ${selected ? renderSelectedRoutineConfig(selected, editing) : `
-   <div class="config-routine-empty">
-    Selecione uma ficha acima para visualizar seus detalhes.
+ let h=`<div class="card settings-section-head">
+   <button type="button" class="back-to-routines" onclick="showConfig()">‹&nbsp; voltar para configurações</button>`;
+ if(section==='profiles'){
+  h+=`<h1>Perfis</h1><p class="muted">Gerencie os perfis e suas informações básicas.</p>
+   <div class="row">
+    <input id="newProfile" placeholder="Nome do novo perfil">
+    <button class="secondary" onclick="addProfile()">+ Perfil</button>
+   </div><br>
+   <label>Sexo do perfil</label>
+   <select id="profileGender" onchange="saveProfileGender(this.value)">
+    <option value="masculino" ${p.gender!=="feminino"?"selected":""}>Masculino</option>
+    <option value="feminino" ${p.gender==="feminino"?"selected":""}>Feminino</option>
+   </select><br><br>
+   <label>Foto do perfil</label>
+   <input type="file" id="profilePhotoInput" accept="image/*"><br><br>
+   <button class="secondary" onclick="saveProfilePhoto()">📷 Salvar foto</button>`;
+ }else if(section==='routines'){
+  const routines=Object.values(p.routines||{});
+  h+=`<h1>Minhas fichas</h1><p class="muted">Selecione uma ficha para abrir sua tela exclusiva.</p>
+   <button class="primary" onclick="importRoutine()">📥 Importar ficha</button>
+   <div class="config-routine-list">
+    ${routines.length ? routines.map(r=>`<button type="button" class="config-routine-summary" onclick="selectConfigRoutine('${esc(r.id)}')"><span><strong>${esc(r.name)}</strong>${r.description?`<small>${esc(r.description)}</small>`:`<small>Sem informações básicas cadastradas</small>`}</span><span class="config-routine-summary-arrow">›</span></button>`).join('') : `<div class="empty">Nenhuma ficha cadastrada ainda.</div>`}
    </div>
-  `}
-
-  <button class="primary" onclick="openRoutineForm()">+ Criar nova ficha</button>
- </div>`;
-
- h+=`
- <div class="card">
-  <div class="section-title">
-   <h2>📚 Biblioteca de exercícios</h2>
-   <button class="secondary" onclick="addLibraryExercise()">➕ Novo</button>
-  </div>
-  <p class="muted">A biblioteca é central. O exercício, sua categoria e sua mídia podem ser reutilizados em qualquer perfil e ficha.</p>
-  ${renderExerciseLibrary()}
- </div>`;
-
- h+=`
- <div class="card">
-  <h2>Categorias</h2>
-  <p class="muted">Crie novas categorias para organizar a biblioteca.</p>
-  <button class="secondary" onclick="addCategory()">➕ Nova categoria</button>
-  <div style="margin-top:10px">
-   ${db.exerciseCategories.map(c=>`<span class="badge" style="margin:3px">${esc(c)}</span>`).join("")}
-  </div>
- </div>`;
-
- h+=`
- <div class="card">
-  <h2>Backup</h2>
-  <p class="muted">O backup completo inclui perfis, fichas, biblioteca, evolução e históricos.</p>
-  <button class="primary" onclick="exportAll()">📦 Exportar backup completo</button>
-  <br><br>
-  <button class="secondary" onclick="exportProfile()">👤 Exportar perfil atual</button>
- </div>`;
-
+   <button class="primary" onclick="openRoutineForm()">+ Criar nova ficha</button>`;
+ }else if(section==='library'){
+  h+=`<h1>Biblioteca de exercícios</h1><p class="muted">Gerencie exercícios, categorias e mídias reutilizáveis.</p>
+   <div class="section-title"><h2>Exercícios</h2><button class="secondary" onclick="addLibraryExercise()">➕ Novo</button></div>
+   ${renderExerciseLibrary()}`;
+ }else if(section==='categories'){
+  h+=`<h1>Categorias de exercícios</h1><p class="muted">Crie e organize categorias para a biblioteca de exercícios.</p>
+   <button class="secondary" onclick="addCategory()">➕ Nova categoria</button>
+   <div style="margin-top:10px">${db.exerciseCategories.map(c=>`<span class="badge" style="margin:3px">${esc(c)}</span>`).join('')}</div>`;
+ }else if(section==='backup'){
+  h+=`<h1>Backup</h1><p class="muted">Mantenha uma cópia de segurança dos seus dados.</p>
+   <button class="primary" onclick="exportAll()">📦 Exportar backup completo</button><br><br>
+   <button class="secondary" onclick="exportProfile()">👤 Exportar perfil atual</button>`;
+ }
+ h+='</div>';
  app.innerHTML=h;
-
+ window.scrollTo(0,0);
 }
 
 let configSelectedRoutineId=null;
