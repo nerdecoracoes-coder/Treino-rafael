@@ -714,37 +714,37 @@ hr{
  }
 }
 
-/* EVOLUTE — identidade laranja + grafite + preto */
+/* EVOLUTE — grafite predominante + laranja controlado */
 :root{
-  --bg:#090b0e;
-  --surface:#050505;
-  --surface2:#111316;
-  --line:#3c4248;
+  --bg:#111417;
+  --surface:#252a2f;
+  --surface2:#30363c;
+  --line:#555d64;
   --text:#f8fafc;
-  --muted:#aeb5bd;
+  --muted:#c0c6cc;
   --blue:#f97316;
   --blue2:#ff8a24;
 }
 
-html{background:#090b0e}
+html{background:#111417}
 
 body{
   background:
-    radial-gradient(ellipse 85% 42% at 100% 4%, rgba(249,115,22,1) 0%, rgba(249,115,22,.92) 24%, rgba(249,115,22,.48) 48%, rgba(249,115,22,0) 76%),
-    radial-gradient(ellipse 72% 55% at 5% 88%, rgba(249,115,22,.95) 0%, rgba(249,115,22,.68) 25%, rgba(249,115,22,.20) 55%, rgba(249,115,22,0) 78%),
-    radial-gradient(ellipse 62% 48% at 50% 55%, rgba(91,99,106,.78) 0%, rgba(91,99,106,.42) 35%, rgba(91,99,106,0) 72%),
-    linear-gradient(115deg,#080a0c 0%,#252b30 25%,#111419 43%,#4d2815 61%,#c9570b 80%,#ff7414 100%);
+    radial-gradient(ellipse 62% 32% at 96% 8%, rgba(249,115,22,.48) 0%, rgba(249,115,22,.20) 38%, rgba(249,115,22,0) 72%),
+    radial-gradient(ellipse 52% 34% at 4% 90%, rgba(249,115,22,.32) 0%, rgba(249,115,22,.12) 42%, rgba(249,115,22,0) 75%),
+    radial-gradient(ellipse 70% 60% at 48% 48%, rgba(93,101,108,.58) 0%, rgba(55,61,67,.32) 42%, rgba(17,20,23,0) 78%),
+    linear-gradient(125deg,#0c0f12 0%,#20252a 24%,#343a40 45%,#292e33 63%,#181c20 82%,#0c0f12 100%);
   background-attachment:fixed;
 }
 
 header{
-  background:linear-gradient(110deg,#07090b 0%,#1a1f23 25%,#3d4449 43%,#654027 60%,#a94d12 78%,#d96718 100%);
-  border-bottom-color:#555a5f;
+  background:linear-gradient(105deg,#0d1013 0%,#242a2f 32%,#3a4045 54%,#593b26 72%,#a34b13 100%);
+  border-bottom-color:#60676d;
 }
 
 nav{
-  background:linear-gradient(105deg,#07090b 0%,#1b2024 25%,#3b4247 43%,#60402c 60%,#974c1d 78%,#c55a18 100%);
-  border-bottom-color:#555a5f;
+  background:linear-gradient(105deg,#101316 0%,#252b30 38%,#343a40 58%,#4a3424 78%,#6f3a18 100%);
+  border-bottom-color:#60676d;
 }
 
 nav button.active{
@@ -752,15 +752,22 @@ nav button.active{
   border-bottom-color:#ff8a24;
 }
 
-.card{
-  background:#050505;
-  border-color:#41464b;
-  box-shadow:0 8px 24px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.025);
+.card,
+.home-profile-card,
+.home-menu button{
+  background:linear-gradient(145deg,#2b3035 0%,#24292e 100%);
+  border-color:#5a6269;
+  box-shadow:0 8px 24px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.home-menu button:hover{
+  background:#343a40;
+  border-color:#ff8a24;
 }
 
 input,select{
-  background:#080909;
-  border-color:#3d4247;
+  background:#171a1d;
+  border-color:#555d64;
 }
 
 .primary{background:#f97316!important}
