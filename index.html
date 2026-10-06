@@ -217,8 +217,8 @@ main{
 }
 
 
-.completed-exercise{opacity:.96;animation:completedSlide .72s cubic-bezier(.22,.61,.36,1) both}
-@keyframes completedSlide{from{opacity:.15;transform:translateY(-34px) scale(.985)}to{opacity:.96;transform:translateY(0) scale(1)}}
+.completed-exercise{opacity:.96}
+.completed-slide-target{will-change:transform,opacity;z-index:50}
 .completed-lock{color:#86efac;font-size:12px;margin:6px 0 10px}
 .rep-low{border-color:#ef4444!important;box-shadow:0 0 0 1px #ef4444 inset}
 .rep-ok{border-color:#22c55e!important;box-shadow:0 0 0 1px #22c55e inset}
@@ -2114,6 +2114,8 @@ function repClass(value,e){
 }
 
 function toggleExerciseDone(index){
+ const card=document.querySelector(`[data-exercise-index="${index}"]`);
+ const before=card?.getBoundingClientRect();
  saveTrainingDraftFromDOM();
  const d=getTrainingDraft();
  if(!d?.exercises[index])return;
@@ -2125,9 +2127,29 @@ function toggleExerciseDone(index){
   setTimeout(()=>{
    alert("Parabéns, treino finalizado com sucesso!");
    finalizeWorkout(true);
-  },80);
+  },850);
  }else{
-  setTimeout(()=>showTraining(),220);
+  showTraining();
+  requestAnimationFrame(()=>{
+   const moved=document.querySelector(`[data-exercise-index="${index}"]`);
+   if(!moved||!before)return;
+   const after=moved.getBoundingClientRect();
+   const dx=before.left-after.left;
+   const dy=before.top-after.top;
+   const sx=before.width/after.width;
+   const sy=before.height/after.height;
+   moved.classList.add('completed-slide-target');
+   moved.style.transformOrigin='top left';
+   moved.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;
+   moved.style.opacity='0.96';
+   moved.offsetHeight;
+   moved.style.transition='transform 900ms cubic-bezier(.22,.61,.36,1), opacity 900ms ease';
+   moved.style.transform='translate(0,0) scale(1,1)';
+   moved.addEventListener('transitionend',()=>{
+    moved.style.transition='';
+    moved.classList.remove('completed-slide-target');
+   },{once:true});
+  });
  }
 }
 
@@ -2171,7 +2193,7 @@ function showTraining(){
   const e=x.e,i=x.i, state=d.exercises[i]||{}, locked=!!state.completed;
   const sets=state.sets||[];
   let block=`
-  <div class="card exercise ${locked?'completed-exercise':''}">
+  <div class="card exercise ${locked?'completed-exercise':''}" data-exercise-index="${i}">
    <div class="exercise-main-row">
     <h3>${formatExerciseName(e.name,i)}</h3>
     ${exerciseAnimationHtml(e)}
