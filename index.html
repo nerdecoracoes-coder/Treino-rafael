@@ -217,7 +217,8 @@ main{
 }
 
 
-.completed-exercise{opacity:.96}
+.completed-exercise{opacity:.96;animation:completedSlide .72s cubic-bezier(.22,.61,.36,1) both}
+@keyframes completedSlide{from{opacity:.15;transform:translateY(-34px) scale(.985)}to{opacity:.96;transform:translateY(0) scale(1)}}
 .completed-lock{color:#86efac;font-size:12px;margin:6px 0 10px}
 .rep-low{border-color:#ef4444!important;box-shadow:0 0 0 1px #ef4444 inset}
 .rep-ok{border-color:#22c55e!important;box-shadow:0 0 0 1px #22c55e inset}
@@ -2126,7 +2127,7 @@ function toggleExerciseDone(index){
    finalizeWorkout(true);
   },80);
  }else{
-  showTraining();
+  setTimeout(()=>showTraining(),220);
  }
 }
 
