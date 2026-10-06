@@ -1015,15 +1015,20 @@ hr{
 .home-dashboard{
  display:flex;
  flex-direction:column;
- gap:12px;
- margin-top:2px
-}
-.home-training-panel{
+ gap:0;
+ margin-top:2px;
  background:var(--surface);
  border:1px solid var(--line);
  border-radius:18px;
- padding:18px;
+ overflow:hidden;
  box-shadow:0 4px 18px #0005
+}
+.home-training-panel{
+ background:transparent;
+ border:0;
+ border-radius:0;
+ padding:18px 18px 16px;
+ box-shadow:none
 }
 .home-training-panel h3{
  margin:0;
@@ -1080,11 +1085,12 @@ hr{
  text-align:center
 }
 .home-calendar-card{
- background:var(--surface);
- border:1px solid var(--line);
- border-radius:18px;
- padding:16px;
- box-shadow:0 4px 18px #0005
+ background:transparent;
+ border:0;
+ border-top:1px solid var(--line);
+ border-radius:0;
+ padding:16px 18px 18px;
+ box-shadow:none
 }
 .home-calendar-head{
  display:flex;
