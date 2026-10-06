@@ -205,9 +205,24 @@ main{
  border-color:#93c5fd !important;
  box-shadow:0 8px 22px rgba(37,99,235,.36), inset 0 1px 0 rgba(255,255,255,.14)
 }
+.routine-list-card-content{
+ display:flex;
+ flex-direction:column;
+ align-items:flex-start;
+ gap:5px;
+ min-width:0;
+ flex:1
+}
 .routine-list-card-name{
  font-size:24px;
  font-weight:800
+}
+.routine-list-card-description{
+ font-size:14px;
+ line-height:1.35;
+ color:#dbeafe;
+ font-weight:600;
+ opacity:.95
 }
 .routine-list-card-arrow{
  font-size:34px;
@@ -1514,6 +1529,8 @@ function readDB(){
 
    }
 
+   r.description=typeof r.description==="string"?r.description.trim():"";
+
    r.ex=Array.isArray(r.ex)
     ?r.ex.map(normalizeExercise).map(ex=>{
        const n=String(ex.name||"").trim().toLowerCase();
@@ -1902,9 +1919,10 @@ function showHome(){
      <button type="button" class="home-recommended-card" onclick="chooseRoutine('${esc(recommendedId)}')">
       <span class="home-recommended-label">Recomendado</span>
       <span class="home-recommended-name">
-       <span>${esc(recommended.name)}</span>
+       <span class="home-recommended-title">${esc(recommended.name)}</span>
        <span class="home-recommended-arrow">›</span>
       </span>
+      ${recommended.description?`<span class="home-recommended-description">${esc(recommended.description)}</span>`:""}
      </button>`;
   })()}
 
@@ -2084,7 +2102,10 @@ function showRoutines(){
   const recommended=id===recommendedId;
   html+=`
    <button type="button" class="routine-list-card" onclick="chooseRoutine('${esc(id)}')">
-    <span class="routine-list-card-name">${esc(r.name)}</span>
+    <span class="routine-list-card-content">
+     <span class="routine-list-card-name">${esc(r.name)}</span>
+     ${r.description?`<span class="routine-list-card-description">${esc(r.description)}</span>`:""}
+    </span>
     ${recommended?'<span class="routine-recommended">Recomendado</span>':''}
     <span class="routine-list-card-arrow">›</span>
    </button>`;
@@ -3473,6 +3494,7 @@ function showConfig(){
    <strong>
     ${esc(r.name)}
    </strong>
+   ${r.description?`<div style="margin-top:6px;color:var(--muted);font-size:13px">${esc(r.description)}</div>`:""}
 
    <div class="move">
 
@@ -3480,7 +3502,7 @@ function showConfig(){
      class="secondary"
      onclick="editRoutine('${esc(id)}')"
     >
-     ✏️ Renomear
+     ✏️ Editar informações
     </button>
 
     <button
@@ -4291,10 +4313,17 @@ function saveProfilePhoto(){
 function addRoutine(){
 
  const n=prompt(
-  "Nome da nova ficha:"
+  "Nome do treino:"
  );
 
  if(!n?.trim())return;
+
+ const description=prompt(
+  "Informações básicas do treino (ex.: Costas, Bíceps e Posterior de ombro):",
+  ""
+ );
+
+ if(description===null)return;
 
  const p=getProfile();
 
@@ -4307,6 +4336,7 @@ function addRoutine(){
 
   id,
   name:n.trim(),
+  description:description.trim(),
   ex:[]
 
  };
@@ -4425,6 +4455,7 @@ function importRoutine(){
 
   id,
   name,
+  description:sr.description||"",
 
   ex:(sr.ex||[]).map(e=>({
 
@@ -4463,13 +4494,21 @@ function editRoutine(id){
  if(!r)return;
 
  const n=prompt(
-  "Novo nome da ficha:",
+  "Nome do treino:",
   r.name||""
  );
 
  if(!n?.trim())return;
 
+ const description=prompt(
+  "Informações básicas do treino (ex.: Costas, Bíceps e Posterior de ombro):",
+  r.description||""
+ );
+
+ if(description===null)return;
+
  r.name=n.trim();
+ r.description=description.trim();
 
  saveDB();
  showConfig();
