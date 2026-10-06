@@ -113,12 +113,18 @@ nav{
 }
 
 nav button{
- flex:1;
- padding:12px 4px;
+ flex:1 1 0;
+ min-width:0;
+ padding:12px 2px;
  border:0;
  background:transparent;
  font-weight:bold;
- color:var(--muted)
+ color:var(--muted);
+ font-size:clamp(11px,3.15vw,16px);
+ line-height:1.2;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:clip
 }
 
 nav button.active{
