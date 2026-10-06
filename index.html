@@ -936,7 +936,8 @@ hr{
  display:flex;
 }
 
-.exercise-animation-modal img{
+.exercise-animation-modal img,
+.exercise-animation-modal canvas{
  display:block;
  max-width:94vw;
  max-height:84vh;
@@ -3059,6 +3060,111 @@ function exerciseAnimationFile(name,gender){
  return ANIMATION_BASE_URL+base+"_"+sex+"_loop.gif";
 }
 
+let gifuctLoaderPromise=null;
+const SLOW_GIF_FACTOR=1.45;
+
+function loadGifuct(){
+ if(window.gifuct) return Promise.resolve(window.gifuct);
+ if(gifuctLoaderPromise) return gifuctLoaderPromise;
+ gifuctLoaderPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement("script");
+  script.src="https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct.min.js";
+  script.onload=()=>window.gifuct?resolve(window.gifuct):reject(new Error("gifuct-js indisponível"));
+  script.onerror=()=>reject(new Error("Não foi possível carregar o reprodutor GIF"));
+  document.head.appendChild(script);
+ });
+ return gifuctLoaderPromise;
+}
+
+const slowGifStates=new WeakMap();
+
+async function startSlowGifCanvas(canvas,url,factor=SLOW_GIF_FACTOR){
+ if(!canvas||!url)return;
+ const previous=slowGifStates.get(canvas);
+ if(previous) previous.cancelled=true;
+ const state={cancelled:false};
+ slowGifStates.set(canvas,state);
+ try{
+  const api=await loadGifuct();
+  const response=await fetch(url,{cache:"force-cache"});
+  if(!response.ok)throw new Error("GIF não encontrado");
+  const buffer=await response.arrayBuffer();
+  if(state.cancelled)return;
+  const gif=api.parseGIF(buffer);
+  const frames=api.decompressFrames(gif,true);
+  if(!frames.length)throw new Error("GIF sem frames");
+  const width=frames[0].dims.width;
+  const height=frames[0].dims.height;
+  canvas.width=width;
+  canvas.height=height;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  let index=0;
+  let restoreImage=null;
+
+  function drawFrame(){
+   if(state.cancelled)return;
+   const frame=frames[index];
+
+   if(index>0){
+    const prev=frames[index-1];
+    if(prev.disposalType===2){
+     ctx.clearRect(prev.dims.left,prev.dims.top,prev.dims.width,prev.dims.height);
+    }else if(prev.disposalType===3&&restoreImage){
+     ctx.putImageData(restoreImage,0,0);
+    }
+   }
+
+   if(frame.disposalType===3){
+    try{restoreImage=ctx.getImageData(0,0,width,height)}catch(e){restoreImage=null;}
+   }else{
+    restoreImage=null;
+   }
+
+   const patch=new ImageData(new Uint8ClampedArray(frame.patch),frame.dims.width,frame.dims.height);
+   ctx.putImageData(patch,frame.dims.left,frame.dims.top);
+   index=(index+1)%frames.length;
+   const delay=Math.max(20,(Number(frame.delay)||10)*10*factor);
+   state.timer=setTimeout(drawFrame,delay);
+  }
+  drawFrame();
+ }catch(err){
+  if(!state.cancelled){
+   const card=canvas.closest?.(".exercise-animation-card");
+   if(card)card.style.display="none";
+   console.warn("GIF lento:",err);
+  }
+ }
+}
+
+function initSlowGifs(root=document){
+ const canvases=root.querySelectorAll?.("canvas.slow-gif-canvas[data-gif-src]")||[];
+ canvases.forEach(canvas=>{
+  if(canvas.dataset.slowGifStarted)return;
+  canvas.dataset.slowGifStarted="1";
+  startSlowGifCanvas(canvas,canvas.dataset.gifSrc);
+ });
+}
+
+function initSlowGifObserver(){
+ if(window.__slowGifObserver)return;
+ if(!("IntersectionObserver" in window)){
+  initSlowGifs(document);
+  return;
+ }
+ window.__slowGifObserver=new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+   if(entry.isIntersecting){
+    const canvas=entry.target;
+    if(!canvas.dataset.slowGifStarted){
+     canvas.dataset.slowGifStarted="1";
+     startSlowGifCanvas(canvas,canvas.dataset.gifSrc);
+    }
+   }
+  });
+ },{rootMargin:"200px"});
+ document.querySelectorAll("canvas.slow-gif-canvas[data-gif-src]").forEach(c=>window.__slowGifObserver.observe(c));
+}
+
 function openExerciseAnimation(url,name){
  let modal=document.getElementById("exerciseAnimationModal");
 
@@ -3068,7 +3174,7 @@ function openExerciseAnimation(url,name){
   modal.className="exercise-animation-modal";
   modal.innerHTML=`
    <button class="exercise-animation-modal-close" type="button" onclick="closeExerciseAnimation()">×</button>
-   <img id="exerciseAnimationModalImg" src="" alt="">
+   <canvas id="exerciseAnimationModalImg" class="exercise-animation-modal-canvas" aria-label=""></canvas>
    <div id="exerciseAnimationModalTitle" class="exercise-animation-modal-title"></div>
   `;
 
@@ -3079,8 +3185,9 @@ function openExerciseAnimation(url,name){
   document.body.appendChild(modal);
  }
 
- document.getElementById("exerciseAnimationModalImg").src=url;
- document.getElementById("exerciseAnimationModalImg").alt="Execução de "+name;
+ const modalCanvas=document.getElementById("exerciseAnimationModalImg");
+ modalCanvas.setAttribute("aria-label","Execução de "+name);
+ startSlowGifCanvas(modalCanvas,url,1.45);
  document.getElementById("exerciseAnimationModalTitle").textContent=name;
  modal.classList.add("open");
 }
@@ -3093,6 +3200,14 @@ function closeExerciseAnimation(){
 document.addEventListener("keydown",function(ev){
  if(ev.key==="Escape") closeExerciseAnimation();
 });
+
+document.addEventListener("DOMContentLoaded",function(){
+ initSlowGifObserver();
+ const mo=new MutationObserver(()=>initSlowGifObserver());
+ mo.observe(document.body,{childList:true,subtree:true});
+});
+
+
 
 /* =========================================================
    MÍDIA
@@ -3114,13 +3229,11 @@ function exerciseAnimationHtml(e){
    onclick="openExerciseAnimation('${esc(animation)}','${esc(e.name)}')"
    aria-label="Ampliar execução de ${esc(e.name)}"
   >
-   <img
-    class="exercise-animation"
-    src="${esc(animation)}"
-    alt="Execução de ${esc(e.name)}"
-    loading="lazy"
-    onerror="this.closest('.exercise-animation-card').style.display='none'"
-   >
+   <canvas
+    class="exercise-animation slow-gif-canvas"
+    data-gif-src="${esc(animation)}"
+    aria-label="Execução de ${esc(e.name)}"
+   ></canvas>
   </button>`;
 }
 
