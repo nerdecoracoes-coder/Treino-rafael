@@ -1689,6 +1689,30 @@ nav{
 }
 </style>
 
+
+<style id="evolute-scroll-together-fix">
+/* HEADER + ABAS: rolagem conjunta com todo o conteúdo */
+html, body {
+  min-height: 100%;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+header {
+  position: relative !important;
+  top: auto !important;
+  z-index: 20;
+}
+nav {
+  position: relative !important;
+  top: auto !important;
+  z-index: 19;
+}
+main {
+  position: relative;
+}
+</style>
+
 </head>
 
 <body>
