@@ -292,29 +292,30 @@ main{
 .routine-list-card{
  width:100%;
  min-height:92px;
- padding:20px 22px;
- border:2px solid #ff8a1f !important;
- border-radius:16px;
- background:#d95f02 !important;
- color:#ffffff !important;
+ padding:20px 54px 20px 20px;
+ border:1px solid #263449 !important;
+ border-radius:18px;
+ background:#121416 !important;
+ color:#f8fafc !important;
  display:flex;
  align-items:center;
  justify-content:space-between;
  text-align:left;
- box-shadow:0 6px 18px rgba(249,115,22,.28), inset 0 1px 0 rgba(255,255,255,.12);
+ box-shadow:none;
  cursor:pointer;
  appearance:none;
  -webkit-appearance:none;
+ position:relative;
  transition:background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease
 }
 .routine-list-card:active{
- transform:scale(.985);
- background:#b84d00 !important
+ transform:scale(.99);
+ background:#151719 !important
 }
 .routine-list-card:hover{
- background:#f97316 !important;
- border-color:#ffb45c !important;
- box-shadow:0 8px 22px rgba(249,115,22,.36), inset 0 1px 0 rgba(255,255,255,.14)
+ background:#1b1d20 !important;
+ border-color:#ff8a1f !important;
+ box-shadow:0 4px 14px rgba(249,115,22,.10)
 }
 
 /* Menu de Configurações */
@@ -393,15 +394,15 @@ main{
  flex:1
 }
 .routine-list-card-name{
- font-size:24px;
- font-weight:800
+ font-size:20px;
+ font-weight:800;
+ line-height:1.2
 }
 .routine-list-card-description{
  font-size:14px;
- line-height:1.35;
- color:#fff0df;
- font-weight:600;
- opacity:.95
+ line-height:1.4;
+ color:#94a3b8;
+ font-weight:500
 }
 .routine-list-card-arrow{
  font-size:34px;
@@ -415,15 +416,14 @@ main{
  align-items:center;
  padding:5px 9px;
  border-radius:999px;
- background:#facc15;
- color:#111827;
+ background:#24170f;
+ border:1px solid #ff8a1f;
+ color:#ffb45c;
  font-size:11px;
- font-weight:900;
- letter-spacing:.2px;
- margin-left:auto;
- margin-right:12px;
- box-shadow:0 2px 8px rgba(250,204,21,.22)
-}
+ font-weight:700;
+ white-space:nowrap;
+ margin-left:10px;
+ }
 
 .home-recommended-card{
  width:100%;
