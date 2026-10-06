@@ -217,7 +217,7 @@ main{
 }
 
 
-.completed-exercise{opacity:.96}
+.completed-exercise{opacity:1;background:var(--surface);}
 .completed-slide-target{will-change:transform,opacity;z-index:50}
 .completed-lock{color:#86efac;font-size:12px;margin:6px 0 10px}
 .rep-low{border-color:#ef4444!important;box-shadow:0 0 0 1px #ef4444 inset}
@@ -2141,9 +2141,9 @@ function toggleExerciseDone(index){
    moved.classList.add('completed-slide-target');
    moved.style.transformOrigin='top left';
    moved.style.transform=`translate(${dx}px,${dy}px) scale(${sx},${sy})`;
-   moved.style.opacity='0.96';
+   moved.style.opacity='1';
    moved.offsetHeight;
-   moved.style.transition='transform 900ms cubic-bezier(.22,.61,.36,1), opacity 900ms ease';
+   moved.style.transition='transform 1400ms cubic-bezier(.22,.61,.36,1), opacity 1400ms ease';
    moved.style.transform='translate(0,0) scale(1,1)';
    moved.addEventListener('transitionend',()=>{
     moved.style.transition='';
