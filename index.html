@@ -1027,13 +1027,13 @@ hr{
  width:100%;
  box-sizing:border-box;
  display:block;
- background:var(--surface);
+ background:var(--surface) !important;
  border:1px solid var(--line);
  border-radius:18px;
  padding:24px 18px 16px;
  color:var(--text);
  text-align:left;
- box-shadow:0 4px 16px #0005;
+ box-shadow:0 4px 18px #0005;
  cursor:pointer;
  font:inherit;
  appearance:none;
@@ -1042,7 +1042,7 @@ hr{
 }
 .home-training-panel:active{
  transform:scale(.985);
- background:#111923
+ background:var(--surface) !important
 }
 .home-training-panel h3{
  margin:0;
@@ -1080,7 +1080,7 @@ hr{
  margin-top:16px
 }
 .home-stat{
- background:#111923;
+ background:var(--surface);
  border:1px solid var(--line);
  border-radius:12px;
  padding:12px;
