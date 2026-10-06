@@ -997,8 +997,16 @@ hr{
  line-height:1.15
 }
 
-.home-subtitle{
+.home-welcome{
  margin:7px 0 0;
+ color:var(--text);
+ font-size:16px;
+ font-weight:600;
+ line-height:1.35
+}
+
+.home-subtitle{
+ margin:5px 0 0;
  color:var(--muted);
  font-size:14px
 }
@@ -2067,6 +2075,10 @@ function showHome(){
    <h2 class="home-profile-name">
     ${esc(p.name)}
    </h2>
+
+   <p class="home-welcome">
+    Bem-vindo ao Treino Rafael! 👋
+   </p>
 
    <p class="home-subtitle">
     O que você deseja acessar?
