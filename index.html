@@ -633,6 +633,104 @@ hr{
  pointer-events:none;
 }
 
+/* Formulário de nova ficha de treino */
+.routine-form{
+ margin-top:14px;
+ padding:18px;
+ border:1px solid var(--line);
+ border-radius:16px;
+ background:#0b1018;
+}
+.routine-form h3{margin:0 0 6px;font-size:22px}
+.routine-form-subtitle{margin:0 0 16px;color:var(--muted);font-size:14px}
+.routine-form-field{margin-bottom:16px}
+.routine-form-field label{display:block;margin-bottom:7px;font-weight:700;color:#e2e8f0}
+.routine-basic-info-button{
+ width:100%;
+ min-height:54px;
+ padding:12px 14px;
+ border:1px solid #334155;
+ border-radius:11px;
+ background:#131a24;
+ color:#f8fafc;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ text-align:left;
+}
+.routine-basic-info-button .summary{color:#94a3b8;font-size:13px;line-height:1.35}
+.routine-form-actions{display:flex;gap:10px;margin-top:6px}
+.routine-form-actions button{flex:1}
+.routine-info-modal{
+ position:fixed;
+ inset:0;
+ z-index:10000;
+ display:none;
+ align-items:flex-end;
+ justify-content:center;
+ background:rgba(0,0,0,.72);
+ padding:12px;
+}
+.routine-info-modal.open{display:flex}
+.routine-info-sheet{
+ width:min(700px,100%);
+ max-height:88vh;
+ overflow:auto;
+ background:#0d1118;
+ border:1px solid #334155;
+ border-radius:20px 20px 14px 14px;
+ padding:18px;
+ box-shadow:0 -12px 40px rgba(0,0,0,.45);
+}
+.routine-info-sheet-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.routine-info-sheet-header h3{margin:0;font-size:22px}
+.routine-info-close{border:0;background:transparent;color:#94a3b8;font-size:28px;padding:2px 8px}
+.routine-info-help{margin:0 0 16px;color:var(--muted);font-size:14px}
+.routine-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.routine-info-option{
+ position:relative;
+ display:flex;
+ align-items:center;
+ min-height:48px;
+ padding:11px 12px;
+ border:1px solid #263244;
+ border-radius:11px;
+ background:#131a24;
+ color:#e5e7eb;
+ cursor:pointer;
+}
+.routine-info-option.complete{
+ border-color:#3b82f6;
+ background:#16284f;
+ color:#bfdbfe;
+ font-weight:800;
+}
+.routine-info-option input{
+ width:20px;
+ height:20px;
+ margin:0 10px 0 0;
+ accent-color:#3b82f6;
+}
+.routine-info-option:has(input:checked){
+ border-color:#60a5fa;
+ background:#1d4ed8;
+ color:#fff;
+ box-shadow:0 0 0 1px rgba(96,165,250,.35) inset;
+}
+.routine-custom-info{
+ margin-top:14px;
+ padding-top:14px;
+ border-top:1px solid #263244;
+}
+.routine-custom-info-row{display:flex;gap:8px}
+.routine-custom-info-row input{flex:1}
+.routine-custom-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.routine-custom-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#172033;color:#bfdbfe;font-size:13px}
+.routine-custom-tag button{border:0;background:transparent;color:#93c5fd;padding:0;font-size:16px}
+.routine-info-footer{display:flex;gap:10px;margin-top:18px}
+.routine-info-footer button{flex:1}
+@media(max-width:480px){.routine-info-grid{grid-template-columns:1fr}.routine-form-actions,.routine-info-footer{flex-direction:column}}
+
 .exercise-animation-modal{
  position:fixed;
  inset:0;
@@ -3658,7 +3756,7 @@ function showConfig(){
 
   <button
    class="primary"
-   onclick="addRoutine()"
+   onclick="openRoutineForm()"
   >
    + Criar nova ficha
   </button>
@@ -4310,42 +4408,189 @@ function saveProfilePhoto(){
    FICHAS
    ========================================================= */
 
-function addRoutine(){
+function getRoutineInfoOptions(){
+ return [
+  {label:"Corpo todo",complete:true},
+  {label:"Superiores completo",complete:true},
+  {label:"Pernas completo",complete:true},
+  {label:"Costas"},
+  {label:"Peito"},
+  {label:"Bíceps"},
+  {label:"Tríceps"},
+  {label:"Frontal de ombro"},
+  {label:"Lateral de ombro"},
+  {label:"Posterior de ombro"},
+  {label:"Abdômen"},
+  {label:"Quadrícepis"},
+  {label:"Adutores"},
+  {label:"Abdutores"},
+  {label:"Gluteos"},
+  {label:"Posterior de coxa"},
+  {label:"Panturrilha"}
+ ];
+}
 
- const n=prompt(
-  "Nome do treino:"
- );
+let routineFormEditId=null;
+let routineInfoDraft=[];
+let routineCustomInfoDraft=[];
 
- if(!n?.trim())return;
-
- const description=prompt(
-  "Informações básicas do treino (ex.: Costas, Bíceps e Posterior de ombro):",
-  ""
- );
-
- if(description===null)return;
-
+function openRoutineForm(editId=null){
  const p=getProfile();
+ if(!p)return;
+ routineFormEditId=editId;
+ const r=editId?p.routines[editId]:null;
+ const selected=Array.isArray(r?.basicInfo)&&r.basicInfo.length
+  ? r.basicInfo.slice()
+  : (r?.description?r.description.split(/\s*,\s*/).filter(Boolean):[]);
+ routineInfoDraft=[...selected];
+ routineCustomInfoDraft=selected.filter(x=>!getRoutineInfoOptions().some(o=>o.label===x));
 
- let id=slug(n);
+ const host=document.getElementById('app');
+ const title=r?'Editar ficha de treino':'Nova ficha de treino';
+ const safeName=r?.name||'';
+ host.innerHTML=`
+  <div class="card">
+   <button type="button" class="back-to-routines" onclick="showConfig()">‹&nbsp; voltar para configurações</button>
+   <div class="routine-form">
+    <h3>${title}</h3>
+    <p class="routine-form-subtitle">Cadastre a ficha como um formulário completo. As informações básicas ajudam a identificar os grupos musculares do treino.</p>
 
- if(p.routines[id])
-  id+="-"+Date.now();
+    <div class="routine-form-field">
+     <label for="routineFormName">Nome da ficha</label>
+     <input id="routineFormName" value="${esc(safeName)}" placeholder="Ex.: Treino A">
+    </div>
 
- p.routines[id]={
+    <div class="routine-form-field">
+     <label>Informações básicas</label>
+     <button type="button" class="routine-basic-info-button" onclick="openRoutineInfoModal()">
+      <span>
+       <strong>Selecionar informações</strong><br>
+       <span id="routineInfoSummary" class="summary"></span>
+      </span>
+      <span>›</span>
+     </button>
+    </div>
 
-  id,
-  name:n.trim(),
-  description:description.trim(),
-  ex:[]
+    <div class="routine-form-actions">
+     <button type="button" class="secondary" onclick="showConfig()">Cancelar</button>
+     <button type="button" class="primary" onclick="saveRoutineForm()">Salvar ficha</button>
+    </div>
+   </div>
+  </div>`;
+ updateRoutineInfoSummary();
+}
 
- };
+function updateRoutineInfoSummary(){
+ const el=document.getElementById('routineInfoSummary');
+ if(!el)return;
+ const values=[...routineInfoDraft];
+ el.textContent=values.length?values.join(', '):'Nenhuma informação selecionada';
+}
 
- currentRoutine=id;
+function openRoutineInfoModal(){
+ let modal=document.getElementById('routineInfoModal');
+ if(!modal){
+  modal=document.createElement('div');
+  modal.id='routineInfoModal';
+  modal.className='routine-info-modal';
+  document.body.appendChild(modal);
+ }
+ const options=getRoutineInfoOptions();
+ const allCustom=routineCustomInfoDraft.slice();
+ modal.innerHTML=`
+  <div class="routine-info-sheet" role="dialog" aria-modal="true">
+   <div class="routine-info-sheet-header">
+    <h3>Informações básicas</h3>
+    <button type="button" class="routine-info-close" onclick="closeRoutineInfoModal()">×</button>
+   </div>
+   <p class="routine-info-help">Selecione uma ou várias opções que fazem parte deste treino.</p>
+   <div class="routine-info-grid">
+    ${options.map(o=>{
+      const checked=routineInfoDraft.includes(o.label)?'checked':'';
+      return `<label class="routine-info-option ${o.complete?'complete':''}">
+       <input type="checkbox" value="${esc(o.label)}" ${checked} onchange="toggleRoutineInfoOption(this)">
+       <span>${esc(o.label)}</span>
+      </label>`;
+    }).join('')}
+   </div>
+   <div class="routine-custom-info">
+    <strong>Criar nova informação</strong>
+    <p class="routine-info-help" style="margin-top:5px">Adicione uma informação que não esteja na lista.</p>
+    <div class="routine-custom-info-row">
+     <input id="routineCustomInfoInput" placeholder="Ex.: Lombar">
+     <button type="button" class="secondary" onclick="addCustomRoutineInfo()">+ Adicionar</button>
+    </div>
+    <div class="routine-custom-list">
+     ${allCustom.map(v=>`<span class="routine-custom-tag">${esc(v)} <button type="button" onclick="removeCustomRoutineInfo('${esc(v)}')">×</button></span>`).join('')}
+    </div>
+   </div>
+   <div class="routine-info-footer">
+    <button type="button" class="secondary" onclick="closeRoutineInfoModal()">Cancelar</button>
+    <button type="button" class="primary" onclick="applyRoutineInfoSelection()">Confirmar seleção</button>
+   </div>
+  </div>`;
+ modal.classList.add('open');
+ modal.onclick=e=>{if(e.target===modal)closeRoutineInfoModal();};
+}
 
+function toggleRoutineInfoOption(input){
+ const value=input.value;
+ if(input.checked){
+  if(!routineInfoDraft.includes(value))routineInfoDraft.push(value);
+ }else{
+  routineInfoDraft=routineInfoDraft.filter(v=>v!==value);
+ }
+}
+
+function addCustomRoutineInfo(){
+ const input=document.getElementById('routineCustomInfoInput');
+ const value=(input?.value||'').trim();
+ if(!value)return;
+ if(!routineCustomInfoDraft.includes(value))routineCustomInfoDraft.push(value);
+ if(!routineInfoDraft.includes(value))routineInfoDraft.push(value);
+ openRoutineInfoModal();
+}
+
+function removeCustomRoutineInfo(value){
+ routineCustomInfoDraft=routineCustomInfoDraft.filter(v=>v!==value);
+ routineInfoDraft=routineInfoDraft.filter(v=>v!==value);
+ openRoutineInfoModal();
+}
+
+function applyRoutineInfoSelection(){
+ closeRoutineInfoModal();
+ updateRoutineInfoSummary();
+}
+
+function closeRoutineInfoModal(){
+ const modal=document.getElementById('routineInfoModal');
+ if(modal)modal.classList.remove('open');
+}
+
+function saveRoutineForm(){
+ const name=(document.getElementById('routineFormName')?.value||'').trim();
+ if(!name){alert('Digite o nome da ficha.');return;}
+ const p=getProfile();
+ if(!p)return;
+ let id=routineFormEditId;
+ if(!id){
+  id=slug(name);
+  if(p.routines[id])id+='-'+Date.now();
+  p.routines[id]={id,name,description:routineInfoDraft.join(', '),basicInfo:routineInfoDraft.slice(),ex:[]};
+ }else{
+  const r=p.routines[id];
+  if(!r)return;
+  r.name=name;
+  r.description=routineInfoDraft.join(', ');
+  r.basicInfo=routineInfoDraft.slice();
+ }
+ currentRoutine=null;
  saveDB();
  showConfig();
+}
 
+function addRoutine(){
+ openRoutineForm();
 }
 
 /* =========================================================
@@ -4488,31 +4733,7 @@ function importRoutine(){
 }
 
 function editRoutine(id){
-
- const r=getProfile().routines[id];
-
- if(!r)return;
-
- const n=prompt(
-  "Nome do treino:",
-  r.name||""
- );
-
- if(!n?.trim())return;
-
- const description=prompt(
-  "Informações básicas do treino (ex.: Costas, Bíceps e Posterior de ombro):",
-  r.description||""
- );
-
- if(description===null)return;
-
- r.name=n.trim();
- r.description=description.trim();
-
- saveDB();
- showConfig();
-
+ openRoutineForm(id);
 }
 
 function deleteRoutine(id){
