@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#11161b">
+<meta name="theme-color" content="#1b2127">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -1509,6 +1509,36 @@ nav{
 }
 main{
   position:relative;
+}
+
+/* EVOLUTE METALLIC THEME TEST */
+body{
+ background:
+  radial-gradient(900px 420px at 18% 12%, rgba(205,212,220,.16), transparent 58%),
+  radial-gradient(800px 500px at 92% 28%, rgba(255,122,0,.10), transparent 58%),
+  linear-gradient(125deg, #080b0f 0%, #171d23 24%, #2a3036 43%, #151b21 61%, #090c10 100%);
+ background-attachment:fixed;
+ background-size:cover;
+}
+header{
+ background:
+  linear-gradient(120deg, #080b0f 0%, #252c33 45%, #11161b 72%, #2b1a0d 100%);
+}
+nav{
+ background:
+  linear-gradient(90deg, #10161c 0%, #252c33 48%, #171d23 76%, #24170f 100%);
+}
+.card,
+.home-profile-card,
+.home-training-panel,
+.home-calendar-card,
+.home-stat{
+ background:linear-gradient(145deg,#12171c 0%,#1d2329 52%,#11161b 100%) !important;
+ border-color:#3a424a;
+ box-shadow:0 8px 24px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.045);
+}
+main,.home-page{
+ background:transparent;
 }
 </style>
 </head>
