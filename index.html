@@ -217,8 +217,8 @@ main{
 }
 
 
-.completed-exercise{opacity:.96}
-.completed-lock{color:#86efac;font-size:12px;margin:6px 0 10px}
+.completed-exercise{opacity:.42;pointer-events:none;transition:opacity .28s ease}
+.exercise-completing{opacity:.42!important;transform:translateY(10px);transition:opacity .38s ease,transform .38s ease;pointer-events:none}
 .rep-low{border-color:#ef4444!important;box-shadow:0 0 0 1px #ef4444 inset}
 .rep-max{border-color:#22c55e!important;box-shadow:0 0 0 1px #22c55e inset}
 
@@ -2112,20 +2112,25 @@ function toggleExerciseDone(index){
  saveTrainingDraftFromDOM();
  const d=getTrainingDraft();
  if(!d?.exercises[index])return;
- d.exercises[index].completed=!d.exercises[index].completed;
+ const wasCompleted=!!d.exercises[index].completed;
+ d.exercises[index].completed=!wasCompleted;
  saveDB();
-
- const all=d.exercises.length>0&&d.exercises.every(x=>x.completed);
- if(all){
+ if(!wasCompleted){
+  const card=document.querySelector(`.exercise input#done${index}`)?.closest(".exercise");
+  if(card){
+   card.classList.add("exercise-completing");
+   const checkbox=card.querySelector("input#done"+index);
+   if(checkbox)checkbox.disabled=true;
+  }
+  const all=d.exercises.length>0&&d.exercises.every(x=>x.completed);
   setTimeout(()=>{
-   alert("Parabéns, treino finalizado com sucesso!");
-   finalizeWorkout(true);
-  },80);
+   if(all){alert("Parabéns, treino finalizado com sucesso!");finalizeWorkout(true);}
+   else showTraining();
+  },380);
  }else{
   showTraining();
  }
 }
-
 function showTraining(){
 
  setTab("btnT");
@@ -2170,11 +2175,10 @@ function showTraining(){
    <div class="exercise-main-row">
     <h3>${formatExerciseName(e.name,i)}</h3>
     ${exerciseAnimationHtml(e)}
-    <label id="doneRow${i}" class="exercise-complete${locked?' done':''}" title="${locked?'Desmarcar exercício':'Marcar exercício como concluído'}">
-     <input id="done${i}" type="checkbox" ${locked?'checked':''} onchange="toggleExerciseDone(${i})">
+    <label id="doneRow${i}" class="exercise-complete${locked?' done':''}" title="${locked?'Exercício concluído':'Marcar exercício como concluído'}">
+     <input id="done${i}" type="checkbox" ${locked?'checked disabled':''} onchange="toggleExerciseDone(${i})">
     </label>
    </div>
-   ${locked?'<div class="completed-lock">🔒 Exercício concluído — cargas e repetições bloqueadas</div>':''}
    <div class="last">Última S1: ${e.refLoad!==""&&e.refLoad!=null?esc(e.refLoad)+" kg × "+esc(e.refReps||"-")+" reps":"sem registro"}</div>
    <div class="target">
     <strong>🎯 Meta para o próximo treino</strong>
