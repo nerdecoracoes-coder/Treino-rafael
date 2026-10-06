@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#05070b">
+<meta name="theme-color" content="#1b2127">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<title>Treino Rafael</title>
+<title>Evolute Training</title>
 
 <style>
 :root{
- --bg:#05070b;
- --surface:#0d1118;
- --surface2:#131a24;
- --line:#263244;
+ --bg:#0b0f13;
+ --surface:#101214;
+ --surface2:#17191c;
+ --line:#2a2d32;
  --text:#f8fafc;
  --muted:#94a3b8;
- --blue:#2563eb;
- --blue2:#3b82f6;
+ --accent:#f97316;
+ --accent2:#ff8a1f;
+ --accent-soft:#ffb45c;
  --danger:#ef4444;
  --success:#22c55e;
 }
@@ -28,7 +29,10 @@
 body{
  margin:0;
  font-family:Arial,sans-serif;
- background:var(--bg);
+ background:
+  radial-gradient(900px 500px at 50% -10%, rgba(255,154,31,.10), transparent 58%),
+  linear-gradient(145deg,#0b0f13 0%,#171c22 46%,#0d1116 100%);
+ background-attachment:fixed;
  color:var(--text)
 }
 
@@ -37,30 +41,44 @@ button,input,select{font:inherit}
 button{cursor:pointer}
 
 header{
- background:#05070b;
+ background:linear-gradient(145deg,#0b0f13 0%,#171c22 58%,#11161b 100%);
  color:#fff;
- padding:14px 12px;
+ padding:10px 12px 27px;
  position:sticky;
  top:0;
  z-index:20;
- border-bottom:1px solid var(--line)
+ border-bottom:1px solid var(--line);
+ min-height:72px;
+ box-sizing:border-box
 }
 
 header h1{
- margin:0 0 10px;
+ margin:0;
  font-size:21px;
- text-align:center
+ text-align:center;
+ line-height:44px
 }
 
 .profile{
- max-width:700px;
- margin:auto
+ position:absolute;
+ top:10px;
+ left:12px;
+ width:44px;
+ height:44px;
+ margin:0;
+ padding:0
 }
 
 .profile-selector{
  display:flex;
  align-items:center;
- gap:10px
+ justify-content:flex-start;
+ position:relative;
+ top:0;
+ left:0;
+ width:44px;
+ height:44px;
+ margin:0
 }
 
 .profile-avatar{
@@ -68,7 +86,7 @@ header h1{
  height:44px;
  min-width:44px;
  border-radius:50%;
- background:var(--blue);
+ background:var(--accent);
  color:#fff;
  display:flex;
  align-items:center;
@@ -76,7 +94,39 @@ header h1{
  font-size:22px;
  font-weight:bold;
  overflow:hidden;
- border:2px solid #fff
+ border:2px solid #fff;
+ cursor:pointer;
+ position:relative;
+ z-index:2
+}
+
+.profile-selector::after{
+ content:"Perfil";
+ position:absolute;
+ top:48px;
+ left:0;
+ width:44px;
+ text-align:center;
+ color:#cbd5e1;
+ font-size:12px;
+ font-weight:500;
+ line-height:1.1;
+ pointer-events:none
+}
+
+.profile-selector select{
+ position:absolute;
+ top:0;
+ left:0;
+ width:44px;
+ height:44px;
+ margin:0;
+ padding:0;
+ opacity:0;
+ cursor:pointer;
+ z-index:3;
+ border:0;
+ background:transparent
 }
 
 .profile-avatar img{
@@ -95,7 +145,7 @@ select,input{
  color:var(--text)
 }
 
-input::placeholder{color:#64748b}
+input::placeholder{color:#707780}
 
 .exerciseSelect{
  font-size:14px;
@@ -104,8 +154,12 @@ input::placeholder{color:#64748b}
 }
 
 nav{
- display:flex;
- background:#090d14;
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.12fr);
+ align-items:stretch;
+ gap:0;
+ padding:0 4px 0 16px;
+ background:linear-gradient(90deg,#0d1217 0%,#171c22 52%,#0e1318 100%);
  border-bottom:1px solid var(--line);
  position:sticky;
  top:92px;
@@ -113,17 +167,77 @@ nav{
 }
 
 nav button{
- flex:1;
- padding:12px 4px;
+ width:100%;
+ min-width:0;
+ padding:8px 1px 10px;
  border:0;
  background:transparent;
  font-weight:bold;
- color:var(--muted)
+ color:var(--muted);
+ font-size:clamp(11px,3.05vw,14px);
+ line-height:1.15;
+ white-space:nowrap;
+ overflow:visible;
+ text-overflow:clip;
+ text-align:center;
+ display:flex !important;
+ flex-direction:column !important;
+ align-items:center;
+ justify-content:center;
+ gap:4px;
 }
+
+.nav-icon{
+ font-size:17px;
+ line-height:1;
+ flex:0 0 auto;
+ color:#aebbd0;
+ display:flex !important;
+ align-items:center;
+ justify-content:center;
+ width:24px;
+ height:24px;
+ margin:0 auto;
+}
+
+.nav-svg{
+ width:24px;
+ height:24px;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+}
+
+.nav-svg svg{
+ width:22px;
+ height:22px;
+ display:block;
+ fill:none;
+ stroke:currentColor;
+ stroke-width:2.2;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+
+nav button > span:last-child{
+ display:block !important;
+ line-height:1.1;
+ text-align:center;
+}
+
+nav button.active .nav-icon{color:#fff;}
+
+/* As cinco abas ocupam exatamente o mesmo espaço. As margens laterais são iguais,
+   deixando o conjunto visualmente centralizado e a última aba sem corte. */
+nav #btnHome,
+nav #btnT,
+nav #btnH,
+nav #btnE,
+nav #btnC{width:100%;}
 
 nav button.active{
  color:#fff;
- border-bottom:3px solid var(--blue2)
+ border-bottom:3px solid var(--accent2)
 }
 
 main{
@@ -139,6 +253,242 @@ main{
  padding:15px;
  margin-bottom:12px;
  box-shadow:0 4px 16px #0005
+}
+
+
+.back-to-routines{
+ display:inline-flex;
+ align-items:center;
+ gap:5px;
+ padding:4px 0;
+ margin:0 0 10px 2px;
+ border:0 !important;
+ outline:0 !important;
+ background:transparent !important;
+ color:#ff9a1f;
+ font-size:14px;
+ font-weight:700;
+ text-transform:lowercase;
+ cursor:pointer;
+ box-shadow:none !important;
+ -webkit-appearance:none;
+ appearance:none
+}
+.back-to-routines:hover{color:#ffb45c}
+.back-to-routines:active{transform:translateX(-2px);color:#ffd0a3}
+
+/* Lista inicial de treinos: cards grandes, um abaixo do outro */
+.routines-page-title{
+ margin:4px 0 6px;
+ font-size:28px
+}
+.routines-page-subtitle{
+ margin:0 0 16px;
+ color:var(--muted);
+ font-size:14px
+}
+.routines-list{
+ display:flex;
+ flex-direction:column;
+ gap:12px
+}
+.routine-list-card{
+ width:100%;
+ min-height:92px;
+ padding:20px 92px 20px 20px;
+ border:1px solid #263449 !important;
+ border-radius:18px;
+ background:#121416 !important;
+ color:#f8fafc !important;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ text-align:left;
+ box-shadow:none;
+ cursor:pointer;
+ appearance:none;
+ -webkit-appearance:none;
+ position:relative;
+ transition:background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease
+}
+.routine-list-card:active{
+ transform:scale(.99);
+ background:#151719 !important
+}
+.routine-list-card:hover{
+ background:#1b1d20 !important;
+ border-color:#ff8a1f !important;
+ box-shadow:0 4px 14px rgba(249,115,22,.10)
+}
+
+/* Menu de Configurações */
+.settings-menu{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.settings-menu-card{position:relative;width:100%;min-height:92px;padding:20px 54px 20px 20px;border:1px solid #263449;border-radius:18px;background:#121416;color:#f8fafc;text-align:left;cursor:pointer;transition:.18s ease;box-sizing:border-box}
+.settings-menu-card:hover{border-color:#ff8a1f;background:#1b1d20;transform:translateY(-1px)}
+.settings-menu-card:active{transform:scale(.99)}
+.settings-menu-card strong{display:block;font-size:20px;line-height:1.2}
+.settings-menu-card span{display:block;margin-top:7px;color:#94a3b8;font-size:14px;line-height:1.4}
+.settings-menu-card b{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:30px;font-weight:400;color:#ff9a1f}
+.settings-menu-backup{border-color:#34383e}
+.settings-section-head>h1{margin-top:20px}
+/* Fichas na configuração: primeiro apenas resumo; detalhes somente após seleção */
+.config-routine-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;margin-bottom:14px}
+.config-routine-summary{
+ width:100%;
+ min-height:72px;
+ padding:14px 16px;
+ border:1px solid #2a2d32;
+ border-radius:14px;
+ background:#121416;
+ color:#f8fafc;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ text-align:left;
+ cursor:pointer;
+ appearance:none;
+ -webkit-appearance:none;
+ transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease
+}
+.config-routine-summary:hover{border-color:#ff8a1f;background:#1b1d20}
+.config-routine-summary:active{transform:scale(.99)}
+.config-routine-summary.selected{border-color:#ff9a1f;background:#38200f;box-shadow:0 0 0 1px rgba(255,154,31,.28) inset}
+.config-routine-summary span:first-child{display:flex;flex-direction:column;gap:5px;min-width:0}
+.config-routine-summary strong{font-size:19px}
+.config-routine-summary small{font-size:13px;color:#94a3b8;line-height:1.35}
+.config-routine-summary.selected small{color:#ffd0a3}
+
+/* Tela exclusiva da ficha selecionada */
+.routine-detail-page{
+ width:100%;
+ max-width:700px;
+ margin:0 auto;
+}
+.routine-detail-page .routine-details-header{
+ margin:4px 0 18px;
+ padding-bottom:14px;
+ border-bottom:1px solid var(--line);
+}
+.routine-detail-page .routine-details-header h2{margin:0 0 5px;font-size:30px}
+.routine-detail-page .routine-details-info{color:var(--muted);font-size:15px;line-height:1.45}
+.routine-detail-page .routine-details-actions{display:flex;gap:10px;margin:0 0 18px}
+.routine-detail-page .routine-details-actions button{flex:1}
+.routine-detail-page .routine-exercises-title{font-size:20px;margin:18px 0 10px}
+.config-routine-summary-arrow{font-size:28px;color:#ff9a1f;line-height:1}
+.config-routine-empty{padding:18px 4px;color:var(--muted);font-size:14px;text-align:center}
+.selected-routine-panel{margin-top:16px;padding:16px;border:1px solid #34383e;border-radius:16px;background:#0d0f11}
+.selected-routine-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.selected-routine-header h3{margin:0 0 5px;font-size:24px}
+.selected-routine-info{color:#ffb45c;font-size:14px;line-height:1.4}
+.selected-routine-actions{margin-top:14px}
+.routine-edit-banner{margin:12px 0;padding:11px 12px;border:1px solid #ff8a1f;border-radius:10px;background:#24170f;color:#ffd0a3;font-size:13px}
+.config-exercise-item{margin-top:12px}
+.config-exercise-item:not(.editing){background:#121416}
+.config-exercise-item:not(.editing) input:disabled{opacity:1;color:#cbd5e1;-webkit-text-fill-color:#cbd5e1}
+@media(max-width:480px){.selected-routine-header{flex-direction:column}.selected-routine-header .secondary{width:100%}}
+
+.routine-list-card-content{
+ display:flex;
+ flex-direction:column;
+ align-items:flex-start;
+ gap:5px;
+ min-width:0;
+ flex:1
+}
+.routine-list-card-name{
+ font-size:20px;
+ font-weight:800;
+ line-height:1.2
+}
+.routine-list-card-description{
+ font-size:14px;
+ line-height:1.4;
+ color:#94a3b8;
+ font-weight:500
+}
+.routine-list-card-arrow{
+ position:absolute;
+ right:20px;
+ top:50%;
+ transform:translateY(-50%);
+ font-size:34px;
+ line-height:1;
+ color:#ff9a1f;
+ font-weight:300
+}
+
+.routine-recommended{
+ position:absolute;
+ right:54px;
+ top:50%;
+ transform:translateY(-50%);
+ display:inline-flex;
+ align-items:center;
+ padding:5px 9px;
+ border-radius:999px;
+ background:#24170f;
+ border:1px solid #ff8a1f;
+ color:#ffb45c;
+ font-size:11px;
+ font-weight:700;
+ white-space:nowrap;
+ margin-left:0;
+ }
+
+.home-recommended-card{
+ width:100%;
+ min-width:100%;
+ max-width:none;
+ align-self:stretch;
+ display:flex;
+ flex-direction:column;
+ box-sizing:border-box;
+ margin:0 0 14px 0;
+ padding:42px 18px 18px 18px;
+ text-align:left;
+ position:relative;
+ border:2px solid #ff8a1f;
+ border-radius:18px;
+ background:#d95f02;
+ color:#fff;
+ box-shadow:0 7px 22px rgba(249,115,22,.28), inset 0 1px 0 rgba(255,255,255,.12);
+ cursor:pointer;
+ transition:transform .18s ease, background .18s ease, box-shadow .18s ease
+}
+.home-recommended-card:active{
+ transform:scale(.985);
+ background:#b84d00
+}
+.home-recommended-label{
+ display:flex !important;
+ position:static !important;
+ width:max-content;
+ margin-left:auto !important;
+ margin-right:0 !important;
+ margin-bottom:10px;
+ padding:4px 8px;
+ border-radius:999px;
+ background:#facc15;
+ color:#111827;
+ font-size:11px;
+ font-weight:900;
+ line-height:1.2;
+ align-items:center;
+ justify-content:center;
+}
+.home-recommended-name{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ font-size:24px;
+ font-weight:900
+}
+.home-recommended-arrow{
+ font-size:32px;
+ font-weight:300;
+ color:#ffd0a3
 }
 
 .exercise h3{
@@ -249,16 +599,16 @@ main{
  opacity:1 !important;
 }
 .completed-section-card{
- background:#102a5c !important;
- border:1px solid #2563eb !important;
- box-shadow:0 6px 20px #0006 !important;
+ background:#6f2f00 !important;
+ border:2px solid #f97316 !important;
+ box-shadow:0 6px 20px #0008 !important;
 }
 .completed-section-card h2,
 .completed-section-card .muted{
- color:#dbeafe !important;
+ color:#fff0df !important;
 }
 .completed-section-card .badge{
- background:#1d4ed8 !important;
+ background:#d95f02 !important;
  color:#fff !important;
 }
 .completed-lock{color:#86efac;font-size:12px;margin:6px 0 10px}
@@ -272,20 +622,20 @@ main{
 }
 
 .last{
- color:#60a5fa;
+ color:#ff9a1f;
  font-size:13px;
  margin-bottom:10px
 }
 
 .target{
- background:#0b1d3a;
- border:1px solid #1d4ed8;
+ background:#24170f;
+ border:1px solid #d95f02;
  border-radius:10px;
  padding:10px;
  margin:8px 0 12px
 }
 
-.target strong{color:#60a5fa}
+.target strong{color:#ff9a1f}
 
 .grid{
  display:grid;
@@ -305,13 +655,13 @@ label{
  padding:14px;
  border:0;
  border-radius:10px;
- background:var(--blue);
+ background:var(--accent);
  color:#fff;
  font-size:17px;
  font-weight:bold
 }
 
-.primary:hover{background:var(--blue2)}
+.primary:hover{background:var(--accent2)}
 
 .secondary{
  padding:10px;
@@ -371,8 +721,8 @@ hr{
  display:inline-block;
  padding:5px 8px;
  border-radius:999px;
- background:#172033;
- color:#93c5fd;
+ background:#1b1d20;
+ color:#ffb45c;
  font-size:12px
 }
 
@@ -473,6 +823,104 @@ hr{
  pointer-events:none;
 }
 
+/* Formulário de nova ficha de treino */
+.routine-form{
+ margin-top:14px;
+ padding:18px;
+ border:1px solid var(--line);
+ border-radius:16px;
+ background:#0d0f11;
+}
+.routine-form h3{margin:0 0 6px;font-size:22px}
+.routine-form-subtitle{margin:0 0 16px;color:var(--muted);font-size:14px}
+.routine-form-field{margin-bottom:16px}
+.routine-form-field label{display:block;margin-bottom:7px;font-weight:700;color:#e2e8f0}
+.routine-basic-info-button{
+ width:100%;
+ min-height:54px;
+ padding:12px 14px;
+ border:1px solid #34383e;
+ border-radius:11px;
+ background:#17191c;
+ color:#f8fafc;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ text-align:left;
+}
+.routine-basic-info-button .summary{color:#94a3b8;font-size:13px;line-height:1.35}
+.routine-form-actions{display:flex;gap:10px;margin-top:6px}
+.routine-form-actions button{flex:1}
+.routine-info-modal{
+ position:fixed;
+ inset:0;
+ z-index:10000;
+ display:none;
+ align-items:flex-end;
+ justify-content:center;
+ background:rgba(0,0,0,.72);
+ padding:12px;
+}
+.routine-info-modal.open{display:flex}
+.routine-info-sheet{
+ width:min(700px,100%);
+ max-height:88vh;
+ overflow:auto;
+ background:#101214;
+ border:1px solid #34383e;
+ border-radius:20px 20px 14px 14px;
+ padding:18px;
+ box-shadow:0 -12px 40px rgba(0,0,0,.45);
+}
+.routine-info-sheet-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.routine-info-sheet-header h3{margin:0;font-size:22px}
+.routine-info-close{border:0;background:transparent;color:#94a3b8;font-size:28px;padding:2px 8px}
+.routine-info-help{margin:0 0 16px;color:var(--muted);font-size:14px}
+.routine-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.routine-info-option{
+ position:relative;
+ display:flex;
+ align-items:center;
+ min-height:48px;
+ padding:11px 12px;
+ border:1px solid #2a2d32;
+ border-radius:11px;
+ background:#17191c;
+ color:#e5e7eb;
+ cursor:pointer;
+}
+.routine-info-option.complete{
+ border-color:#ff8a1f;
+ background:#24170f;
+ color:#ffd0a3;
+ font-weight:800;
+}
+.routine-info-option input{
+ width:20px;
+ height:20px;
+ margin:0 10px 0 0;
+ accent-color:#ff8a1f;
+}
+.routine-info-option:has(input:checked){
+ border-color:#ff9a1f;
+ background:#d95f02;
+ color:#fff;
+ box-shadow:0 0 0 1px rgba(255,154,31,.35) inset;
+}
+.routine-custom-info{
+ margin-top:14px;
+ padding-top:14px;
+ border-top:1px solid #2a2d32;
+}
+.routine-custom-info-row{display:flex;gap:8px}
+.routine-custom-info-row input{flex:1}
+.routine-custom-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.routine-custom-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#1b1d20;color:#ffd0a3;font-size:13px}
+.routine-custom-tag button{border:0;background:transparent;color:#ffb45c;padding:0;font-size:16px}
+.routine-info-footer{display:flex;gap:10px;margin-top:18px}
+.routine-info-footer button{flex:1}
+@media(max-width:480px){.routine-info-grid{grid-template-columns:1fr}.routine-form-actions,.routine-info-footer{flex-direction:column}}
+
 .exercise-animation-modal{
  position:fixed;
  inset:0;
@@ -529,9 +977,9 @@ hr{
  display:block;
  text-align:center;
  padding:10px;
- background:#172033;
+ background:#1b1d20;
  border-radius:9px;
- color:#bfdbfe;
+ color:#ffd0a3;
  text-decoration:none;
  font-weight:bold;
  margin-top:8px
@@ -556,7 +1004,7 @@ hr{
 }
 
 .timeline-item{
- border-left:3px solid var(--blue);
+ border-left:3px solid var(--accent);
  padding:0 0 18px 14px;
  margin-left:6px
 }
@@ -565,7 +1013,7 @@ hr{
 
 .timeline-date{
  font-weight:bold;
- color:#93c5fd
+ color:#ffb45c
 }
 
 .metric-grid{
@@ -603,7 +1051,7 @@ hr{
 }
 
 .link{
- color:#60a5fa;
+ color:#ff9a1f;
  text-decoration:none
 }
 
@@ -629,7 +1077,7 @@ hr{
  height:82px;
  margin:0 auto 12px;
  border-radius:50%;
- background:var(--blue);
+ background:var(--accent);
  color:#fff;
  display:flex;
  align-items:center;
@@ -652,10 +1100,241 @@ hr{
  line-height:1.15
 }
 
-.home-subtitle{
+.home-welcome{
  margin:7px 0 0;
+ color:var(--text);
+ font-size:16px;
+ font-weight:600;
+ line-height:1.35
+}
+
+.home-subtitle{
+ margin:5px 0 0;
  color:var(--muted);
  font-size:14px
+}
+
+
+.home-dashboard{
+ display:flex;
+ flex-direction:column;
+ gap:14px;
+ margin-top:2px;
+ background:transparent;
+ border:0;
+ border-radius:0;
+ overflow:visible;
+ box-shadow:none
+}
+.home-training-panel{
+ width:100%;
+ box-sizing:border-box;
+ display:block;
+ background:var(--surface) !important;
+ border:1px solid var(--line);
+ border-radius:18px;
+ padding:24px 18px 16px;
+ color:var(--text);
+ text-align:left;
+ box-shadow:0 4px 18px #0005;
+ cursor:pointer;
+ font:inherit;
+ appearance:none;
+ -webkit-appearance:none;
+ transition:transform .18s ease, background .18s ease, box-shadow .18s ease
+}
+.home-training-panel:active{
+ transform:scale(.985);
+ background:var(--surface) !important
+}
+.home-training-panel h3{
+ margin:0;
+ font-size:25px;
+ line-height:1.1
+}
+.home-training-head{
+ display:flex;
+ align-items:flex-start;
+ justify-content:space-between;
+ gap:12px
+}
+.home-next-name{
+ color:var(--text);
+ font-size:25px;
+ font-weight:900;
+ margin:0
+}
+.home-next-description{
+ color:var(--muted);
+ font-size:16px;
+ margin-top:7px;
+ line-height:1.3
+}
+.home-training-panel .home-recommended-label{
+ flex:0 0 auto;
+ margin:0;
+ padding:5px 9px;
+ font-size:11px
+}
+.home-stats{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;
+ margin-top:16px
+}
+.home-stat{
+ background:var(--surface);
+ border:1px solid var(--line);
+ border-radius:12px;
+ padding:12px;
+ min-height:70px
+}
+.home-stat-label{
+ display:block;
+ color:var(--muted);
+ font-size:12px;
+ margin-bottom:5px
+}
+.home-stat-value{
+ display:block;
+ color:var(--text);
+ font-size:16px;
+ font-weight:800
+}
+.home-motivation{
+ margin:14px 0 0;
+ padding-top:12px;
+ border-top:1px solid var(--line);
+ color:var(--muted);
+ font-size:14px;
+ font-weight:700;
+ text-align:center
+}
+.home-calendar-card{
+ background:var(--surface);
+ border:1px solid var(--line);
+ border-radius:22px;
+ padding:17px 16px 15px;
+ box-shadow:0 10px 28px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.025)
+}
+.home-calendar-head{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ margin-bottom:14px;
+ padding:0 2px
+}
+.home-calendar-head h3{
+ margin:0;
+ font-size:19px;
+ letter-spacing:-.2px
+}
+.home-calendar-month{
+ color:#fff0df;
+ background:rgba(255,138,31,.12);
+ border:1px solid rgba(255,154,31,.24);
+ border-radius:999px;
+ padding:6px 10px;
+ font-size:12px;
+ font-weight:800;
+ text-transform:capitalize
+}
+.home-calendar-grid{
+ display:grid;
+ grid-template-columns:repeat(7,minmax(0,1fr));
+ gap:6px;
+ text-align:center
+}
+.home-calendar-weekday{
+ color:#94a3b8;
+ font-size:10px;
+ font-weight:900;
+ letter-spacing:.35px;
+ padding-bottom:3px
+}
+.home-calendar-day{
+ position:relative;
+ min-height:38px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ border-radius:12px;
+ color:#cbd5e1;
+ font-size:13px;
+ font-weight:600;
+ transition:transform .15s ease,background .15s ease
+}
+.home-calendar-day.empty{visibility:hidden}
+.home-calendar-day.today{
+ background:linear-gradient(145deg,#ff9a1f 0%,#f97316 58%,#d95f02 100%);
+ border:1px solid #ffffff;
+ color:#fff;
+ font-size:15px;
+ font-weight:950;
+ text-shadow:0 1px 2px rgba(0,0,0,.35);
+ box-shadow:
+  0 0 0 1px rgba(255,154,31,.9),
+  0 0 0 3px rgba(255,138,31,.22),
+  0 0 14px rgba(255,138,31,.55),
+  0 7px 18px rgba(0,0,0,.35);
+ transform:scale(1.08);
+ z-index:4;
+ overflow:visible
+}
+.home-calendar-day.today::after{
+ content:'HOJE';
+ position:absolute;
+ left:50%;
+ bottom:-10px;
+ transform:translateX(-50%);
+ padding:2px 5px;
+ border-radius:999px;
+ background:#facc15;
+ border:1px solid #fde68a;
+ color:#111827;
+ font-size:6px;
+ line-height:1.1;
+ font-weight:1000;
+ letter-spacing:.45px;
+ box-shadow:0 2px 7px rgba(0,0,0,.35);
+ white-space:nowrap
+}
+.home-calendar-day.workout{
+ background:rgba(34,197,94,.13);
+ border:1px solid rgba(74,222,128,.35);
+ color:#dcfce7;
+ font-weight:900;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+}
+.home-calendar-day.workout.today{
+ background:linear-gradient(145deg,#ff8a1f,#f97316);
+ border-color:#ffd0a3
+}
+.home-calendar-dot{
+ position:absolute;
+ width:5px;
+ height:5px;
+ border-radius:50%;
+ background:#4ade80;
+ bottom:5px;
+ box-shadow:0 0 0 2px rgba(74,222,128,.12)
+}
+.home-calendar-day.today .home-calendar-dot{background:#fff;box-shadow:none}
+.home-calendar-legend{
+ display:flex;
+ justify-content:center;
+ gap:7px;
+ align-items:center;
+ color:var(--muted);
+ font-size:10px;
+ margin-top:14px
+}
+.home-calendar-legend-dot{
+ width:7px;
+ height:7px;
+ border-radius:50%;
+ background:#4ade80;
+ box-shadow:0 0 0 2px rgba(74,222,128,.10)
 }
 
 .home-menu{
@@ -682,7 +1361,7 @@ hr{
 
 .home-menu button:hover{
  background:var(--surface2);
- border-color:#3b82f6
+ border-color:#ff8a1f
 }
 
 .home-menu .home-menu-icon{
@@ -714,109 +1393,302 @@ hr{
  }
 }
 
-/* EVOLUTE — grafite predominante + laranja controlado */
+/* ===== EVOLUTE TRAINING — CARTÕES DE TREINO ===== */
+.routine-list-card{
+  background:#121416 !important;
+  border:1px solid #263449 !important;
+  color:#f8fafc !important;
+  box-shadow:none !important;
+}
+.routine-list-card:hover{
+  background:#1b1d20 !important;
+  border-color:#ff8a1f !important;
+  box-shadow:none !important;
+}
+.routine-list-card:active{
+  background:#151719 !important;
+}
+.routine-list-card-name{color:#f8fafc !important;}
+.routine-list-card-description{color:#94a3b8 !important;}
+.routine-list-card-arrow{
+  position:absolute !important;
+  right:10px !important;
+  top:50% !important;
+  transform:translateY(-50%) !important;
+  color:#ff9a1f !important;
+  z-index:3 !important;
+}
+.routine-recommended{
+  position:absolute !important;
+  right:46px !important;
+  top:20px !important;
+  transform:none !important;
+  background:#facc15 !important;
+  border:0 !important;
+  color:#111827 !important;
+  padding:6px 12px !important;
+  border-radius:999px !important;
+  font-size:12px !important;
+  font-weight:800 !important;
+  margin-left:0 !important;
+  box-shadow:none !important;
+}
+
+/* ===== EVOLUTE TRAINING — TESTE DE PALETA METÁLICA ===== */
 :root{
-  --bg:#111417;
-  --surface:#252a2f;
-  --surface2:#30363c;
-  --line:#555d64;
-  --text:#f8fafc;
-  --muted:#c0c6cc;
-  --blue:#f97316;
-  --blue2:#ff8a24;
+ --bg:#0b0e12;
+ --surface:#15191e;
+ --surface2:#1d2228;
+ --line:#303740;
+ --text:#f4f6f8;
+ --muted:#a7b0bb;
+ --accent:#f47a18;
+ --accent2:#ff9628;
+ --accent-soft:#ffc06b;
 }
-
-html{background:#111417}
-
-body{
-  background:
-    radial-gradient(ellipse 62% 32% at 96% 8%, rgba(249,115,22,.58) 0%, rgba(249,115,22,.30) 38%, rgba(249,115,22,0) 74%),
-    radial-gradient(ellipse 52% 34% at 4% 90%, rgba(249,115,22,.40) 0%, rgba(249,115,22,.17) 42%, rgba(249,115,22,0) 78%),
-    radial-gradient(ellipse 70% 60% at 48% 48%, rgba(93,101,108,.58) 0%, rgba(55,61,67,.32) 42%, rgba(17,20,23,0) 78%),
-    linear-gradient(125deg,#0c0f12 0%,#20252a 22%,#343a40 42%,#4a3527 58%,#292e33 72%,#181c20 86%,#0c0f12 100%);
-  background-attachment:fixed;
-}
-
-header{
-  background:linear-gradient(105deg,#0d1013 0%,#242a2f 28%,#3a4045 48%,#5a3824 67%,#a34b13 100%);
-  border-bottom-color:#60676d;
-}
-
-nav{
-  background:linear-gradient(105deg,#101316 0%,#252b30 34%,#343a40 52%,#4d392d 70%,#75421f 100%);
-  border-bottom-color:#60676d;
-}
-
-nav button.active{
-  color:#fff;
-  border-bottom-color:#ff8a24;
-}
-
-.card,
-.home-profile-card,
-.home-menu button{
-  background:linear-gradient(145deg,#3b4248 0%,#32383e 100%);
-  border-color:#69727a;
-  box-shadow:0 8px 24px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-.home-menu button:hover{
-  background:#444b52;
-  border-color:#ff8a24;
-}
-
-input,select{
-  background:#171a1d;
-  border-color:#555d64;
-}
-
-.primary{background:#f97316!important}
-.primary:hover{background:#ff8a24!important}
-
-</style>
-
-<style id="evolute-final-theme">
-:root{
- --bg:#14191e;
- --surface:#343b41;
- --surface2:#20262b;
- --line:#59636b;
- --text:#f8fafc;
- --muted:#c0c7cc;
- --blue:#f26a00;
- --blue2:#ff7a00;
-}
-html,body{min-height:100%;}
 body{
  background:
-  radial-gradient(ellipse 70% 42% at 91% 13%, rgba(245,102,0,.48) 0%, rgba(245,102,0,.28) 30%, rgba(245,102,0,0) 68%),
-  radial-gradient(ellipse 62% 38% at 8% 86%, rgba(230,91,0,.34) 0%, rgba(230,91,0,.18) 34%, rgba(230,91,0,0) 72%),
-  linear-gradient(125deg,#11161b 0%,#2b3238 38%,#1b2228 64%,#0b1015 100%);
+   radial-gradient(circle at 92% 8%, rgba(255,126,20,.10) 0%, rgba(255,126,20,0) 24%),
+   radial-gradient(circle at 8% 18%, rgba(210,216,224,.07) 0%, rgba(210,216,224,0) 28%),
+   linear-gradient(145deg,#090c10 0%,#151a20 48%,#0b0e12 100%);
  background-attachment:fixed;
 }
 header{
+ background:linear-gradient(145deg,#090c10 0%,#171c22 58%,#101419 100%) !important;
+}
+nav{
+ background:linear-gradient(180deg,#151b21 0%,#0c1015 100%) !important;
+}
+.card{
+ background:linear-gradient(145deg,#171b20 0%,#11151a 100%);
+ border-color:#303740;
+ box-shadow:0 6px 20px rgba(0,0,0,.28);
+}
+.settings-menu-card{
+ background:linear-gradient(145deg,#181d22 0%,#12161b 100%);
+ border-color:#303740;
+}
+.settings-menu-card:hover{
+ background:linear-gradient(145deg,#20262c 0%,#151a1f 100%);
+ border-color:#ff8a1f;
+}
+.routine-list-card{
+ background:linear-gradient(145deg,#181d22 0%,#12161b 100%) !important;
+ border-color:#303740 !important;
+}
+.routine-list-card:hover{
+ background:linear-gradient(145deg,#20262c 0%,#151a1f 100%) !important;
+}
+.routine-list-card:active{
+ background:linear-gradient(145deg,#1d2228 0%,#14181d 100%) !important;
+}
+.config-routine-summary{
+ background:linear-gradient(145deg,#181d22 0%,#12161b 100%);
+ border-color:#303740;
+}
+.config-routine-summary:hover{
+ background:linear-gradient(145deg,#20262c 0%,#151a1f 100%);
+}
+
+
+/* ===== EVOLUTE — FUNDO METÁLICO MAIS VISÍVEL ===== */
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(220,226,232,.16) 0%, rgba(220,226,232,0) 30%),
+    radial-gradient(circle at 88% 12%, rgba(255,126,20,.09) 0%, rgba(255,126,20,0) 25%),
+    radial-gradient(circle at 72% 78%, rgba(170,180,190,.08) 0%, rgba(170,180,190,0) 32%),
+    linear-gradient(135deg,#252b31 0%,#171c22 38%,#22282e 68%,#11161b 100%) !important;
+  background-attachment:fixed;
+}
+header{
+  background:linear-gradient(135deg,#10151a 0%,#20262c 55%,#151a20 100%) !important;
+}
+nav{
+  background:linear-gradient(180deg,#1c2228 0%,#10151a 100%) !important;
+}
+main{
+  position:relative;
+}
+
+/* EVOLUTE METALLIC THEME — BLACK / METALLIC GRAPHITE / ORANGE */
+body{
  background:
-  radial-gradient(ellipse 70% 100% at 92% 15%,rgba(245,102,0,.50),rgba(245,102,0,0) 70%),
-  linear-gradient(110deg,#0d1217 0%,#252c32 48%,#1a2025 100%);
+  radial-gradient(700px 520px at 88% 18%, rgba(255,122,0,.24), transparent 64%),
+  radial-gradient(620px 460px at 8% 72%, rgba(185,194,203,.20), transparent 62%),
+  linear-gradient(125deg,
+   #050608 0%,
+   #11161b 19%,
+   #3b4249 39%,
+   #5a4330 50%,
+   #a34e13 58%,
+   #2a3036 70%,
+   #101419 84%,
+   #050608 100%);
+ background-attachment:fixed;
+ background-size:cover;
+ color:var(--text);
+}
+header{
+ background:
+  linear-gradient(115deg,
+   #050608 0%,
+   #171d23 28%,
+   #424950 51%,
+   #7a431f 68%,
+   #171b20 86%,
+   #07090b 100%);
+ box-shadow:0 5px 20px rgba(0,0,0,.28);
 }
 nav{
  background:
-  linear-gradient(90deg,rgba(12,17,22,.98),rgba(43,49,54,.94) 48%,rgba(105,48,17,.92) 100%);
+  linear-gradient(90deg,
+   #080b0f 0%,
+   #242a30 27%,
+   #596168 48%,
+   #6f3b19 64%,
+   #252b31 80%,
+   #090c10 100%);
 }
-nav button.active{color:#fff;border-bottom-color:#ff7800}
+.card,
+.home-profile-card,
+.home-training-panel,
+.home-calendar-card,
+.home-stat{
+ background:
+  linear-gradient(125deg,
+   rgba(7,9,11,.97) 0%,
+   rgba(28,34,40,.96) 28%,
+   rgba(66,73,80,.95) 49%,
+   rgba(91,54,29,.94) 63%,
+   rgba(30,35,40,.96) 78%,
+   rgba(8,10,12,.98) 100%) !important;
+ border-color:#515a63;
+ box-shadow:
+  0 10px 30px rgba(0,0,0,.38),
+  inset 0 1px 0 rgba(255,255,255,.09),
+  inset 0 -1px 0 rgba(255,122,0,.10);
+}
+main,.home-page{background:transparent;}
+
+/* ===== EVOLUTE — PALETA INTENSA: PRETO + GRAFITE METÁLICO + LARANJA ===== */
+body{
+  background:
+    radial-gradient(900px 700px at 78% 18%, rgba(255,112,0,.34) 0%, rgba(255,112,0,.18) 22%, transparent 58%),
+    radial-gradient(850px 700px at 18% 42%, rgba(185,194,203,.30) 0%, rgba(115,126,137,.18) 32%, transparent 65%),
+    linear-gradient(125deg,
+      #030405 0%,
+      #12171c 15%,
+      #343c44 31%,
+      #69727a 43%,
+      #a84e0d 55%,
+      #e66b08 62%,
+      #555e66 72%,
+      #242b31 84%,
+      #050607 100%) !important;
+  background-attachment:fixed !important;
+  background-size:cover !important;
+}
+header{
+  background:
+    linear-gradient(110deg,
+      #050607 0%,
+      #222930 24%,
+      #68727b 43%,
+      #a94d0c 57%,
+      #e46a08 65%,
+      #343b42 78%,
+      #080a0c 100%) !important;
+}
+nav{
+  background:
+    linear-gradient(90deg,
+      #07090b 0%,
+      #30383f 23%,
+      #727c85 42%,
+      #9f4b10 56%,
+      #e06a0a 65%,
+      #3b434a 79%,
+      #090b0d 100%) !important;
+}
 main{
-  position:relative;
-  z-index:1;
+  background:transparent !important;
 }
-.card{
- background:linear-gradient(145deg,#3a4147,#30373d);
- border-color:#68727a;
- box-shadow:0 5px 18px rgba(0,0,0,.32);
+.home-page{
+  background:transparent !important;
 }
-select,input{background:#20262b;border-color:#5b656d}
-.primary{background:#ed6500}
-.primary:hover{background:#ff7800}
+.card,
+.home-profile-card,
+.home-calendar-card,
+.home-training-panel,
+.home-stat,
+.settings-home,
+.routines-page{
+  background:
+    linear-gradient(125deg,
+      rgba(9,11,13,.94) 0%,
+      rgba(48,56,64,.95) 28%,
+      rgba(103,113,122,.90) 45%,
+      rgba(133,67,25,.88) 56%,
+      rgba(67,76,84,.94) 68%,
+      rgba(13,16,19,.97) 100%) !important;
+  border-color:#69737c !important;
+  box-shadow:
+    0 12px 32px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -2px 0 rgba(255,122,0,.18) !important;
+}
+.routine-list-card,
+.settings-menu-card,
+.config-routine-summary{
+  background:
+    linear-gradient(120deg,
+      #0b0e11 0%,
+      #30383f 38%,
+      #555f67 54%,
+      #713b1c 64%,
+      #151a1f 100%) !important;
+  border-color:#59636c !important;
+}
+
 </style>
+
+<style id="evolute-home-orange-final">
+/* EVOLUTE HOME — NOVO LAYOUT + LARANJA PRESENTE */
+body{
+  background:
+    radial-gradient(900px 620px at 88% 16%, rgba(255,112,0,.42) 0%, rgba(255,112,0,.24) 25%, transparent 62%),
+    radial-gradient(760px 600px at 8% 78%, rgba(230,105,8,.28) 0%, rgba(230,105,8,.12) 28%, transparent 64%),
+    linear-gradient(125deg,#080a0d 0%,#252d34 24%,#48525a 43%,#7f4a28 55%,#c35d0b 64%,#343d45 76%,#0a0d11 100%) !important;
+  background-attachment:fixed !important;
+  background-size:cover !important;
+}
+header{
+  background:linear-gradient(110deg,#07090c 0%,#20272e 25%,#56616a 43%,#9d4b14 57%,#d96a0b 68%,#30383f 82%,#080a0c 100%) !important;
+}
+nav{
+  background:linear-gradient(90deg,#080b0e 0%,#2c353d 25%,#606b74 43%,#8e4818 56%,#c95d09 67%,#343d45 80%,#090c10 100%) !important;
+}
+.card,.home-profile-card,.home-calendar-card,.home-training-panel,.home-stat,.settings-home,.routines-page{
+  background:linear-gradient(145deg,#20272d 0%,#303941 48%,#252c32 100%) !important;
+  border-color:#59636b !important;
+  box-shadow:0 12px 30px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.10),inset 0 -2px 0 rgba(255,122,0,.14) !important;
+}
+.routine-list-card,.settings-menu-card,.config-routine-summary{
+  background:linear-gradient(145deg,#1d242a 0%,#343d45 58%,#252c32 100%) !important;
+  border-color:#59636b !important;
+}
+.home-calendar-month{
+  background:rgba(255,126,20,.18) !important;
+  border-color:rgba(255,150,40,.48) !important;
+}
+.home-calendar-day.today{
+  background:linear-gradient(145deg,#ff9b1f,#f26a08) !important;
+  border-color:#ffc46a !important;
+  box-shadow:0 0 0 2px rgba(255,126,20,.22),0 8px 20px rgba(255,100,0,.28) !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -827,17 +1699,13 @@ select,input{background:#20262b;border-color:#5b656d}
 
 <div class="profile">
 
-<label style="color:#cbd5e1;text-align:left">
-Perfil
-</label>
+<div class="profile-selector" aria-label="Selecionar perfil">
 
-<div class="profile-selector">
-
-<div id="profileAvatar" class="profile-avatar">
+<div id="profileAvatar" class="profile-avatar" title="Selecionar perfil">
 👤
 </div>
 
-<select id="profileSelect">
+<select id="profileSelect" aria-label="Selecionar perfil">
 <option value="">Carregando...</option>
 </select>
 
@@ -849,23 +1717,23 @@ Perfil
 <nav>
 
 <button id="btnHome">
-Início
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span><span>Início</span>
 </button>
 
 <button id="btnT">
-Treino
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M4 9v6"/><path d="M7 7v10"/><path d="M17 7v10"/><path d="M20 9v6"/><path d="M7 12h10"/></svg></span><span>Treinos</span>
 </button>
 
 <button id="btnH">
-Histórico
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M7 3h10v4H7z"/><path d="M6 5H5a2 2 0 0 0-2 2v14h18V7a2 2 0 0 0-2-2h-1"/><path d="M8 11h8"/><path d="M8 15h8"/></svg></span><span>Histórico</span>
 </button>
 
 <button id="btnE">
-Evolução
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 4-4 3 2 6-7"/></svg></span><span>Evolução</span>
 </button>
 
 <button id="btnC">
-Configurar
+<span class="nav-icon nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" role="img"><path d="M9.2 3.7 10 2.5h4l.8 1.2 1.5.7 1.4-.2 2 3.4-.8 1.2v1.8l.8 1.2-2 3.4-1.4-.2-1.5.7-.8 1.2h-4l-.8-1.2-1.5-.7-1.4.2-2-3.4.8-1.2V8.8L4.3 7.6l2-3.4 1.4.2 1.5-.7Z"/><circle cx="12" cy="10" r="2.8"/></svg></span><span>Configurações</span>
 </button>
 
 </nav>
@@ -1472,6 +2340,8 @@ function readDB(){
 
    }
 
+   r.description=typeof r.description==="string"?r.description.trim():"";
+
    r.ex=Array.isArray(r.ex)
     ?r.ex.map(normalizeExercise).map(ex=>{
        const n=String(ex.name||"").trim().toLowerCase();
@@ -1739,6 +2609,26 @@ function getRoutine(){
 
 }
 
+function getRecommendedRoutineId(p){
+
+ if(!p||!p.routines)return null;
+
+ const ids=Object.keys(p.routines);
+ if(!ids.length)return null;
+
+ const last=db.history
+  .filter(x=>x.profileId===p.id && x.workout && p.routines[x.workout])
+  .slice(-1)[0];
+
+ if(!last)return ids[0];
+
+ const index=ids.indexOf(last.workout);
+ if(index<0)return ids[0];
+
+ return ids[(index+1)%ids.length];
+
+}
+
 /* =========================================================
    PÁGINA INICIAL / PERFIL
    ========================================================= */
@@ -1804,69 +2694,85 @@ function showHome(){
     ${esc(p.name)}
    </h2>
 
-   <p class="home-subtitle">
-    O que você deseja acessar?
+   <p class="home-welcome">
+    Bem-vindo ao Treino Rafael! 👋
    </p>
 
-   <div class="home-profile-actions">
-
-    <select
-     onchange="changeProfile(this.value)"
-     aria-label="Selecionar perfil"
-    >
-
-     ${
-      db.profiles.map(x=>
-       `<option
-        value="${esc(x.id)}"
-        ${x.id===p.id?"selected":""}
-       >
-        ${esc(x.name)}
-       </option>`
-      ).join("")
-     }
-
-    </select>
-
-   </div>
+   <p class="home-subtitle">
+    Tenha um excelente treino! 💪
+   </p>
 
   </div>
 
-  <div class="home-menu">
+  ${(()=>{
+    const nextId=getRecommendedRoutineId(p);
+    const next=nextId&&p.routines[nextId];
+    const entries=db.history
+      .filter(x=>x.profileId===p.id && x.workout)
+      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const last=entries[0]||null;
+    const exerciseCount=next&&Array.isArray(next.ex)?next.ex.length:0;
+    const lastDate=last?.date?formatDate(last.date):"Ainda não realizado";
+    const lastDuration=last?.duration?String(last.duration):"—";
+    const monthDate=new Date();
+    const year=monthDate.getFullYear();
+    const month=monthDate.getMonth();
+    const monthName=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const firstDay=new Date(year,month,1).getDay();
+    const mondayOffset=(firstDay+6)%7;
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    const workoutDates=new Set(entries.filter(x=>String(x.date||'').startsWith(`${year}-${String(month+1).padStart(2,'0')}-`)).map(x=>x.date));
+    const todayKey=today();
+    const weekdays=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+    let calendar=weekdays.map(d=>`<div class="home-calendar-weekday">${d}</div>`).join('');
+    for(let i=0;i<mondayOffset;i++) calendar+='<div class="home-calendar-day empty">0</div>';
+    for(let day=1;day<=daysInMonth;day++){
+      const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isWorkout=workoutDates.has(key);
+      const isToday=key===todayKey;
+      calendar+=`<div class="home-calendar-day ${isWorkout?'workout':''} ${isToday?'today':''}">${day}${isWorkout?'<span class="home-calendar-dot"></span>':''}</div>`;
+    }
+    return `
+    <div class="home-dashboard">
+      <div class="home-calendar-card">
+        <div class="home-calendar-head">
+          <h3>Calendário de treinos</h3>
+          <span class="home-calendar-month">${monthName}</span>
+        </div>
+        <div class="home-calendar-grid">${calendar}</div>
+        <div class="home-calendar-legend"><span class="home-calendar-legend-dot"></span> dia com treino realizado</div>
+      </div>
 
-   <button
-    type="button"
-    onclick="showTraining()"
-   >
-    <span class="home-menu-icon">🏋️</span>
-    <span>Treino</span>
-   </button>
-
-   <button
-    type="button"
-    onclick="showHistory()"
-   >
-    <span class="home-menu-icon">📋</span>
-    <span>Histórico</span>
-   </button>
-
-   <button
-    type="button"
-    onclick="showEvolution()"
-   >
-    <span class="home-menu-icon">📈</span>
-    <span>Evolução</span>
-   </button>
-
-   <button
-    type="button"
-    onclick="showConfig()"
-   >
-    <span class="home-menu-icon">⚙️</span>
-    <span>Configurações</span>
-   </button>
-
-  </div>
+      <button type="button" class="home-training-panel" onclick="${next?`chooseRoutine('${esc(nextId)}')`:''}">
+        <div class="home-training-head">
+          <div>
+            <h3 class="home-next-name">${next?esc(next.name):'Nenhuma ficha cadastrada'}</h3>
+            ${next?.description?`<div class="home-next-description">${esc(next.description)}</div>`:''}
+          </div>
+          ${next?'<span class="home-recommended-label">Recomendado</span>':''}
+        </div>
+        <div class="home-stats">
+          <div class="home-stat">
+            <span class="home-stat-label">Exercícios</span>
+            <span class="home-stat-value">${exerciseCount}</span>
+          </div>
+          <div class="home-stat">
+            <span class="home-stat-label">Último treino</span>
+            <span class="home-stat-value">${lastDate}</span>
+          </div>
+          <div class="home-stat">
+            <span class="home-stat-label">Duração do último</span>
+            <span class="home-stat-value">${esc(lastDuration)}</span>
+          </div>
+          <div class="home-stat">
+            <span class="home-stat-label">Treinos realizados</span>
+            <span class="home-stat-value">${entries.length}</span>
+          </div>
+        </div>
+        <div class="home-motivation">Constância hoje. Resultado amanhã. 💪</div>
+      </button>
+    </div>`;
+  })()}
 
  </div>`;
 
@@ -1956,20 +2862,73 @@ function changeProfile(id){
 
  const p=getProfile();
 
- currentRoutine=
-  p
-   ?Object.keys(p.routines||{})[0]||null
-   :null;
+ currentRoutine=null;
 
  saveDB();
 
- showTraining();
+ showRoutines();
 
 }
 
 /* =========================================================
    FICHAS
    ========================================================= */
+
+function showRoutines(){
+
+ setTab("btnT");
+ refreshProfiles();
+
+ const p=getProfile();
+
+ if(!p){
+  app.innerHTML=`<div class="card"><h2>Perfil não encontrado</h2></div>`;
+  return;
+ }
+
+ const routines=Object.keys(p.routines||{});
+
+ if(!routines.length){
+  currentRoutine=null;
+  app.innerHTML=`
+   <div class="card">
+    <h2 class="routines-page-title">Treinos</h2>
+    <p class="routines-page-subtitle">Nenhum treino criado para este perfil.</p>
+    <button class="primary" onclick="showConfig()">⚙️ Configurações</button>
+   </div>`;
+  return;
+ }
+
+ currentRoutine=null;
+
+ let html=`
+  <div class="card">
+   <h2 class="routines-page-title">Treinos</h2>
+   <p class="routines-page-subtitle">Selecione um treino para abrir os exercícios.</p>
+   <div class="routines-list">`;
+
+ const recommendedId=getRecommendedRoutineId(p);
+
+ routines.forEach(id=>{
+  const r=p.routines[id];
+  const recommended=id===recommendedId;
+  html+=`
+   <button type="button" class="routine-list-card" onclick="chooseRoutine('${esc(id)}')">
+    <span class="routine-list-card-content">
+     <span class="routine-list-card-name">${esc(r.name)}</span>
+     ${r.description?`<span class="routine-list-card-description">${esc(r.description)}</span>`:""}
+    </span>
+    ${recommended?'<span class="routine-recommended">Recomendado</span>':''}
+    <span class="routine-list-card-arrow">›</span>
+   </button>`;
+ });
+
+ html+=`
+   </div>
+  </div>`;
+
+ app.innerHTML=html;
+}
 
 function chooseRoutine(id){
 
@@ -2305,11 +3264,8 @@ function showTraining(){
  const p=getProfile();
  if(!p){app.innerHTML=`<div class="card"><h2>Perfil não encontrado</h2></div>`;return;}
 
- if(!currentRoutine||!p.routines[currentRoutine])
-  currentRoutine=Object.keys(p.routines||{})[0]||null;
-
- if(!currentRoutine){
-  app.innerHTML=`<div class="card"><h2>Nenhuma ficha criada</h2><p class="muted">Crie ou importe uma ficha em Configurar.</p><button class="primary" onclick="showConfig()">⚙️ Configurar</button></div>`;
+ if(!currentRoutine||!p.routines[currentRoutine]){
+  showRoutines();
   return;
  }
 
@@ -2320,8 +3276,8 @@ function showTraining(){
  const done=r.ex.map((e,i)=>({e,i})).filter(x=>d.exercises[x.i]?.completed);
 
  let html=`
- <div class="card">
-  <div class="row">${routineButtons()}</div>
+ <div class="training-back-wrap">
+  <button type="button" class="back-to-routines" onclick="showRoutines()">‹&nbsp; voltar para treinos</button>
  </div>
  <div class="card">
   <h2>${esc(r.name)}</h2>
@@ -2373,7 +3329,7 @@ function showTraining(){
  }
 
  if(done.length){
-  html+=`<div class="card completed-section-card"><div class="section-title"><h2>Concluídos</h2><span class="badge">${done.length}</span></div><p class="muted">Para alterar pesos ou repetições, desmarque o exercício.</p></div>`;
+  html+=`<div class="card completed-section-card" style="background:#6f2f00 !important;border:2px solid #ffffff !important;"><div class="section-title"><h2>Concluídos</h2><span class="badge">${done.length}</span></div><p class="muted">Para alterar pesos ou repetições, desmarque o exercício.</p></div>`;
   done.forEach(x=>html+=renderExercise(x));
  }
 
@@ -3251,378 +4207,194 @@ function renderDeveloperNotifications(){
    ========================================================= */
 
 function showConfig(){
-
  setTab("btnC");
  refreshProfiles();
-
- const p=getProfile();
-
- if(!p)return;
-
- let h=renderDeveloperNotifications();
-
- h+=`
-
- <div class="card">
-
-  <h2>Perfis</h2>
-
-  <p class="muted">
-
-   O perfil padrão é salvo neste dispositivo.
-   Você pode trocar de perfil quando quiser.
-
-  </p>
-
-  <div class="row">
-
-   <input
-    id="newProfile"
-    placeholder="Nome do novo perfil"
-   >
-
-   <button
-    class="secondary"
-    onclick="addProfile()"
-   >
-    + Perfil
+ const h=`
+ <div class="card settings-home">
+  <h1>Configurações</h1>
+  <p class="muted">Gerencie perfis, fichas, exercícios, categorias e seus backups.</p>
+  <div class="settings-menu">
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('profiles')">
+    <strong>Perfis</strong>
+    <span>Gerencie os perfis e suas informações básicas.</span>
+    <b>›</b>
    </button>
-
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('routines')">
+    <strong>Minhas fichas</strong>
+    <span>Crie, organize e edite suas fichas de treino.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('library')">
+    <strong>Biblioteca de exercícios</strong>
+    <span>Gerencie exercícios, categorias e mídias reutilizáveis.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card" onclick="showConfigSection('categories')">
+    <strong>Categorias de exercícios</strong>
+    <span>Organize os exercícios por categorias.</span>
+    <b>›</b>
+   </button>
+   <button type="button" class="settings-menu-card settings-menu-backup" onclick="showConfigSection('backup')">
+    <strong>Backup</strong>
+    <span>Exporte seus dados para manter uma cópia de segurança.</span>
+    <b>›</b>
+   </button>
   </div>
-
-  <br>
-
-  <label>Sexo do perfil</label>
-
-  <select
-   id="profileGender"
-   onchange="saveProfileGender(this.value)"
-  >
-   <option value="masculino" ${p.gender!=="feminino"?"selected":""}>Masculino</option>
-   <option value="feminino" ${p.gender==="feminino"?"selected":""}>Feminino</option>
-  </select>
-
-  <br><br>
-
-  <label>Foto do perfil</label>
-
-  <input
-   type="file"
-   id="profilePhotoInput"
-   accept="image/*"
-  >
-
-  <br><br>
-
-  <button
-   class="secondary"
-   onclick="saveProfilePhoto()"
-  >
-   📷 Salvar foto
-  </button>
-
  </div>`;
+ app.innerHTML=h;
+ window.scrollTo(0,0);
+}
 
- h+=`
-
- <div class="card">
-
-  <h2>
-   Fichas de ${esc(p.name)}
-  </h2>
-
-  <button
-   class="primary"
-   onclick="importRoutine()"
-  >
-   📥 Importar ficha
-  </button>`;
-
- Object.keys(p.routines||{})
- .forEach(id=>{
-
-  const r=p.routines[id];
-
-  h+=`
-
-  <div class="editor">
-
-   <strong>
-    ${esc(r.name)}
-   </strong>
-
-   <div class="move">
-
-    <button
-     class="secondary"
-     onclick="editRoutine('${esc(id)}')"
-    >
-     ✏️ Renomear
-    </button>
-
-    <button
-     class="danger"
-     onclick="deleteRoutine('${esc(id)}')"
-    >
-     🗑️ Excluir
-    </button>
-
-   </div>
-
-   <hr>
-
-   <strong>
-    Exercícios
-   </strong>`;
-
-  r.ex.forEach((e,i)=>{
-
-   h+=`
-
-   <div class="editor">
-
-    <div class="row">
-
-     <input
-      id="ename_${id}_${i}"
-      value="${esc(e.name)}"
-     >
-
-     <button
-      class="secondary"
-      onclick="renameExercise('${esc(id)}',${i})"
-     >
-      Salvar
-     </button>
-
-    </div>
-
-    <div
-     class="small"
-     style="margin-top:7px"
-    >
-
-     ${esc(e.category||"Sem categoria")}
-
-     ${mediaHtml(e)
-      ?"• mídia disponível"
-      :""}
-
-    </div>
-
-    <div class="grid" style="margin-top:10px">
-     <div>
-      <label>Séries</label>
-      <input id="series_${id}_${i}" type="number" min="1" max="20" value="${esc(e.series||3)}">
-     </div>
-     <div>
-      <label>Mín. reps</label>
-      <input id="minReps_${id}_${i}" type="number" min="0" value="${esc(e.minReps??"")}" placeholder="Opcional">
-     </div>
-     <div>
-      <label>Máx. reps</label>
-      <input id="maxReps_${id}_${i}" type="number" min="0" value="${esc(e.maxReps??"")}" placeholder="Opcional">
-     </div>
-     <div style="display:flex;align-items:end">
-      <button class="secondary" style="width:100%" onclick="saveExerciseSettings('${esc(id)}',${i})">💾 Salvar parâmetros</button>
-     </div>
-    </div>
-
-    <div class="small" style="margin-top:6px">Defina quantas séries serão feitas e a faixa de repetições desejada.</div>
-
-    <div class="move">
-
-     <button
-      class="secondary"
-      onclick="moveExercise('${esc(id)}',${i},-1)"
-     >
-      ↑
-     </button>
-
-     <button
-      class="secondary"
-      onclick="moveExercise('${esc(id)}',${i},1)"
-     >
-      ↓
-     </button>
-
-     <button
-      class="danger"
-      onclick="removeExercise('${esc(id)}',${i})"
-     >
-      🗑️
-     </button>
-
-    </div>
-
-   </div>`;
-
-  });
-
-  h+=`
-
+function showConfigSection(section){
+ setTab("btnC");
+ refreshProfiles();
+ const p=getProfile();
+ if(!p)return;
+ let h=`<div class="card settings-section-head">
+   <button type="button" class="back-to-routines" onclick="showConfig()">‹&nbsp; voltar para configurações</button>`;
+ if(section==='profiles'){
+  h+=`<h1>Perfis</h1><p class="muted">Gerencie os perfis e suas informações básicas.</p>
    <div class="row">
-
-    <select
-     class="exerciseSelect"
-     id="exerciseCategory_${id}"
-     onchange="updateExerciseOptions('${esc(id)}')"
-    >
-
-     <option value="">
-      Categorias
-     </option>
-
-     ${
-      db.exerciseCategories.map(c=>
-
-       `<option value="${esc(c)}">
-        ${esc(c)}
-       </option>`
-
-      ).join("")
-     }
-
-    </select>
-
-    <select
-     class="exerciseSelect"
-     id="exerciseSelect_${id}"
-    >
-
-     <option value="">
-      Exercícios
-     </option>
-
-    </select>
-
-    <button
-     class="secondary"
-     onclick="addExercise('${esc(id)}')"
-    >
-     + Exercício
-    </button>
-
+    <input id="newProfile" placeholder="Nome do novo perfil">
+    <button class="secondary" onclick="addProfile()">+ Perfil</button>
+   </div><br>
+   <label>Sexo do perfil</label>
+   <select id="profileGender" onchange="saveProfileGender(this.value)">
+    <option value="masculino" ${p.gender!=="feminino"?"selected":""}>Masculino</option>
+    <option value="feminino" ${p.gender==="feminino"?"selected":""}>Feminino</option>
+   </select><br><br>
+   <label>Foto do perfil</label>
+   <input type="file" id="profilePhotoInput" accept="image/*"><br><br>
+   <button class="secondary" onclick="saveProfilePhoto()">📷 Salvar foto</button>`;
+ }else if(section==='routines'){
+  const routines=Object.values(p.routines||{});
+  h+=`<h1>Minhas fichas</h1><p class="muted">Selecione uma ficha para abrir sua tela exclusiva.</p>
+   <button class="primary" onclick="importRoutine()">📥 Importar ficha</button>
+   <div class="config-routine-list">
+    ${routines.length ? routines.map(r=>`<button type="button" class="config-routine-summary" onclick="selectConfigRoutine('${esc(r.id)}')"><span><strong>${esc(r.name)}</strong>${r.description?`<small>${esc(r.description)}</small>`:`<small>Sem informações básicas cadastradas</small>`}</span><span class="config-routine-summary-arrow">›</span></button>`).join('') : `<div class="empty">Nenhuma ficha cadastrada ainda.</div>`}
    </div>
+   <button class="primary" onclick="openRoutineForm()">+ Criar nova ficha</button>`;
+ }else if(section==='library'){
+  h+=`<h1>Biblioteca de exercícios</h1><p class="muted">Gerencie exercícios, categorias e mídias reutilizáveis.</p>
+   <div class="section-title"><h2>Exercícios</h2><button class="secondary" onclick="addLibraryExercise()">➕ Novo</button></div>
+   ${renderExerciseLibrary()}`;
+ }else if(section==='categories'){
+  h+=`<h1>Categorias de exercícios</h1><p class="muted">Crie e organize categorias para a biblioteca de exercícios.</p>
+   <button class="secondary" onclick="addCategory()">➕ Nova categoria</button>
+   <div style="margin-top:10px">${db.exerciseCategories.map(c=>`<span class="badge" style="margin:3px">${esc(c)}</span>`).join('')}</div>`;
+ }else if(section==='backup'){
+  h+=`<h1>Backup</h1><p class="muted">Mantenha uma cópia de segurança dos seus dados.</p>
+   <button class="primary" onclick="exportAll()">📦 Exportar backup completo</button><br><br>
+   <button class="secondary" onclick="exportProfile()">👤 Exportar perfil atual</button>`;
+ }
+ h+='</div>';
+ app.innerHTML=h;
+ window.scrollTo(0,0);
+}
 
+let configSelectedRoutineId=null;
+let configRoutineEditMode=false;
+
+function selectConfigRoutine(id){
+ configSelectedRoutineId=id;
+ configRoutineEditMode=false;
+ showRoutineDetails(id);
+}
+
+function enterRoutineEditMode(){
+ if(!configSelectedRoutineId)return;
+ configRoutineEditMode=true;
+ showRoutineDetails(configSelectedRoutineId);
+}
+
+function exitRoutineEditMode(){
+ configRoutineEditMode=false;
+ showRoutineDetails(configSelectedRoutineId);
+}
+
+function showRoutineDetails(id){
+ const p=getProfile();
+ const r=p?.routines?.[id];
+ if(!r){
+  configSelectedRoutineId=null;
+  configRoutineEditMode=false;
+  showConfig();
+  return;
+ }
+ const editing=!!configRoutineEditMode;
+ app.innerHTML=`
+  <div class="routine-detail-page">
+   <button type="button" class="back-to-routines" onclick="configSelectedRoutineId=null;configRoutineEditMode=false;showConfig()">‹&nbsp; voltar para fichas</button>
+
+   <div class="card">
+    <div class="routine-details-header">
+     <h2>${esc(r.name)}</h2>
+     <div class="routine-details-info">${esc(r.description||"Sem informações básicas cadastradas")}</div>
+    </div>
+
+    <div class="routine-details-actions">
+     <button class="secondary" onclick="enterRoutineEditMode()" ${editing?'disabled':''}>✏️ Editar</button>
+     <button class="danger" onclick="deleteRoutine('${esc(r.id)}')">🗑️ Excluir</button>
+    </div>
+
+    ${editing ? `<div class="routine-edit-banner">Modo de edição ativado. Você pode alterar o nome, as informações básicas e todos os exercícios desta ficha.</div>
+     <div class="move" style="margin-bottom:14px">
+      <button class="secondary" onclick="openRoutineForm('${esc(r.id)}')">✏️ Editar nome e informações básicas</button>
+      <button class="secondary" onclick="exitRoutineEditMode()">✓ Concluir edição</button>
+     </div>` : ''}
+
+    <div class="routine-exercises-title"><strong>Exercícios</strong></div>
+    ${r.ex?.length ? r.ex.map((e,i)=>renderConfigExerciseEditor(r,e,i,editing)).join('') : '<div class="empty" style="margin-top:12px">Nenhum exercício cadastrado nesta ficha.</div>'}
+    ${editing ? `<div class="row" style="margin-top:12px">
+     <select class="exerciseSelect" id="exerciseCategory_${r.id}" onchange="updateExerciseOptions('${esc(r.id)}')"><option value="">Categorias</option>${db.exerciseCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+     <select class="exerciseSelect" id="exerciseSelect_${r.id}"><option value="">Exercícios</option></select>
+     <button class="secondary" onclick="addExercise('${esc(r.id)}')">+ Exercício</button>
+    </div>` : ''}
+   </div>
   </div>`;
 
+ // Sempre abrir a ficha no início da página, sem herdar a posição de rolagem anterior.
+ // O reset é feito imediatamente e novamente após o navegador pintar o novo conteúdo,
+ // evitando que o Chrome/Android restaure a posição antiga da tela.
+ if('scrollRestoration' in history) history.scrollRestoration='manual';
+ const resetRoutineScroll=()=>{
+  window.scrollTo(0,0);
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+  if(document.scrollingElement) document.scrollingElement.scrollTop=0;
+ };
+ resetRoutineScroll();
+ requestAnimationFrame(()=>{
+  resetRoutineScroll();
+  requestAnimationFrame(resetRoutineScroll);
  });
+ setTimeout(resetRoutineScroll,80);
+ setTimeout(resetRoutineScroll,250);
+}
 
- h+=`
+function renderSelectedRoutineConfig(r,editing){
+ return '';
+}
 
-  <button
-   class="primary"
-   onclick="addRoutine()"
-  >
-   + Criar nova ficha
-  </button>
-
- </div>`;
-
- h+=`
-
- <div class="card">
-
-  <div class="section-title">
-
-   <h2>
-    📚 Biblioteca de exercícios
-   </h2>
-
-   <button
-    class="secondary"
-    onclick="addLibraryExercise()"
-   >
-    ➕ Novo
-   </button>
-
-  </div>
-
-  <p class="muted">
-
-   A biblioteca é central.
-   O exercício, sua categoria e sua mídia
-   podem ser reutilizados em qualquer perfil e ficha.
-
-  </p>
-
-  ${renderExerciseLibrary()}
-
- </div>`;
-
- h+=`
-
- <div class="card">
-
-  <h2>Categorias</h2>
-
-  <p class="muted">
-
-   Crie novas categorias para organizar
-   a biblioteca.
-
-  </p>
-
-  <button
-   class="secondary"
-   onclick="addCategory()"
-  >
-   ➕ Nova categoria
-  </button>
-
-  <div style="margin-top:10px">
-
-   ${
-    db.exerciseCategories.map(c=>
-
-     `<span
-      class="badge"
-      style="margin:3px"
-     >
-      ${esc(c)}
-     </span>`
-
-    ).join("")
-   }
-
-  </div>
-
- </div>`;
-
- h+=`
-
- <div class="card">
-
-  <h2>Backup</h2>
-
-  <p class="muted">
-
-   O backup completo inclui perfis,
-   fichas, biblioteca, evolução e históricos.
-
-  </p>
-
-  <button
-   class="primary"
-   onclick="exportAll()"
-  >
-   📦 Exportar backup completo
-  </button>
-
-  <br><br>
-
-  <button
-   class="secondary"
-   onclick="exportProfile()"
-  >
-   👤 Exportar perfil atual
-  </button>
-
- </div>`;
-
- app.innerHTML=h;
-
+function renderConfigExerciseEditor(r,e,i,editing){
+ const dis=editing?'':'disabled';
+ return `
+  <div class="editor config-exercise-item ${editing?'editing':''}">
+   <div class="row">
+    <input id="ename_${r.id}_${i}" value="${esc(e.name)}" ${dis}>
+    ${editing?`<button class="secondary" onclick="renameExercise('${esc(r.id)}',${i})">Salvar</button>`:''}
+   </div>
+   <div class="small" style="margin-top:7px">${esc(e.category||"Sem categoria")}${mediaHtml(e)?" • mídia disponível":""}</div>
+   ${mediaHtml(e)?mediaHtml(e):''}
+   <div class="grid" style="margin-top:10px">
+    <div><label>Séries</label><input id="series_${r.id}_${i}" type="number" min="1" max="20" value="${esc(e.series||3)}" ${dis}></div>
+    <div><label>Mín. reps</label><input id="minReps_${r.id}_${i}" type="number" min="0" value="${esc(e.minReps??"")}" placeholder="Opcional" ${dis}></div>
+    <div><label>Máx. reps</label><input id="maxReps_${r.id}_${i}" type="number" min="0" value="${esc(e.maxReps??"")}" placeholder="Opcional" ${dis}></div>
+    ${editing?`<div style="display:flex;align-items:end"><button class="secondary" style="width:100%" onclick="saveExerciseSettings('${esc(r.id)}',${i})">💾 Salvar parâmetros</button></div>`:''}
+   </div>
+   <div class="small" style="margin-top:6px">Defina quantas séries serão feitas e a faixa de repetições desejada.</div>
+   ${editing?`<div class="move"><button class="secondary" onclick="moveExercise('${esc(r.id)}',${i},-1)">↑</button><button class="secondary" onclick="moveExercise('${esc(r.id)}',${i},1)">↓</button><button class="danger" onclick="removeExercise('${esc(r.id)}',${i})">🗑️</button></div>`:''}
+  </div>`;
 }
 
 /* =========================================================
@@ -4165,34 +4937,189 @@ function saveProfilePhoto(){
    FICHAS
    ========================================================= */
 
-function addRoutine(){
+function getRoutineInfoOptions(){
+ return [
+  {label:"Corpo todo",complete:true},
+  {label:"Superiores completo",complete:true},
+  {label:"Pernas completo",complete:true},
+  {label:"Costas"},
+  {label:"Peito"},
+  {label:"Bíceps"},
+  {label:"Tríceps"},
+  {label:"Frontal de ombro"},
+  {label:"Lateral de ombro"},
+  {label:"Posterior de ombro"},
+  {label:"Abdômen"},
+  {label:"Quadrícepis"},
+  {label:"Adutores"},
+  {label:"Abdutores"},
+  {label:"Gluteos"},
+  {label:"Posterior de coxa"},
+  {label:"Panturrilha"}
+ ];
+}
 
- const n=prompt(
-  "Nome da nova ficha:"
- );
+let routineFormEditId=null;
+let routineInfoDraft=[];
+let routineCustomInfoDraft=[];
 
- if(!n?.trim())return;
-
+function openRoutineForm(editId=null){
  const p=getProfile();
+ if(!p)return;
+ routineFormEditId=editId;
+ const r=editId?p.routines[editId]:null;
+ const selected=Array.isArray(r?.basicInfo)&&r.basicInfo.length
+  ? r.basicInfo.slice()
+  : (r?.description?r.description.split(/\s*,\s*/).filter(Boolean):[]);
+ routineInfoDraft=[...selected];
+ routineCustomInfoDraft=selected.filter(x=>!getRoutineInfoOptions().some(o=>o.label===x));
 
- let id=slug(n);
+ const host=document.getElementById('app');
+ const title=r?'Editar ficha de treino':'Nova ficha de treino';
+ const safeName=r?.name||'';
+ host.innerHTML=`
+  <div class="card">
+   <button type="button" class="back-to-routines" onclick="showConfig()">‹&nbsp; voltar para configurações</button>
+   <div class="routine-form">
+    <h3>${title}</h3>
+    <p class="routine-form-subtitle">Cadastre a ficha como um formulário completo. As informações básicas ajudam a identificar os grupos musculares do treino.</p>
 
- if(p.routines[id])
-  id+="-"+Date.now();
+    <div class="routine-form-field">
+     <label for="routineFormName">Nome da ficha</label>
+     <input id="routineFormName" value="${esc(safeName)}" placeholder="Ex.: Treino A">
+    </div>
 
- p.routines[id]={
+    <div class="routine-form-field">
+     <label>Informações básicas</label>
+     <button type="button" class="routine-basic-info-button" onclick="openRoutineInfoModal()">
+      <span>
+       <strong>Selecionar informações</strong><br>
+       <span id="routineInfoSummary" class="summary"></span>
+      </span>
+      <span>›</span>
+     </button>
+    </div>
 
-  id,
-  name:n.trim(),
-  ex:[]
+    <div class="routine-form-actions">
+     <button type="button" class="secondary" onclick="showConfig()">Cancelar</button>
+     <button type="button" class="primary" onclick="saveRoutineForm()">Salvar ficha</button>
+    </div>
+   </div>
+  </div>`;
+ updateRoutineInfoSummary();
+}
 
- };
+function updateRoutineInfoSummary(){
+ const el=document.getElementById('routineInfoSummary');
+ if(!el)return;
+ const values=[...routineInfoDraft];
+ el.textContent=values.length?values.join(', '):'Nenhuma informação selecionada';
+}
 
- currentRoutine=id;
+function openRoutineInfoModal(){
+ let modal=document.getElementById('routineInfoModal');
+ if(!modal){
+  modal=document.createElement('div');
+  modal.id='routineInfoModal';
+  modal.className='routine-info-modal';
+  document.body.appendChild(modal);
+ }
+ const options=getRoutineInfoOptions();
+ const allCustom=routineCustomInfoDraft.slice();
+ modal.innerHTML=`
+  <div class="routine-info-sheet" role="dialog" aria-modal="true">
+   <div class="routine-info-sheet-header">
+    <h3>Informações básicas</h3>
+    <button type="button" class="routine-info-close" onclick="closeRoutineInfoModal()">×</button>
+   </div>
+   <p class="routine-info-help">Selecione uma ou várias opções que fazem parte deste treino.</p>
+   <div class="routine-info-grid">
+    ${options.map(o=>{
+      const checked=routineInfoDraft.includes(o.label)?'checked':'';
+      return `<label class="routine-info-option ${o.complete?'complete':''}">
+       <input type="checkbox" value="${esc(o.label)}" ${checked} onchange="toggleRoutineInfoOption(this)">
+       <span>${esc(o.label)}</span>
+      </label>`;
+    }).join('')}
+   </div>
+   <div class="routine-custom-info">
+    <strong>Criar nova informação</strong>
+    <p class="routine-info-help" style="margin-top:5px">Adicione uma informação que não esteja na lista.</p>
+    <div class="routine-custom-info-row">
+     <input id="routineCustomInfoInput" placeholder="Ex.: Lombar">
+     <button type="button" class="secondary" onclick="addCustomRoutineInfo()">+ Adicionar</button>
+    </div>
+    <div class="routine-custom-list">
+     ${allCustom.map(v=>`<span class="routine-custom-tag">${esc(v)} <button type="button" onclick="removeCustomRoutineInfo('${esc(v)}')">×</button></span>`).join('')}
+    </div>
+   </div>
+   <div class="routine-info-footer">
+    <button type="button" class="secondary" onclick="closeRoutineInfoModal()">Cancelar</button>
+    <button type="button" class="primary" onclick="applyRoutineInfoSelection()">Confirmar seleção</button>
+   </div>
+  </div>`;
+ modal.classList.add('open');
+ modal.onclick=e=>{if(e.target===modal)closeRoutineInfoModal();};
+}
 
+function toggleRoutineInfoOption(input){
+ const value=input.value;
+ if(input.checked){
+  if(!routineInfoDraft.includes(value))routineInfoDraft.push(value);
+ }else{
+  routineInfoDraft=routineInfoDraft.filter(v=>v!==value);
+ }
+}
+
+function addCustomRoutineInfo(){
+ const input=document.getElementById('routineCustomInfoInput');
+ const value=(input?.value||'').trim();
+ if(!value)return;
+ if(!routineCustomInfoDraft.includes(value))routineCustomInfoDraft.push(value);
+ if(!routineInfoDraft.includes(value))routineInfoDraft.push(value);
+ openRoutineInfoModal();
+}
+
+function removeCustomRoutineInfo(value){
+ routineCustomInfoDraft=routineCustomInfoDraft.filter(v=>v!==value);
+ routineInfoDraft=routineInfoDraft.filter(v=>v!==value);
+ openRoutineInfoModal();
+}
+
+function applyRoutineInfoSelection(){
+ closeRoutineInfoModal();
+ updateRoutineInfoSummary();
+}
+
+function closeRoutineInfoModal(){
+ const modal=document.getElementById('routineInfoModal');
+ if(modal)modal.classList.remove('open');
+}
+
+function saveRoutineForm(){
+ const name=(document.getElementById('routineFormName')?.value||'').trim();
+ if(!name){alert('Digite o nome da ficha.');return;}
+ const p=getProfile();
+ if(!p)return;
+ let id=routineFormEditId;
+ if(!id){
+  id=slug(name);
+  if(p.routines[id])id+='-'+Date.now();
+  p.routines[id]={id,name,description:routineInfoDraft.join(', '),basicInfo:routineInfoDraft.slice(),ex:[]};
+ }else{
+  const r=p.routines[id];
+  if(!r)return;
+  r.name=name;
+  r.description=routineInfoDraft.join(', ');
+  r.basicInfo=routineInfoDraft.slice();
+ }
+ currentRoutine=null;
  saveDB();
  showConfig();
+}
 
+function addRoutine(){
+ openRoutineForm();
 }
 
 /* =========================================================
@@ -4302,6 +5229,7 @@ function importRoutine(){
 
   id,
   name,
+  description:sr.description||"",
 
   ex:(sr.ex||[]).map(e=>({
 
@@ -4334,23 +5262,7 @@ function importRoutine(){
 }
 
 function editRoutine(id){
-
- const r=getProfile().routines[id];
-
- if(!r)return;
-
- const n=prompt(
-  "Novo nome da ficha:",
-  r.name||""
- );
-
- if(!n?.trim())return;
-
- r.name=n.trim();
-
- saveDB();
- showConfig();
-
+ openRoutineForm(id);
 }
 
 function deleteRoutine(id){
@@ -4486,7 +5398,7 @@ document.getElementById(
 
 document.getElementById(
  "btnT"
-).onclick=showTraining;
+).onclick=showRoutines;
 
 document.getElementById(
  "btnH"
@@ -4516,10 +5428,7 @@ const initial=getProfile();
 
 if(initial){
 
- currentRoutine=
-  Object.keys(
-   initial.routines||{}
-  )[0]||null;
+ currentRoutine=null;
 
 }
 
