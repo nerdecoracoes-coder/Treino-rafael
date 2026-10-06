@@ -3708,10 +3708,23 @@ function showRoutineDetails(id){
    </div>
   </div>`;
 
- // Sempre abrir a ficha no início da página, sem manter a posição de rolagem anterior.
- window.scrollTo({top:0,left:0,behavior:'auto'});
- document.documentElement.scrollTop=0;
- document.body.scrollTop=0;
+ // Sempre abrir a ficha no início da página, sem herdar a posição de rolagem anterior.
+ // O reset é feito imediatamente e novamente após o navegador pintar o novo conteúdo,
+ // evitando que o Chrome/Android restaure a posição antiga da tela.
+ if('scrollRestoration' in history) history.scrollRestoration='manual';
+ const resetRoutineScroll=()=>{
+  window.scrollTo(0,0);
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+  if(document.scrollingElement) document.scrollingElement.scrollTop=0;
+ };
+ resetRoutineScroll();
+ requestAnimationFrame(()=>{
+  resetRoutineScroll();
+  requestAnimationFrame(resetRoutineScroll);
+ });
+ setTimeout(resetRoutineScroll,80);
+ setTimeout(resetRoutineScroll,250);
 }
 
 function renderSelectedRoutineConfig(r,editing){
