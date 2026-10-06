@@ -141,6 +141,55 @@ main{
  box-shadow:0 4px 16px #0005
 }
 
+/* Lista inicial de treinos: cards grandes, um abaixo do outro */
+.routines-page-title{
+ margin:4px 0 6px;
+ font-size:28px
+}
+.routines-page-subtitle{
+ margin:0 0 16px;
+ color:var(--muted);
+ font-size:14px
+}
+.routines-list{
+ display:flex;
+ flex-direction:column;
+ gap:12px
+}
+.routine-list-card{
+ width:100%;
+ min-height:86px;
+ padding:18px 20px;
+ border:1px solid var(--line);
+ border-radius:16px;
+ background:var(--surface);
+ color:var(--text);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ text-align:left;
+ box-shadow:0 4px 16px #0005;
+ cursor:pointer;
+ transition:background .18s ease, border-color .18s ease, transform .18s ease
+}
+.routine-list-card:active{
+ transform:scale(.985)
+}
+.routine-list-card:hover{
+ background:#162033;
+ border-color:var(--blue2)
+}
+.routine-list-card-name{
+ font-size:24px;
+ font-weight:800
+}
+.routine-list-card-arrow{
+ font-size:34px;
+ line-height:1;
+ color:#60a5fa;
+ font-weight:300
+}
+
 .exercise h3{
  margin:0;
  font-size:20px;
@@ -750,7 +799,7 @@ Início
 </button>
 
 <button id="btnT">
-Treino
+Treinos
 </button>
 
 <button id="btnH">
@@ -1736,7 +1785,7 @@ function showHome(){
     onclick="showTraining()"
    >
     <span class="home-menu-icon">🏋️</span>
-    <span>Treino</span>
+    <span>Treinos</span>
    </button>
 
    <button
@@ -1853,20 +1902,66 @@ function changeProfile(id){
 
  const p=getProfile();
 
- currentRoutine=
-  p
-   ?Object.keys(p.routines||{})[0]||null
-   :null;
+ currentRoutine=null;
 
  saveDB();
 
- showTraining();
+ showRoutines();
 
 }
 
 /* =========================================================
    FICHAS
    ========================================================= */
+
+function showRoutines(){
+
+ setTab("btnT");
+ refreshProfiles();
+
+ const p=getProfile();
+
+ if(!p){
+  app.innerHTML=`<div class="card"><h2>Perfil não encontrado</h2></div>`;
+  return;
+ }
+
+ const routines=Object.keys(p.routines||{});
+
+ if(!routines.length){
+  currentRoutine=null;
+  app.innerHTML=`
+   <div class="card">
+    <h2 class="routines-page-title">Treinos</h2>
+    <p class="routines-page-subtitle">Nenhum treino criado para este perfil.</p>
+    <button class="primary" onclick="showConfig()">⚙️ Configurar treinos</button>
+   </div>`;
+  return;
+ }
+
+ currentRoutine=null;
+
+ let html=`
+  <div class="card">
+   <h2 class="routines-page-title">Treinos</h2>
+   <p class="routines-page-subtitle">Selecione um treino para abrir os exercícios.</p>
+   <div class="routines-list">`;
+
+ routines.forEach(id=>{
+  const r=p.routines[id];
+  html+=`
+   <button type="button" class="routine-list-card" onclick="chooseRoutine('${esc(id)}')">
+    <span class="routine-list-card-name">${esc(r.name)}</span>
+    <span class="routine-list-card-arrow">›</span>
+   </button>`;
+ });
+
+ html+=`
+   </div>
+  </div>`;
+
+ app.innerHTML=html;
+}
 
 function chooseRoutine(id){
 
@@ -2202,11 +2297,8 @@ function showTraining(){
  const p=getProfile();
  if(!p){app.innerHTML=`<div class="card"><h2>Perfil não encontrado</h2></div>`;return;}
 
- if(!currentRoutine||!p.routines[currentRoutine])
-  currentRoutine=Object.keys(p.routines||{})[0]||null;
-
- if(!currentRoutine){
-  app.innerHTML=`<div class="card"><h2>Nenhuma ficha criada</h2><p class="muted">Crie ou importe uma ficha em Configurar.</p><button class="primary" onclick="showConfig()">⚙️ Configurar</button></div>`;
+ if(!currentRoutine||!p.routines[currentRoutine]){
+  showRoutines();
   return;
  }
 
@@ -4413,10 +4505,7 @@ const initial=getProfile();
 
 if(initial){
 
- currentRoutine=
-  Object.keys(
-   initial.routines||{}
-  )[0]||null;
+ currentRoutine=null;
 
 }
 
