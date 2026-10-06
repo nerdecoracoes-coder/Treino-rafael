@@ -249,9 +249,9 @@ main{
  opacity:1 !important;
 }
 .completed-section-card{
- background:#102a5c !important;
- border:1px solid #2563eb !important;
- box-shadow:0 6px 20px #0006 !important;
+ background:#0b3b82 !important;
+ border:2px solid #2563eb !important;
+ box-shadow:0 6px 20px #0008 !important;
 }
 .completed-section-card h2,
 .completed-section-card .muted{
@@ -2270,7 +2270,7 @@ function showTraining(){
  }
 
  if(done.length){
-  html+=`<div class="card completed-section-card"><div class="section-title"><h2>Concluídos</h2><span class="badge">${done.length}</span></div><p class="muted">Para alterar pesos ou repetições, desmarque o exercício.</p></div>`;
+  html+=`<div class="card completed-section-card" style="background:#0b3b82 !important;border:2px solid #2563eb !important;"><div class="section-title"><h2>Concluídos</h2><span class="badge">${done.length}</span></div><p class="muted">Para alterar pesos ou repetições, desmarque o exercício.</p></div>`;
   done.forEach(x=>html+=renderExercise(x));
  }
 
