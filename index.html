@@ -1015,29 +1015,45 @@ hr{
 .home-dashboard{
  display:flex;
  flex-direction:column;
- gap:0;
+ gap:14px;
  margin-top:2px;
- background:var(--surface);
- border:1px solid var(--line);
- border-radius:18px;
- overflow:hidden;
- box-shadow:0 4px 18px #0005
-}
-.home-training-panel{
  background:transparent;
  border:0;
  border-radius:0;
- padding:18px 18px 16px;
+ overflow:visible;
  box-shadow:none
+}
+.home-training-panel{
+ width:100%;
+ box-sizing:border-box;
+ display:block;
+ background:#1d4ed8;
+ border:2px solid #3b82f6;
+ border-radius:18px;
+ padding:24px 18px 16px;
+ color:#fff;
+ text-align:left;
+ box-shadow:0 7px 22px rgba(37,99,235,.28), inset 0 1px 0 rgba(255,255,255,.12);
+ cursor:pointer;
+ font:inherit;
+ appearance:none;
+ -webkit-appearance:none;
+ transition:transform .18s ease, background .18s ease, box-shadow .18s ease
+}
+.home-training-panel:active{
+ transform:scale(.985);
+ background:#1e40af
 }
 .home-training-panel h3{
  margin:0;
- font-size:19px
+ font-size:25px;
+ line-height:1.1
 }
-.home-next-label{
- color:var(--muted);
- font-size:13px;
- margin-bottom:6px
+.home-training-head{
+ display:flex;
+ align-items:flex-start;
+ justify-content:space-between;
+ gap:12px
 }
 .home-next-name{
  color:#fff;
@@ -1046,40 +1062,47 @@ hr{
  margin:0
 }
 .home-next-description{
- color:#cbd5e1;
- font-size:15px;
- margin-top:5px
+ color:#fff;
+ font-size:16px;
+ margin-top:7px;
+ line-height:1.3
+}
+.home-training-panel .home-recommended-label{
+ flex:0 0 auto;
+ margin:0;
+ padding:5px 9px;
+ font-size:11px
 }
 .home-stats{
  display:grid;
  grid-template-columns:repeat(2,minmax(0,1fr));
  gap:10px;
- margin-top:14px
+ margin-top:16px
 }
 .home-stat{
- background:var(--surface2);
- border:1px solid var(--line);
+ background:rgba(15,23,42,.28);
+ border:1px solid rgba(255,255,255,.22);
  border-radius:12px;
  padding:12px;
  min-height:70px
 }
 .home-stat-label{
  display:block;
- color:var(--muted);
+ color:#dbeafe;
  font-size:12px;
  margin-bottom:5px
 }
 .home-stat-value{
  display:block;
- color:var(--text);
+ color:#fff;
  font-size:16px;
  font-weight:800
 }
 .home-motivation{
  margin:14px 0 0;
  padding-top:12px;
- border-top:1px solid var(--line);
- color:#bfdbfe;
+ border-top:1px solid rgba(255,255,255,.25);
+ color:#dbeafe;
  font-size:14px;
  font-weight:700;
  text-align:center
@@ -2264,21 +2287,6 @@ function showHome(){
   </div>
 
   ${(()=>{
-    const recommendedId=getRecommendedRoutineId(p);
-    const recommended=recommendedId&&p.routines[recommendedId];
-    if(!recommended)return "";
-    return `
-     <button type="button" class="home-recommended-card" onclick="chooseRoutine('${esc(recommendedId)}')">
-      <span class="home-recommended-label">Recomendado</span>
-      <span class="home-recommended-name">
-       <span class="home-recommended-title">${esc(recommended.name)}</span>
-       <span class="home-recommended-arrow">›</span>
-      </span>
-      ${recommended.description?`<span class="home-recommended-description">${esc(recommended.description)}</span>`:""}
-     </button>`;
-  })()}
-
-  ${(()=>{
     const nextId=getRecommendedRoutineId(p);
     const next=nextId&&p.routines[nextId];
     const entries=db.history
@@ -2308,10 +2316,14 @@ function showHome(){
     }
     return `
     <div class="home-dashboard">
-      <div class="home-training-panel">
-        <div class="home-next-label">Próximo treino</div>
-        <h3 class="home-next-name">${next?esc(next.name):'Nenhuma ficha cadastrada'}</h3>
-        ${next?.description?`<div class="home-next-description">${esc(next.description)}</div>`:''}
+      <button type="button" class="home-training-panel" onclick="${next?`chooseRoutine('${esc(nextId)}')`:''}">
+        <div class="home-training-head">
+          <div>
+            <h3 class="home-next-name">${next?esc(next.name):'Nenhuma ficha cadastrada'}</h3>
+            ${next?.description?`<div class="home-next-description">${esc(next.description)}</div>`:''}
+          </div>
+          ${next?'<span class="home-recommended-label">Recomendado</span>':''}
+        </div>
         <div class="home-stats">
           <div class="home-stat">
             <span class="home-stat-label">Exercícios</span>
@@ -2331,7 +2343,7 @@ function showHome(){
           </div>
         </div>
         <div class="home-motivation">Constância hoje. Resultado amanhã. 💪</div>
-      </div>
+      </button>
 
       <div class="home-calendar-card">
         <div class="home-calendar-head">
