@@ -3707,6 +3707,11 @@ function showRoutineDetails(id){
     </div>` : ''}
    </div>
   </div>`;
+
+ // Sempre abrir a ficha no início da página, sem manter a posição de rolagem anterior.
+ window.scrollTo({top:0,left:0,behavior:'auto'});
+ document.documentElement.scrollTop=0;
+ document.body.scrollTop=0;
 }
 
 function renderSelectedRoutineConfig(r,editing){
