@@ -165,7 +165,7 @@ nav{
 nav button{
  width:100%;
  min-width:0;
- padding:9px 1px 10px;
+ padding:8px 1px 10px;
  border:0;
  background:transparent;
  font-weight:bold;
@@ -176,11 +176,11 @@ nav button{
  overflow:visible;
  text-overflow:clip;
  text-align:center;
- display:flex;
- flex-direction:column;
+ display:flex !important;
+ flex-direction:column !important;
  align-items:center;
  justify-content:center;
- gap:3px
+ gap:4px;
 }
 
 .nav-icon{
@@ -188,25 +188,37 @@ nav button{
  line-height:1;
  flex:0 0 auto;
  color:#aebbd0;
+ display:flex !important;
+ align-items:center;
+ justify-content:center;
+ width:24px;
+ height:24px;
+ margin:0 auto;
 }
 
 .nav-svg{
- width:19px;
- height:19px;
+ width:24px;
+ height:24px;
  display:inline-flex;
  align-items:center;
  justify-content:center;
 }
 
 .nav-svg svg{
- width:19px;
- height:19px;
+ width:22px;
+ height:22px;
  display:block;
  fill:none;
  stroke:currentColor;
  stroke-width:2.2;
  stroke-linecap:round;
  stroke-linejoin:round;
+}
+
+nav button > span:last-child{
+ display:block !important;
+ line-height:1.1;
+ text-align:center;
 }
 
 nav button.active .nav-icon{color:#fff;}
