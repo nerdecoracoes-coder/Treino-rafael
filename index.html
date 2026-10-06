@@ -1011,6 +1011,155 @@ hr{
  font-size:14px
 }
 
+
+.home-dashboard{
+ display:flex;
+ flex-direction:column;
+ gap:12px;
+ margin-top:2px
+}
+.home-training-panel{
+ background:var(--surface);
+ border:1px solid var(--line);
+ border-radius:18px;
+ padding:18px;
+ box-shadow:0 4px 18px #0005
+}
+.home-training-panel h3{
+ margin:0;
+ font-size:19px
+}
+.home-next-label{
+ color:var(--muted);
+ font-size:13px;
+ margin-bottom:6px
+}
+.home-next-name{
+ color:#fff;
+ font-size:25px;
+ font-weight:900;
+ margin:0
+}
+.home-next-description{
+ color:#cbd5e1;
+ font-size:15px;
+ margin-top:5px
+}
+.home-stats{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;
+ margin-top:14px
+}
+.home-stat{
+ background:var(--surface2);
+ border:1px solid var(--line);
+ border-radius:12px;
+ padding:12px;
+ min-height:70px
+}
+.home-stat-label{
+ display:block;
+ color:var(--muted);
+ font-size:12px;
+ margin-bottom:5px
+}
+.home-stat-value{
+ display:block;
+ color:var(--text);
+ font-size:16px;
+ font-weight:800
+}
+.home-motivation{
+ margin:14px 0 0;
+ padding-top:12px;
+ border-top:1px solid var(--line);
+ color:#bfdbfe;
+ font-size:14px;
+ font-weight:700;
+ text-align:center
+}
+.home-calendar-card{
+ background:var(--surface);
+ border:1px solid var(--line);
+ border-radius:18px;
+ padding:16px;
+ box-shadow:0 4px 18px #0005
+}
+.home-calendar-head{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ margin-bottom:12px
+}
+.home-calendar-head h3{
+ margin:0;
+ font-size:19px
+}
+.home-calendar-month{
+ color:#bfdbfe;
+ font-size:14px;
+ font-weight:700
+}
+.home-calendar-grid{
+ display:grid;
+ grid-template-columns:repeat(7,minmax(0,1fr));
+ gap:5px;
+ text-align:center
+}
+.home-calendar-weekday{
+ color:var(--muted);
+ font-size:10px;
+ font-weight:800;
+ padding-bottom:4px
+}
+.home-calendar-day{
+ position:relative;
+ min-height:34px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ border-radius:9px;
+ color:#cbd5e1;
+ font-size:13px
+}
+.home-calendar-day.empty{visibility:hidden}
+.home-calendar-day.today{
+ border:1px solid #60a5fa;
+ color:#fff;
+ font-weight:900
+}
+.home-calendar-day.workout{
+ background:#1d4ed8;
+ color:#fff;
+ font-weight:900;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.12)
+}
+.home-calendar-day.workout.today{border-color:#93c5fd}
+.home-calendar-dot{
+ position:absolute;
+ width:4px;
+ height:4px;
+ border-radius:50%;
+ background:#facc15;
+ bottom:4px
+}
+.home-calendar-legend{
+ display:flex;
+ justify-content:center;
+ gap:6px;
+ align-items:center;
+ color:var(--muted);
+ font-size:11px;
+ margin-top:10px
+}
+.home-calendar-legend-dot{
+ width:7px;
+ height:7px;
+ border-radius:50%;
+ background:#facc15
+}
+
 .home-menu{
  display:grid;
  grid-template-columns:1fr 1fr;
@@ -2123,41 +2272,71 @@ function showHome(){
      </button>`;
   })()}
 
-  <div class="home-menu">
+  ${(()=>{
+    const nextId=getRecommendedRoutineId(p);
+    const next=nextId&&p.routines[nextId];
+    const entries=db.history
+      .filter(x=>x.profileId===p.id && x.workout)
+      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const last=entries[0]||null;
+    const exerciseCount=next&&Array.isArray(next.ex)?next.ex.length:0;
+    const lastDate=last?.date?formatDate(last.date):"Ainda não realizado";
+    const lastDuration=last?.duration?String(last.duration):"—";
+    const monthDate=new Date();
+    const year=monthDate.getFullYear();
+    const month=monthDate.getMonth();
+    const monthName=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const firstDay=new Date(year,month,1).getDay();
+    const mondayOffset=(firstDay+6)%7;
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    const workoutDates=new Set(entries.filter(x=>String(x.date||'').startsWith(`${year}-${String(month+1).padStart(2,'0')}-`)).map(x=>x.date));
+    const todayKey=today();
+    const weekdays=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+    let calendar=weekdays.map(d=>`<div class="home-calendar-weekday">${d}</div>`).join('');
+    for(let i=0;i<mondayOffset;i++) calendar+='<div class="home-calendar-day empty">0</div>';
+    for(let day=1;day<=daysInMonth;day++){
+      const key=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isWorkout=workoutDates.has(key);
+      const isToday=key===todayKey;
+      calendar+=`<div class="home-calendar-day ${isWorkout?'workout':''} ${isToday?'today':''}">${day}${isWorkout?'<span class="home-calendar-dot"></span>':''}</div>`;
+    }
+    return `
+    <div class="home-dashboard">
+      <div class="home-training-panel">
+        <div class="home-next-label">Próximo treino</div>
+        <h3 class="home-next-name">${next?esc(next.name):'Nenhuma ficha cadastrada'}</h3>
+        ${next?.description?`<div class="home-next-description">${esc(next.description)}</div>`:''}
+        <div class="home-stats">
+          <div class="home-stat">
+            <span class="home-stat-label">Exercícios</span>
+            <span class="home-stat-value">${exerciseCount}</span>
+          </div>
+          <div class="home-stat">
+            <span class="home-stat-label">Último treino</span>
+            <span class="home-stat-value">${lastDate}</span>
+          </div>
+          <div class="home-stat">
+            <span class="home-stat-label">Duração do último</span>
+            <span class="home-stat-value">${esc(lastDuration)}</span>
+          </div>
+          <div class="home-stat">
+            <span class="home-stat-label">Treinos realizados</span>
+            <span class="home-stat-value">${entries.length}</span>
+          </div>
+        </div>
+        <div class="home-motivation">Constância hoje. Resultado amanhã. 💪</div>
+      </div>
 
-   <button
-    type="button"
-    onclick="showTraining()"
-   >
-    <span class="home-menu-icon">🏋️</span>
-    <span>Treinos</span>
-   </button>
-
-   <button
-    type="button"
-    onclick="showHistory()"
-   >
-    <span class="home-menu-icon">📋</span>
-    <span>Histórico</span>
-   </button>
-
-   <button
-    type="button"
-    onclick="showEvolution()"
-   >
-    <span class="home-menu-icon">📈</span>
-    <span>Evolução</span>
-   </button>
-
-   <button
-    type="button"
-    onclick="showConfig()"
-   >
-    <span class="home-menu-icon">⚙️</span>
-    <span>Configurações</span>
-   </button>
-
-  </div>
+      <div class="home-calendar-card">
+        <div class="home-calendar-head">
+          <h3>Calendário de treinos</h3>
+          <span class="home-calendar-month">${monthName}</span>
+        </div>
+        <div class="home-calendar-grid">${calendar}</div>
+        <div class="home-calendar-legend"><span class="home-calendar-legend-dot"></span> dia com treino realizado</div>
+      </div>
+    </div>`;
+  })()}
 
  </div>`;
 
