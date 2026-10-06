@@ -3636,61 +3636,61 @@ let configRoutineEditMode=false;
 function selectConfigRoutine(id){
  configSelectedRoutineId=id;
  configRoutineEditMode=false;
- showConfig();
+ showRoutineDetails(id);
 }
 
 function enterRoutineEditMode(){
  if(!configSelectedRoutineId)return;
  configRoutineEditMode=true;
- showConfig();
+ showRoutineDetails(configSelectedRoutineId);
 }
 
 function exitRoutineEditMode(){
  configRoutineEditMode=false;
- showConfig();
+ showRoutineDetails(configSelectedRoutineId);
 }
 
-function renderSelectedRoutineConfig(r,editing){
- return `
-  <div class="selected-routine-panel">
-   <div class="selected-routine-header">
+function showRoutineDetails(id){
+ const p=getProfile();
+ const r=p?.routines?.[id];
+ if(!r){
+  configSelectedRoutineId=null;
+  configRoutineEditMode=false;
+  showConfig();
+  return;
+ }
+ const editing=!!configRoutineEditMode;
+ app.innerHTML=`
+  <div class="card routine-details-screen">
+   <button type="button" class="back-to-routines" onclick="configSelectedRoutineId=null;configRoutineEditMode=false;showConfig()">‹&nbsp; voltar para fichas</button>
+   <div class="routine-details-title">
     <div>
-     <h3>${esc(r.name)}</h3>
+     <h2>${esc(r.name)}</h2>
      <div class="selected-routine-info">${esc(r.description||"Sem informações básicas cadastradas")}</div>
     </div>
-    <button type="button" class="secondary" onclick="exitRoutineEditMode()">× Fechar</button>
    </div>
-
    <div class="move selected-routine-actions">
     <button class="secondary" onclick="enterRoutineEditMode()" ${editing?'disabled':''}>✏️ Editar</button>
     <button class="danger" onclick="deleteRoutine('${esc(r.id)}')">🗑️ Excluir</button>
    </div>
-
-   ${editing ? `
-    <div class="routine-edit-banner">Modo de edição ativado. Você pode alterar o nome, as informações básicas e todos os exercícios desta ficha.</div>
+   ${editing ? `<div class="routine-edit-banner">Modo de edição ativado. Você pode alterar o nome, as informações básicas e todos os exercícios desta ficha.</div>
     <div class="move" style="margin-bottom:14px">
      <button class="secondary" onclick="openRoutineForm('${esc(r.id)}')">✏️ Editar nome e informações básicas</button>
      <button class="secondary" onclick="exitRoutineEditMode()">✓ Concluir edição</button>
-    </div>
-   ` : `
-    <div class="small" style="margin:10px 0 14px">Os exercícios são somente para visualização. Toque em <strong>Editar</strong> para alterar a ficha.</div>
-   `}
-
+    </div>` : `<div class="small" style="margin:10px 0 14px">Os exercícios são somente para visualização. Toque em <strong>Editar</strong> para alterar a ficha.</div>`}
    <hr>
    <strong>Exercícios</strong>
    ${r.ex?.length ? r.ex.map((e,i)=>renderConfigExerciseEditor(r,e,i,editing)).join('') : '<div class="empty" style="margin-top:12px">Nenhum exercício cadastrado nesta ficha.</div>'}
-
-   ${editing ? `
-    <div class="row" style="margin-top:12px">
-     <select class="exerciseSelect" id="exerciseCategory_${r.id}" onchange="updateExerciseOptions('${esc(r.id)}')">
-      <option value="">Categorias</option>
-      ${db.exerciseCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
-     </select>
-     <select class="exerciseSelect" id="exerciseSelect_${r.id}"><option value="">Exercícios</option></select>
-     <button class="secondary" onclick="addExercise('${esc(r.id)}')">+ Exercício</button>
-    </div>
-   ` : ''}
+   ${editing ? `<div class="row" style="margin-top:12px">
+    <select class="exerciseSelect" id="exerciseCategory_${r.id}" onchange="updateExerciseOptions('${esc(r.id)}')"><option value="">Categorias</option>${db.exerciseCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+    <select class="exerciseSelect" id="exerciseSelect_${r.id}"><option value="">Exercícios</option></select>
+    <button class="secondary" onclick="addExercise('${esc(r.id)}')">+ Exercício</button>
+   </div>` : ''}
   </div>`;
+}
+
+function renderSelectedRoutineConfig(r,editing){
+ return '';
 }
 
 function renderConfigExerciseEditor(r,e,i,editing){
