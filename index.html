@@ -1511,35 +1511,65 @@ main{
   position:relative;
 }
 
-/* EVOLUTE METALLIC THEME TEST */
+/* EVOLUTE METALLIC THEME — BLACK / METALLIC GRAPHITE / ORANGE */
 body{
  background:
-  radial-gradient(900px 420px at 18% 12%, rgba(205,212,220,.16), transparent 58%),
-  radial-gradient(800px 500px at 92% 28%, rgba(255,122,0,.10), transparent 58%),
-  linear-gradient(125deg, #080b0f 0%, #171d23 24%, #2a3036 43%, #151b21 61%, #090c10 100%);
+  radial-gradient(700px 520px at 88% 18%, rgba(255,122,0,.24), transparent 64%),
+  radial-gradient(620px 460px at 8% 72%, rgba(185,194,203,.20), transparent 62%),
+  linear-gradient(125deg,
+   #050608 0%,
+   #11161b 19%,
+   #3b4249 39%,
+   #5a4330 50%,
+   #a34e13 58%,
+   #2a3036 70%,
+   #101419 84%,
+   #050608 100%);
  background-attachment:fixed;
  background-size:cover;
+ color:var(--text);
 }
 header{
  background:
-  linear-gradient(120deg, #080b0f 0%, #252c33 45%, #11161b 72%, #2b1a0d 100%);
+  linear-gradient(115deg,
+   #050608 0%,
+   #171d23 28%,
+   #424950 51%,
+   #7a431f 68%,
+   #171b20 86%,
+   #07090b 100%);
+ box-shadow:0 5px 20px rgba(0,0,0,.28);
 }
 nav{
  background:
-  linear-gradient(90deg, #10161c 0%, #252c33 48%, #171d23 76%, #24170f 100%);
+  linear-gradient(90deg,
+   #080b0f 0%,
+   #242a30 27%,
+   #596168 48%,
+   #6f3b19 64%,
+   #252b31 80%,
+   #090c10 100%);
 }
 .card,
 .home-profile-card,
 .home-training-panel,
 .home-calendar-card,
 .home-stat{
- background:linear-gradient(145deg,#12171c 0%,#1d2329 52%,#11161b 100%) !important;
- border-color:#3a424a;
- box-shadow:0 8px 24px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.045);
+ background:
+  linear-gradient(125deg,
+   rgba(7,9,11,.97) 0%,
+   rgba(28,34,40,.96) 28%,
+   rgba(66,73,80,.95) 49%,
+   rgba(91,54,29,.94) 63%,
+   rgba(30,35,40,.96) 78%,
+   rgba(8,10,12,.98) 100%) !important;
+ border-color:#515a63;
+ box-shadow:
+  0 10px 30px rgba(0,0,0,.38),
+  inset 0 1px 0 rgba(255,255,255,.09),
+  inset 0 -1px 0 rgba(255,122,0,.10);
 }
-main,.home-page{
- background:transparent;
-}
+main,.home-page{background:transparent;}
 </style>
 </head>
 
