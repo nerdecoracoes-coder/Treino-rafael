@@ -714,61 +714,57 @@ hr{
  }
 }
 
-/* EVOLUTE — fundo laranja + grafite + preto; cards permanecem pretos */
+/* EVOLUTE — identidade laranja + grafite + preto */
 :root{
-  --bg:#050607;
-  --surface:#050607;
-  --surface2:#101318;
-  --line:#353b43;
+  --bg:#090b0e;
+  --surface:#050505;
+  --surface2:#111316;
+  --line:#3c4248;
   --text:#f8fafc;
-  --muted:#a7afb9;
+  --muted:#aeb5bd;
   --blue:#f97316;
-  --blue2:#fb923c;
+  --blue2:#ff8a24;
 }
 
-html{background:#050607}
+html{background:#090b0e}
 
 body{
   background:
-    radial-gradient(ellipse 62% 78% at 100% 28%, rgba(249,115,22,.98) 0%, rgba(249,115,22,.62) 24%, rgba(249,115,22,.12) 55%, rgba(249,115,22,0) 72%),
-    radial-gradient(ellipse 58% 72% at 0% 78%, rgba(249,115,22,.78) 0%, rgba(249,115,22,.38) 25%, rgba(249,115,22,0) 58%),
-    radial-gradient(ellipse 62% 70% at 32% 42%, rgba(82,91,101,.88) 0%, rgba(82,91,101,.52) 30%, rgba(82,91,101,0) 62%),
-    linear-gradient(120deg,#080a0d 0%,#252b31 30%,#11151a 52%,#6a2d0c 76%,#f97316 100%);
+    radial-gradient(ellipse 85% 42% at 100% 4%, rgba(249,115,22,1) 0%, rgba(249,115,22,.92) 24%, rgba(249,115,22,.48) 48%, rgba(249,115,22,0) 76%),
+    radial-gradient(ellipse 72% 55% at 5% 88%, rgba(249,115,22,.95) 0%, rgba(249,115,22,.68) 25%, rgba(249,115,22,.20) 55%, rgba(249,115,22,0) 78%),
+    radial-gradient(ellipse 62% 48% at 50% 55%, rgba(91,99,106,.78) 0%, rgba(91,99,106,.42) 35%, rgba(91,99,106,0) 72%),
+    linear-gradient(115deg,#080a0c 0%,#252b30 25%,#111419 43%,#4d2815 61%,#c9570b 80%,#ff7414 100%);
   background-attachment:fixed;
 }
 
 header{
-  background:linear-gradient(112deg,#07090b 0%,#11161b 25%,#30363c 42%,#2b2020 58%,#a94408 78%,#f97316 100%);
-  border-bottom-color:#4a4f55;
+  background:linear-gradient(110deg,#07090b 0%,#171b20 22%,#454a4f 39%,#5a321e 54%,#c65309 76%,#ff7414 100%);
+  border-bottom-color:#555a5f;
 }
 
 nav{
-  background:linear-gradient(105deg,#07090b 0%,#151a1f 28%,#30363c 43%,#20181a 58%,#7d3508 80%,#b84a0b 100%);
-  border-bottom-color:#4a4f55;
+  background:linear-gradient(105deg,#07090b 0%,#1a1e22 23%,#42474c 40%,#5a321e 57%,#a74609 78%,#d65a0b 100%);
+  border-bottom-color:#555a5f;
+}
+
+nav button.active{
+  color:#fff;
+  border-bottom-color:#ff8a24;
 }
 
 .card{
-  background:#050607;
-  border-color:#3b424a;
-  box-shadow:0 8px 24px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.025);
+  background:#050505;
+  border-color:#41464b;
+  box-shadow:0 8px 24px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.025);
 }
 
 input,select{
-  background:#080a0d;
-  border-color:#343a42;
+  background:#080909;
+  border-color:#3d4247;
 }
 
-.primary{background:#f97316}
-.primary:hover{background:#fb923c}
-
-.profile-avatar,.home-avatar{background:#f97316}
-
-nav button.active{border-bottom-color:#f97316}
-
-.timeline-item{border-left-color:#f97316}
-
-/* áreas que não são cards recebem apenas luz/reflexo; os cartões continuam pretos */
-main{background:transparent}
+.primary{background:#f97316!important}
+.primary:hover{background:#ff8a24!important}
 
 </style>
 </head>
