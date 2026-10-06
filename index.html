@@ -216,6 +216,60 @@ main{
  font-weight:300
 }
 
+.routine-recommended{
+ display:inline-flex;
+ align-items:center;
+ padding:5px 9px;
+ border-radius:999px;
+ background:#facc15;
+ color:#111827;
+ font-size:11px;
+ font-weight:900;
+ letter-spacing:.2px;
+ margin-left:auto;
+ margin-right:12px;
+ box-shadow:0 2px 8px rgba(250,204,21,.22)
+}
+
+.home-recommended-card{
+ margin-bottom:14px;
+ padding:18px;
+ border:2px solid #3b82f6;
+ border-radius:18px;
+ background:#1d4ed8;
+ color:#fff;
+ box-shadow:0 7px 22px rgba(37,99,235,.28), inset 0 1px 0 rgba(255,255,255,.12);
+ cursor:pointer;
+ transition:transform .18s ease, background .18s ease, box-shadow .18s ease
+}
+.home-recommended-card:active{
+ transform:scale(.985);
+ background:#1e40af
+}
+.home-recommended-label{
+ display:inline-flex;
+ padding:4px 8px;
+ border-radius:999px;
+ background:#facc15;
+ color:#111827;
+ font-size:11px;
+ font-weight:900;
+ margin-bottom:9px
+}
+.home-recommended-name{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ font-size:24px;
+ font-weight:900
+}
+.home-recommended-arrow{
+ font-size:32px;
+ font-weight:300;
+ color:#bfdbfe
+}
+
 .exercise h3{
  margin:0;
  font-size:20px;
@@ -1711,6 +1765,26 @@ function getRoutine(){
 
 }
 
+function getRecommendedRoutineId(p){
+
+ if(!p||!p.routines)return null;
+
+ const ids=Object.keys(p.routines);
+ if(!ids.length)return null;
+
+ const last=db.history
+  .filter(x=>x.profileId===p.id && x.workout && p.routines[x.workout])
+  .slice(-1)[0];
+
+ if(!last)return ids[0];
+
+ const index=ids.indexOf(last.workout);
+ if(index<0)return ids[0];
+
+ return ids[(index+1)%ids.length];
+
+}
+
 /* =========================================================
    PÁGINA INICIAL / PERFIL
    ========================================================= */
@@ -1803,6 +1877,20 @@ function showHome(){
    </div>
 
   </div>
+
+  ${(()=>{
+    const recommendedId=getRecommendedRoutineId(p);
+    const recommended=recommendedId&&p.routines[recommendedId];
+    if(!recommended)return "";
+    return `
+     <button type="button" class="home-recommended-card" onclick="chooseRoutine('${esc(recommendedId)}')">
+      <span class="home-recommended-label">Recomendado</span>
+      <span class="home-recommended-name">
+       <span>${esc(recommended.name)}</span>
+       <span class="home-recommended-arrow">›</span>
+      </span>
+     </button>`;
+  })()}
 
   <div class="home-menu">
 
@@ -1973,11 +2061,15 @@ function showRoutines(){
    <p class="routines-page-subtitle">Selecione um treino para abrir os exercícios.</p>
    <div class="routines-list">`;
 
+ const recommendedId=getRecommendedRoutineId(p);
+
  routines.forEach(id=>{
   const r=p.routines[id];
+  const recommended=id===recommendedId;
   html+=`
    <button type="button" class="routine-list-card" onclick="chooseRoutine('${esc(id)}')">
     <span class="routine-list-card-name">${esc(r.name)}</span>
+    ${recommended?'<span class="routine-recommended">Recomendado</span>':''}
     <span class="routine-list-card-arrow">›</span>
    </button>`;
  });
