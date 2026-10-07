@@ -9,7 +9,18 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Evolute Training</title>
 
-<style>
+
+
+
+
+
+
+
+
+
+
+<style id="evolute-clean-styles">
+/* ===== CSS: BASE ===== */
 :root{
  --bg:#0b0f13;
  --surface:#101214;
@@ -936,8 +947,7 @@ hr{
  display:flex;
 }
 
-.exercise-animation-modal img,
-.exercise-animation-modal canvas{
+.exercise-animation-modal img{
  display:block;
  max-width:94vw;
  max-height:84vh;
@@ -1652,9 +1662,7 @@ main{
   border-color:#59636c !important;
 }
 
-</style>
-
-<style id="evolute-home-orange-final">
+/* ===== CSS: evolute-home-orange-final ===== */
 /* EVOLUTE HOME — NOVO LAYOUT + LARANJA PRESENTE */
 body{
   background:
@@ -1688,10 +1696,8 @@ nav{
   border-color:#ffc46a !important;
   box-shadow:0 0 0 2px rgba(255,126,20,.22),0 8px 20px rgba(255,100,0,.28) !important;
 }
-</style>
 
-
-<style id="evolute-scroll-together-fix">
+/* ===== CSS: evolute-scroll-together-fix ===== */
 /* HEADER + ABAS: rolagem conjunta com todo o conteúdo */
 html, body {
   min-height: 100%;
@@ -1712,10 +1718,8 @@ nav {
 main {
   position: relative;
 }
-</style>
 
-
-<style id="evolute-brand-header">
+/* ===== CSS: evolute-brand-header ===== */
 /* Nova identidade visual — Evolute Training */
 header h1.evolute-brand {
   margin: -4px auto -8px;
@@ -1802,12 +1806,39 @@ header h1.evolute-brand img {
 <script>
 "use strict";
 
+/* ESTÁVEL 1.0 — AUDITORIA FINAL DE ESTRUTURA.\n   Não alterar dados, chaves de armazenamento ou mapa de GIFs sem atualizar a versão. */
+
+/* EVOLUTE TRAINING — CÓDIGO ESTÁVEL 1.0
+   Fonte única de verdade: este arquivo.
+   Alterações futuras devem ser feitas apenas no bloco responsável.
+*/
+
 /* =========================================================
    BANCO
    ========================================================= */
 
-const DBKEY="treinoRafaelDB_v7";
-const OLDKEY="treinoRafaelHistorico";
+/* ============================================================
+   EVOLUTE TRAINING — CONFIGURAÇÃO CENTRAL
+   Altere valores globais somente neste bloco.
+   Dados de treino, perfis e rotinas ficam abaixo, separados.
+   ============================================================ */
+const APP_CONFIG={
+  app:{
+    name:"Evolute Training",
+    version:"stable-1.0"
+  },
+  storage:{
+    dbKey:"treinoRafaelDB_v7",
+    oldKey:"treinoRafaelHistorico"
+  },
+  animations:{
+    baseUrl:"https://raw.githubusercontent.com/nerdecoracoes-coder/Treino-rafael/Desenvolvimento/"
+  }
+};
+
+/* Chaves mantidas com os mesmos nomes para compatibilidade retroativa. */
+const DBKEY=APP_CONFIG.storage.dbKey;
+const OLDKEY=APP_CONFIG.storage.oldKey;
 
 /* =========================================================
    ARMAZENAMENTO SEGURO
@@ -1823,6 +1854,9 @@ function storageGet(key){
 
 }
 
+/* ============================================================
+   CAMADA DE DADOS / UTILITÁRIOS
+   ============================================================ */
 function storageSet(key,value){
 
  try{
@@ -2004,6 +2038,9 @@ function routineExercise(name){
    FICHAS PADRÃO — RAFAEL
    ========================================================= */
 
+/* ============================================================
+   DADOS PRINCIPAIS — FICHAS E ROTINAS PADRÃO
+   ============================================================ */
 const defaultA={
  id:"A",
  name:"Treino A",
@@ -2128,7 +2165,7 @@ const natielleE={
   routineExercise("Crucifixo inverso na polia"),
   routineExercise("Remada articulada"),
   routineExercise("Supino reto máquina"),
-  routineExercise("Tríceps testa na polia")
+  routineExercise("Tríceps testa polia")
  ]
 };
 
@@ -2154,6 +2191,49 @@ function getNatielleRoutines(){
 /* =========================================================
    BANCO INICIAL
    ========================================================= */
+
+const STANDARD_LIBRARY_EXERCISES={
+  "Puxada aberta na polia":"Costas",
+  "Remada neutra na máquina":"Costas",
+  "Remada baixa triângulo":"Costas",
+  "Crucifixo inverso na polia":"Ombros",
+  "Bíceps máquina":"Bíceps",
+  "Rosca martelo com halteres":"Bíceps",
+  "Encolhimento com halteres":"Ombros",
+  "Crucifixo na máquina":"Peito",
+  "Supino inclinado com halteres":"Peito",
+  "Supino reto máquina":"Peito",
+  "Desenvolvimento máquina":"Ombros",
+  "Elevação lateral com halteres":"Ombros",
+  "Tríceps unilateral na polia":"Tríceps",
+  "Tríceps francês unilateral na polia":"Tríceps",
+  "Agachamento no Smith":"Quadríceps",
+  "Leg press máquina":"Quadríceps",
+  "Cadeira extensora":"Quadríceps",
+  "Cadeira flexora":"Posteriores",
+  "Panturrilha no leg press":"Panturrilha",
+  "Cadeira adutora":"Adutores",
+  "Rosca alternada com halteres":"Bíceps",
+  "Puxada alta neutra":"Costas",
+  "Stiff com barra":"Posteriores",
+  "Mesa flexora":"Posteriores",
+  "RDL na polia baixa":"Posteriores",
+  "Cadeira abdutora":"Abdutores",
+  "Abdução com cabo":"Abdutores",
+  "Remada baixa":"Costas",
+  "Remada alta":"Ombros",
+  "Supino inclinado na máquina":"Peito",
+  "Elevação lateral":"Ombros",
+  "Afundo no Smith":"Quadríceps",
+  "Flexão de joelho no cabo":"Posteriores",
+  "Elevação pélvica":"Glúteos",
+  "Gêmeos no leg press":"Panturrilha",
+  "Desenvolvimento com halteres":"Ombros",
+  "Remada articulada":"Costas",
+  "Tríceps testa polia":"Tríceps",
+  "Afundo com halteres":"Quadríceps",
+  "Elevação pélvica na máquina":"Glúteos"
+ };
 
 function createInitialDB(){
 
@@ -2293,63 +2373,12 @@ function readDB(){
 
   }));
 
- /* EXERCÍCIOS DAS FICHAS PADRÃO
-  * Mantém a biblioteca centralizada e acrescenta apenas
-  * os exercícios que ainda não estiverem cadastrados.
-  */
- const standardLibraryExercises={
-  "Puxada aberta na polia":"Costas",
-  "Remada neutra na máquina":"Costas",
-  "Remada baixa triângulo":"Costas",
-  "Crucifixo inverso na polia":"Ombros",
-  "Bíceps máquina":"Bíceps",
-  "Rosca martelo com halteres":"Bíceps",
-  "Encolhimento com halteres":"Ombros",
-  "Crucifixo na máquina":"Peito",
-  "Supino inclinado com halteres":"Peito",
-  "Supino reto máquina":"Peito",
-  "Desenvolvimento máquina":"Ombros",
-  "Elevação lateral com halteres":"Ombros",
-  "Tríceps unilateral na polia":"Tríceps",
-  "Tríceps francês unilateral na polia":"Tríceps",
-  "Tríceps polia corda":"Tríceps",
-  "Tríceps francês corda":"Tríceps",
-  "Agachamento no Smith":"Quadríceps",
-  "Agachamento com barra livre":"Quadríceps",
-  "Leg press máquina":"Quadríceps",
-  "Cadeira extensora":"Quadríceps",
-  "Cadeira flexora":"Posteriores",
-  "Lombar na máquina":"Lombar",
-  "Panturrilha no leg press":"Panturrilha",
-  "Cadeira adutora":"Adutores",
-  "Rosca alternada com halteres":"Bíceps",
-  "Puxada alta neutra":"Costas",
-  "Stiff com barra":"Posteriores",
-  "Mesa flexora":"Posteriores",
-  "RDL na polia baixa":"Posteriores",
-  "Cadeira abdutora":"Abdutores",
-  "Abdução com cabo":"Abdutores",
-  "Remada baixa":"Costas",
-  "Remada alta":"Ombros",
-  "Supino inclinado na máquina":"Peito",
-  "Elevação lateral":"Ombros",
-  "Afundo no Smith":"Quadríceps",
-  "Flexão de joelho no cabo":"Posteriores",
-  "Elevação pélvica":"Glúteos",
-  "Gêmeos no leg press":"Panturrilha",
-  "Desenvolvimento com halteres":"Ombros",
-  "Remada articulada":"Costas",
-  "Tríceps testa polia":"Tríceps",
-  "Afundo com halteres":"Quadríceps",
-  "Elevação pélvica na máquina":"Glúteos"
- };
-
  const libraryNames=new Set(
   data.exerciseLibrary
    .map(x=>String(x.name||"").trim().toLowerCase())
  );
 
- Object.entries(standardLibraryExercises).forEach(([name,category])=>{
+ Object.entries(STANDARD_LIBRARY_EXERCISES).forEach(([name,category])=>{
   const key=name.toLowerCase();
   if(libraryNames.has(key))return;
 
@@ -2410,6 +2439,10 @@ function readDB(){
        const n=String(ex.name||"").trim().toLowerCase();
        if(n==="agachamento") ex.name="Agachamento no Smith";
        if(n==="remada neutra máquina") ex.name="Remada neutra na máquina";
+       if(n==="bíceps na máquina") ex.name="Bíceps máquina";
+       if(n==="leg press horizontal") ex.name="Leg press máquina";
+       if(n==="supino reto na máquina") ex.name="Supino reto máquina";
+       if(n==="tríceps testa na polia") ex.name="Tríceps testa polia";
        return ex;
      })
     :[];
@@ -2723,7 +2756,12 @@ function showHome(){
     <button
      class="primary"
      style="margin-top:16px"
-     onclick="showConfig()"
+     onclick="
+/* =========================================================
+   CONFIGURAÇÕES
+   ========================================================= */
+
+showConfig()"
     >
      ⚙️ Criar perfil
     </button>
@@ -2845,6 +2883,9 @@ function showHome(){
    NAVEGAÇÃO
    ========================================================= */
 
+/* ============================================================
+   NAVEGAÇÃO E RENDERIZAÇÃO
+   ============================================================ */
 function setTab(id){
 
  ["btnHome","btnT","btnH","btnE","btnC"].forEach(x=>{
@@ -3027,10 +3068,16 @@ function routineButtons(){
    ANIMAÇÕES DOS EXERCÍCIOS
    ========================================================= */
 
+/* ============================================================
+   MÍDIA — MAPA ÚNICO DE ANIMAÇÕES
+   Não alterar nomes dos arquivos sem atualizar a branch Desenvolvimento.
+   ============================================================ */
 const EXERCISE_ANIMATIONS={
  "agachamento no smith":null,
+ "agachamento":null,
  "agachamento com barra livre":"agachamento_barra_livre",
  "puxada aberta na polia":"puxada_aberta",
+ "puxada aberta na frente":"puxada_aberta",
  "remada neutra na máquina":"remada_neutra_maquina",
  "remada neutra máquina":"remada_neutra_maquina",
  "leg press máquina":"leg_press_45",
@@ -3039,8 +3086,9 @@ const EXERCISE_ANIMATIONS={
  "rosca martelo com halteres":"rosca_martelo_halteres",
  "supino inclinado com halteres":"supino_inclinado_halteres",
  "encolhimento com halteres":"encolhimento_halteres",
+ "crucifixo máquina":null,
  "supino reto máquina":"supino_maquina",
- "lombar na máquina":"lombar_na_maquina",
+ "lombar na máquina":null,
  "cadeira flexora":"cadeira_flexora_corrigida",
  "desenvolvimento máquina":"desenvolvimento_maquina",
  "cadeira abdutora":"cadeira_abdutora",
@@ -3049,11 +3097,7 @@ const EXERCISE_ANIMATIONS={
  "elevação lateral":"elevacao_lateral"
 };
 
-const ANIMATION_BASE_URL="";
-const ANIMATION_FALLBACK_BASE_URLS=[
- "https://raw.githubusercontent.com/nerdecoracoes-coder/Treino-rafael/main/",
- "https://raw.githubusercontent.com/nerdecoracoes-coder/Treino-rafael/Desenvolvimento/"
-];
+const ANIMATION_BASE_URL=APP_CONFIG.animations.baseUrl;
 
 function exerciseAnimationFile(name,gender){
  const key=String(name||"").trim().toLowerCase();
@@ -3061,19 +3105,6 @@ function exerciseAnimationFile(name,gender){
  if(!base)return "";
  const sex=gender==="feminino"?"feminino":"masculino";
  return ANIMATION_BASE_URL+base+"_"+sex+"_loop.gif";
-}
-function exerciseAnimationFallback(img){
- if(!img)return;
- const current=img.getAttribute("src")||"";
- const filename=current.split("/").pop();
- let step=Number(img.dataset.gifFallback||0);
- if(step>=ANIMATION_FALLBACK_BASE_URLS.length){
-  const card=img.closest(".exercise-animation-card");
-  if(card)card.style.display="none";
-  return;
- }
- img.dataset.gifFallback=String(step+1);
- img.src=ANIMATION_FALLBACK_BASE_URLS[step]+filename;
 }
 
 function openExerciseAnimation(url,name){
@@ -3096,11 +3127,8 @@ function openExerciseAnimation(url,name){
   document.body.appendChild(modal);
  }
 
- const modalImg=document.getElementById("exerciseAnimationModalImg");
- modalImg.dataset.gifFallback="0";
- modalImg.onerror=function(){ exerciseAnimationFallback(this); };
- modalImg.src=url;
- modalImg.alt="Execução de "+name;
+ document.getElementById("exerciseAnimationModalImg").src=url;
+ document.getElementById("exerciseAnimationModalImg").alt="Execução de "+name;
  document.getElementById("exerciseAnimationModalTitle").textContent=name;
  modal.classList.add("open");
 }
@@ -3113,7 +3141,6 @@ function closeExerciseAnimation(){
 document.addEventListener("keydown",function(ev){
  if(ev.key==="Escape") closeExerciseAnimation();
 });
-
 
 /* =========================================================
    MÍDIA
@@ -3140,7 +3167,7 @@ function exerciseAnimationHtml(e){
     src="${esc(animation)}"
     alt="Execução de ${esc(e.name)}"
     loading="lazy"
-    onerror="exerciseAnimationFallback(this)"
+    onerror="this.closest('.exercise-animation-card').style.display='none'"
    >
   </button>`;
 }
@@ -3211,6 +3238,9 @@ function trainingDraftKey(){
   :"";
 }
 
+/* ============================================================
+   TREINO — REGISTRO, EXECUÇÃO E FINALIZAÇÃO
+   ============================================================ */
 function newTrainingDraft(r){
  return {
   id:uid(),
@@ -4286,6 +4316,9 @@ function renderDeveloperNotifications(){
    CONFIGURAÇÕES
    ========================================================= */
 
+/* ============================================================
+   CONFIGURAÇÕES / BIBLIOTECA / ROTINAS PERSONALIZADAS
+   ============================================================ */
 function showConfig(){
  setTab("btnC");
  refreshProfiles();
@@ -4336,7 +4369,12 @@ function showConfigSection(section){
   h+=`<h1>Perfis</h1><p class="muted">Gerencie os perfis e suas informações básicas.</p>
    <div class="row">
     <input id="newProfile" placeholder="Nome do novo perfil">
-    <button class="secondary" onclick="addProfile()">+ Perfil</button>
+    <button class="secondary" onclick="
+/* =========================================================
+   PERFIS — CONFIGURAÇÃO
+   ========================================================= */
+
+addProfile()">+ Perfil</button>
    </div><br>
    <label>Sexo do perfil</label>
    <select id="profileGender" onchange="saveProfileGender(this.value)">
@@ -4357,14 +4395,24 @@ function showConfigSection(section){
  }else if(section==='library'){
   h+=`<h1>Biblioteca de exercícios</h1><p class="muted">Gerencie exercícios, categorias e mídias reutilizáveis.</p>
    <div class="section-title"><h2>Exercícios</h2><button class="secondary" onclick="addLibraryExercise()">➕ Novo</button></div>
-   ${renderExerciseLibrary()}`;
+   ${
+/* =========================================================
+   BIBLIOTECA DE EXERCÍCIOS
+   ========================================================= */
+
+renderExerciseLibrary()}`;
  }else if(section==='categories'){
   h+=`<h1>Categorias de exercícios</h1><p class="muted">Crie e organize categorias para a biblioteca de exercícios.</p>
    <button class="secondary" onclick="addCategory()">➕ Nova categoria</button>
    <div style="margin-top:10px">${db.exerciseCategories.map(c=>`<span class="badge" style="margin:3px">${esc(c)}</span>`).join('')}</div>`;
  }else if(section==='backup'){
   h+=`<h1>Backup</h1><p class="muted">Mantenha uma cópia de segurança dos seus dados.</p>
-   <button class="primary" onclick="exportAll()">📦 Exportar backup completo</button><br><br>
+   <button class="primary" onclick="
+/* =========================================================
+   BACKUP / RESTAURAÇÃO
+   ========================================================= */
+
+exportAll()">📦 Exportar backup completo</button><br><br>
    <button class="secondary" onclick="exportProfile()">👤 Exportar perfil atual</button>`;
  }
  h+='</div>';
@@ -4428,7 +4476,12 @@ function showRoutineDetails(id){
     ${editing ? `<div class="row" style="margin-top:12px">
      <select class="exerciseSelect" id="exerciseCategory_${r.id}" onchange="updateExerciseOptions('${esc(r.id)}')"><option value="">Categorias</option>${db.exerciseCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
      <select class="exerciseSelect" id="exerciseSelect_${r.id}"><option value="">Exercícios</option></select>
-     <button class="secondary" onclick="addExercise('${esc(r.id)}')">+ Exercício</button>
+     <button class="secondary" onclick="
+/* =========================================================
+   EDIÇÃO DE EXERCÍCIOS
+   ========================================================= */
+
+addExercise('${esc(r.id)}')">+ Exercício</button>
     </div>` : ''}
    </div>
   </div>`;
@@ -5367,6 +5420,9 @@ function deleteRoutine(id){
    BACKUP
    ========================================================= */
 
+/* ============================================================
+   BACKUP / EXPORTAÇÃO / INICIALIZAÇÃO
+   ============================================================ */
 function downloadJSON(data,filename){
 
  const blob=new Blob(
@@ -5464,6 +5520,11 @@ function exportAll(){
  );
 
 }
+
+/* =========================================================
+   INICIALIZAÇÃO
+   ========================================================= */
+
 
 /* =========================================================
    INICIALIZAÇÃO
