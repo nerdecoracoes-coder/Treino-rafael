@@ -3651,6 +3651,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--evo-orange) !importan
   .evolute-global-page-menu-wrap{top:48px !important;right:22px !important;}
 }
 </style>
+
+<style id="evolute-home-header-height-increase-v1">
+/* Home — aumenta somente a altura do cabeçalho visual. */
+@media (max-width:600px){
+  body:has(.home-reference-dashboard) .home-hero-greeting{
+    flex:0 0 70px !important;
+    height:70px !important;
+    min-height:70px !important;
+    box-sizing:border-box !important;
+  }
+}
+@media (min-width:601px){
+  body:has(.home-reference-dashboard) .home-hero-greeting{
+    min-height:175px !important;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -12597,6 +12614,77 @@ body{
   }
   body:has(.home-reference-dashboard) .home-week-progress{
     flex:0.48 1 0 !important;
+  }
+}
+</style>
+
+<style id="evolute-home-header-height-final-v2">
+/* HOME — correção final da altura do cabeçalho visual.
+   Este bloco fica por último para prevalecer sobre os ajustes anteriores. */
+@media (max-width:600px){
+  body:has(.home-reference-dashboard) .home-hero-greeting{
+    flex:0 0 85px !important;
+    height:85px !important;
+    min-height:85px !important;
+    max-height:85px !important;
+    box-sizing:border-box !important;
+  }
+}
+@media (min-width:601px){
+  body:has(.home-reference-dashboard) .home-hero-greeting{
+    min-height:175px !important;
+  }
+}
+</style>
+<style id="evolute-home-header-scale-v3">
+/* HOME — aumenta proporcionalmente todo o conjunto do cabeçalho visual. */
+@media (max-width:600px){
+  body:has(.home-reference-dashboard) .home-hero-greeting{
+    flex:0 0 115px !important;
+    height:115px !important;
+    min-height:115px !important;
+    max-height:115px !important;
+    padding:8px 4px 10px !important;
+    box-sizing:border-box !important;
+  }
+  body:has(.home-reference-dashboard) .home-hero-profile{
+    gap:12px !important;
+  }
+  body:has(.home-reference-dashboard) .home-hero-avatar{
+    width:62px !important;
+    height:62px !important;
+    min-width:62px !important;
+    border-width:2px !important;
+  }
+  body:has(.home-reference-dashboard) .home-hero-avatar .evo-ui-icon{
+    width:34px !important;
+    height:34px !important;
+  }
+  body:has(.home-reference-dashboard) .home-hero-greeting h2{
+    font-size:36px !important;
+    line-height:1.02 !important;
+    letter-spacing:-1.2px !important;
+  }
+  body:has(.home-reference-dashboard) .home-hero-greeting p{
+    font-size:18px !important;
+    line-height:1.15 !important;
+    margin-top:5px !important;
+  }
+  body:has(.home-reference-dashboard) .home-hero-actions{
+    gap:6px !important;
+  }
+  body:has(.home-reference-dashboard) .home-notification,
+  body:has(.home-reference-dashboard) .home-menu-button{
+    width:54px !important;
+    height:54px !important;
+  }
+  body:has(.home-reference-dashboard) .home-notification .evo-ui-icon{
+    width:40px !important;
+    height:40px !important;
+  }
+  body:has(.home-reference-dashboard) .home-menu-button .evo-ui-icon{
+    width:44px !important;
+    height:44px !important;
   }
 }
 </style>
