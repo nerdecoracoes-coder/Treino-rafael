@@ -5663,6 +5663,13 @@ window.toggleTrainingExerciseExpanded = function(index,button){
   button.setAttribute('aria-expanded',expanded?'true':'false');
   button.setAttribute('aria-label',expanded?'Fechar opções do exercício':'Abrir opções do exercício');
  }
+ /* Ao expandir, centraliza o exercício na área visível, após a transição do card. */
+ if(expanded){
+  window.setTimeout(()=>{
+   if(!card.isConnected || !card.classList.contains('training-card-expanded'))return;
+   card.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+  },160);
+ }
 };
 
 function validateTrainingTarget(index){
@@ -5837,7 +5844,7 @@ function showTraining(){
   <button type="button" class="back-to-routines" onclick="requestLeaveCurrentView(showRoutines)">‹&nbsp; voltar para treinos</button>
  </div>
  <div class="card">
-  <h2>${esc(r.name)}</h2>
+  <h2 class="training-page-title">${esc(r.name)}</h2>
   <p class="muted">Seu treino fica salvo automaticamente enquanto você preenche. Você pode sair do app e continuar depois.</p>
   <div class="grid">
    <div><label>Peso hoje (kg)</label><input id="peso" type="number" step="0.1" value="${esc(d.weight)}" oninput="saveTrainingDraftFromDOM()"></div>
@@ -6094,10 +6101,6 @@ function showHistory(section="history"){
  let h=`
 
  <div class="card">
-
-  <h2>
-   Histórico — ${esc(p.name)}
-  </h2>
 
   <p class="muted">
    ${historySection==="history"
@@ -10896,8 +10899,43 @@ body:has(.home-page) .evolute-global-page-menu-wrap{display:none !important}
   const header=document.getElementById('evoluteSharedPageHeader'); if(!header)return;
   let profile=null; try{ if(typeof getProfile==='function') profile=getProfile(); }catch(e){}
   const name=document.getElementById('evoluteSharedName');
+  const copy=header.querySelector('.home-hero-copy');
+  const title=copy&&copy.querySelector('h2');
+  const subtitle=copy&&copy.querySelector('p');
+  const app=document.getElementById('app');
+  const isHome=!!(app&&app.querySelector('.home-reference-dashboard'));
+  if(isHome){
+   if(title)title.innerHTML='Olá, <span id="evoluteSharedName"></span>';
+   const sharedName=document.getElementById('evoluteSharedName');
+   if(sharedName)sharedName.textContent=(profile&&profile.name?profile.name:'Rafael')+'!';
+   if(subtitle)subtitle.textContent='Bora evoluir hoje?';
+  }else{
+   const candidates=[
+    ['community-page','Comunidades'],['training-page','Treinos'],['routines-page-title','Treinos'],
+    ['history-page','Histórico'],['evolution-page','Evolução'],['settings-page-head','Configurações'],
+    ['profile-page-title','Perfil']
+   ];
+   let pageTitle='';
+   if(app){
+    const heading=app.querySelector('h1, h2.routines-page-title, .community-head h1, .settings-section-head h1, .settings-section-head h2, .training-page-title');
+    if(heading)pageTitle=(heading.textContent||'').trim();
+   }
+   if(!pageTitle){
+    const text=(app&&app.innerText||'').slice(0,1200);
+    if(/Biblioteca de exercícios/.test(text))pageTitle='Biblioteca de exercícios';
+    else if(/Minhas fichas/.test(text))pageTitle='Minhas fichas';
+    else if(/Categorias de exercícios/.test(text))pageTitle='Categorias de exercícios';
+    else if(/Configurações/.test(text))pageTitle='Configurações';
+    else if(/Comunidades/.test(text))pageTitle='Comunidades';
+    else if(/Histórico/.test(text))pageTitle='Histórico';
+    else if(/Treinos/.test(text))pageTitle='Treinos';
+    else if(/Meu perfil/.test(text))pageTitle='Meu perfil';
+    else pageTitle='Evolute Training';
+   }
+   if(title)title.textContent=pageTitle;
+   if(subtitle)subtitle.textContent='';
+  }
   const avatar=document.getElementById('evoluteSharedAvatar');
-  if(name)name.textContent=(profile&&profile.name?profile.name:'Rafael')+'!';
   if(avatar){ if(profile&&profile.photo){avatar.innerHTML='<img src="'+String(profile.photo).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" alt="">';} else {avatar.innerHTML='<svg class="evo-ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2"/></svg>';}}
  }
  window.toggleSharedNotifications=function(event){if(event)event.stopPropagation();const d=document.getElementById('evoluteSharedNotifications');if(!d)return;const opening=d.hidden;d.hidden=!opening;const b=document.querySelector('#evoluteSharedPageHeader .home-notification');if(b)b.setAttribute('aria-expanded',String(opening));};
@@ -14123,5 +14161,19 @@ span.home-community-cta svg {
   min-width: 36px !important;
   min-height: 36px !important;
   flex: 0 0 36px !important;
+}
+</style>
+
+<style id="evolute-hide-duplicate-content-page-titles-v1">
+/* O título da página já fica no cabeçalho compartilhado; evita repeti-lo no conteúdo. */
+#app .routines-page-title,
+#app .community-head > div > h1,
+#app > .card.settings-home > h1,
+#app .settings-section-head > h1,
+#app .profile-page-title,
+#app .training-page-title,
+#app .history-page > h1,
+#app .evolution-page > h1 {
+  display: none !important;
 }
 </style>
