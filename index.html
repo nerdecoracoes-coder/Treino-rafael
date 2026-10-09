@@ -3725,13 +3725,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--evo-orange) !importan
 #evoluteSharedAvatar{cursor:pointer!important;}
 </style>
 
-
-<style id="routine-name-edit-style">
-.routine-name-edit-field{display:flex;flex-direction:column;gap:7px;width:100%;margin:0 0 8px}
-.routine-name-edit-field label{font-size:.82rem;font-weight:600;color:var(--muted,#a7a7a7)}
-.routine-name-edit-input{box-sizing:border-box;width:100%;min-width:0;border:1px solid rgba(255,115,0,.58);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.035);color:inherit;font:inherit;font-size:1.15rem;font-weight:700;outline:none}
-.routine-name-edit-input:focus{border-color:#ff6900;box-shadow:0 0 0 3px rgba(255,105,0,.14)}
-</style>
 </head>
 
 <body>
@@ -4082,6 +4075,7 @@ function normalizeExercise(e){
   targetLoad:e.targetLoad??"",
   targetReps:e.targetReps??"",
   series,
+  restSeconds:e.restSeconds??"",
   minReps,
   maxReps,
   image:e.image||"",
@@ -5586,7 +5580,81 @@ function repClass(value,e){
  return "";
 }
 
-function toggleTrainingExerciseExpanded(index,button){
+const evoluteRestTimers=window.__evoluteRestTimers||(window.__evoluteRestTimers={});
+let evoluteAudioContext=null;
+function playRestCountdownBeep(second){
+ try{
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return;
+  if(!evoluteAudioContext)evoluteAudioContext=new AudioCtx();
+  if(evoluteAudioContext.state==='suspended')evoluteAudioContext.resume();
+  const ctx=evoluteAudioContext;
+  const oscillator=ctx.createOscillator();
+  const gain=ctx.createGain();
+  oscillator.type='sine';
+  oscillator.frequency.setValueAtTime(second===1?1046:880,ctx.currentTime);
+  gain.gain.setValueAtTime(0.0001,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.22,ctx.currentTime+0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.16);
+  oscillator.connect(gain);gain.connect(ctx.destination);
+  oscillator.start(ctx.currentTime);oscillator.stop(ctx.currentTime+0.17);
+ }catch(error){console.warn('Não foi possível reproduzir o sinal sonoro do descanso.',error);}
+}
+function formatRestClock(seconds){seconds=Math.max(0,Math.ceil(seconds));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
+function toggleExerciseRestTimer(index,button){
+ const card=document.querySelector(`.training-exercise-card[data-exercise-index="${index}"]`);
+ const panel=card?.querySelector(`[data-rest-timer="${index}"]`);
+ const duration=Math.max(0,Number(panel?.dataset.duration||0));
+ if(!card||!panel||!Number.isFinite(duration)||duration<=0)return;
+ const existing=evoluteRestTimers[index];
+ if(existing){
+  clearInterval(existing.interval);
+  delete evoluteRestTimers[index];
+  card.classList.remove('rest-timer-active','rest-timer-last-five');
+  panel.classList.remove('rest-timer-running');
+  panel.removeAttribute('data-countdown');
+  button.textContent='▶';button.setAttribute('aria-label','Iniciar descanso');
+  const readout=document.getElementById('restReadout'+index);if(readout)readout.textContent=formatRestClock(duration);
+  const progress=document.getElementById('restProgress'+index);if(progress)progress.style.width='0%';
+  const finished=document.getElementById('restFinished'+index);if(finished)finished.style.display='none';
+  return;
+ }
+ const state={startedAt:Date.now(),duration,interval:null,button,panel,card};
+ evoluteRestTimers[index]=state;
+ panel.classList.add('rest-timer-running');card.classList.add('rest-timer-active');
+ button.textContent='Ⅱ';button.setAttribute('aria-label','Pausar/parar descanso');
+ const tick=()=>{
+  if(evoluteRestTimers[index]!==state){clearInterval(state.interval);return;}
+  const elapsed=(Date.now()-state.startedAt)/1000;
+  const remaining=Math.max(0,duration-elapsed);
+  const readout=document.getElementById('restReadout'+index);
+  const progress=document.getElementById('restProgress'+index);
+  const finished=document.getElementById('restFinished'+index);
+  if(readout)readout.textContent=formatRestClock(remaining);
+  if(progress)progress.style.width=Math.min(100,(elapsed/duration)*100)+'%';
+  card.classList.toggle('rest-timer-last-five',remaining>0&&remaining<=5);
+  if(remaining>0&&remaining<=5){
+   const countdownSecond=Math.ceil(remaining);
+   card.setAttribute('data-rest-countdown',String(countdownSecond));
+   if(state.lastBeepSecond!==countdownSecond){
+    state.lastBeepSecond=countdownSecond;
+    playRestCountdownBeep(countdownSecond);
+   }
+  }else card.removeAttribute('data-rest-countdown');
+  if(remaining<=0){
+   clearInterval(state.interval);delete evoluteRestTimers[index];
+   card.classList.remove('rest-timer-active','rest-timer-last-five');card.removeAttribute('data-rest-countdown');panel.classList.remove('rest-timer-running');panel.removeAttribute('data-countdown');
+   button.textContent='▶';button.setAttribute('aria-label','Iniciar descanso');
+   if(readout)readout.textContent='00:00';
+   if(finished){finished.style.display='block';setTimeout(()=>{if(finished.isConnected)finished.style.display='none';},3500);}
+   if(progress)progress.style.width='100%';
+  }
+ };
+ tick();
+ if(evoluteRestTimers[index]===state)state.interval=setInterval(tick,100);
+}
+
+window.toggleTrainingExerciseExpanded = function(index,button){
  const card=document.querySelector(`.training-exercise-card[data-exercise-index="${index}"]`);
  if(!card)return;
  const expanded=card.classList.toggle('training-card-expanded');
@@ -5595,7 +5663,7 @@ function toggleTrainingExerciseExpanded(index,button){
   button.setAttribute('aria-expanded',expanded?'true':'false');
   button.setAttribute('aria-label',expanded?'Fechar opções do exercício':'Abrir opções do exercício');
  }
-}
+};
 
 function validateTrainingTarget(index){
  const card=document.querySelector(`.training-exercise-card[data-exercise-index="${index}"]`);
@@ -5800,7 +5868,11 @@ function showTraining(){
    <div class="training-card-category-wrap"><span class="training-card-category-label">Categoria:</span><span class="training-card-category-value">${esc(e.category||getExerciseCategoryByName(e.name)||"Sem categoria")}</span></div>
    <div class="training-card-compact-target">Meta: <span>${(state.targetLoad??e.targetLoad)!==""&&((state.targetLoad??e.targetLoad)!=null)?esc(state.targetLoad??e.targetLoad)+" kg":"não definida"}</span></div>
    <div class="training-target-warning" hidden>Defina sua meta para esse exercício no próximo treino.</div>
-   <button type="button" class="training-card-expand" aria-label="Abrir opções do exercício" aria-expanded="false" onclick="toggleTrainingExerciseExpanded(${i},this)">⌄</button>
+   <div class="exercise-rest-timer" data-rest-timer="${i}" data-duration="${Math.max(0,Number(e.restSeconds)||0)}">
+    <div class="exercise-rest-top"><span class="exercise-rest-label">${e.restSeconds!==""&&e.restSeconds!=null?`Descanso • ${esc(e.restSeconds)}s`:'Descanso não configurado'}</span><span class="exercise-rest-readout" id="restReadout${i}">${e.restSeconds!==""&&e.restSeconds!=null?`${Math.floor(Number(e.restSeconds)/60).toString().padStart(2,'0')}:${(Number(e.restSeconds)%60).toString().padStart(2,'0')}`:'—'}</span><button type="button" class="exercise-rest-play" aria-label="Iniciar descanso" ${locked||!(Number(e.restSeconds)>0)?'disabled':''} onclick="event.stopPropagation();toggleExerciseRestTimer(${i},this)">▶</button></div>
+    <div class="exercise-rest-track"><div class="exercise-rest-progress" id="restProgress${i}"></div></div>
+    <div class="exercise-rest-finished" id="restFinished${i}" aria-live="polite">DESCANSO FINALIZADO</div>
+   </div>
    <div class="last">Última S1: ${e.refLoad!==""&&e.refLoad!=null?esc(e.refLoad)+" kg × "+esc(e.refReps||"-")+" reps":"sem registro"}</div>
    <div class="target">
     <strong>${evoIcon('target')} Meta para o próximo treino</strong>
@@ -7511,23 +7583,79 @@ function markRoutineEditDirty(){
  if(configRoutineEditMode)configRoutineEditDirty=true;
 }
 
+function handleRestPresetChange(id,index){
+ const select=document.getElementById('restSeconds_'+id+'_'+index);
+ const wrap=document.getElementById('restCustomWrap_'+id+'_'+index);
+ const custom=document.getElementById('restCustom_'+id+'_'+index);
+ if(!select||!wrap)return;
+ const isCustom=select.value==='custom';
+ wrap.style.display=isCustom?'':'none';
+ if(!isCustom&&custom)custom.value='';
+ const label=document.getElementById('restPickerLabel_'+id+'_'+index);
+ const selected=select.options[select.selectedIndex];
+ if(label)label.textContent=isCustom?'Criar novo tempo':(selected&&selected.value?selected.textContent:'Selecione o descanso');
+ markRoutineEditDirty();
+}
+
+function closeRestOptions(){
+ const modal=document.getElementById('evoluteRestOptionsModal');
+ if(modal)modal.remove();
+ document.body.classList.remove('evolute-rest-modal-open');
+}
+function openRestOptions(id,index){
+ const select=document.getElementById('restSeconds_'+id+'_'+index);
+ if(!select||select.disabled)return;
+ closeRestOptions();
+ const current=select.value;
+ const modal=document.createElement('div');
+ modal.id='evoluteRestOptionsModal';
+ modal.className='evolute-rest-options-backdrop';
+ modal.innerHTML=`<section class="evolute-rest-options-sheet" role="dialog" aria-modal="true" aria-labelledby="evoluteRestOptionsTitle">
+  <div class="evolute-rest-sheet-handle"></div>
+  <div class="evolute-rest-sheet-heading"><span class="evolute-rest-sheet-icon">◷</span><div><h3 id="evoluteRestOptionsTitle">Tempo de descanso</h3><p>Escolha o intervalo entre as séries</p></div><button type="button" class="evolute-rest-close" aria-label="Fechar" onclick="closeRestOptions()">×</button></div>
+  <div class="evolute-rest-options-list" id="evoluteRestOptionsList"></div>
+  <div class="evolute-rest-sheet-footer">Você pode personalizar o tempo quando precisar.</div>
+ </section>`;
+ modal.addEventListener('click',event=>{if(event.target===modal)closeRestOptions();});
+ const list=modal.querySelector('#evoluteRestOptionsList');
+ [...select.options].filter(option=>option.value!=='' ).forEach(option=>{
+  const isCustom=option.value==='custom';
+  const chosen=option.value===current;
+  const item=document.createElement('button');
+  item.type='button';
+  item.className='evolute-rest-option'+(chosen?' is-selected':'')+(isCustom?' is-custom':'');
+  item.innerHTML=isCustom?`<span class="evolute-rest-option-symbol custom-symbol">＋</span><span class="evolute-rest-option-copy"><strong>Criar novo tempo</strong><small>Definir uma duração personalizada</small></span><span class="evolute-rest-option-arrow">›</span>`:`<span class="evolute-rest-option-symbol">◷</span><span class="evolute-rest-option-copy"><strong>${option.textContent}</strong><small>${option.value<60?option.value+' segundos de pausa':Math.floor(Number(option.value)/60)+(Number(option.value)%60?' min e '+Number(option.value)%60+' s':' minuto'+(Number(option.value)>60?'s':''))+' de pausa'}</small></span><span class="evolute-rest-option-check">${chosen?'✓':''}</span>`;
+  item.addEventListener('click',()=>{
+   select.value=option.value;
+   handleRestPresetChange(id,index);
+   closeRestOptions();
+  });
+  list.appendChild(item);
+ });
+ document.body.appendChild(modal);
+ document.body.classList.add('evolute-rest-modal-open');
+ requestAnimationFrame(()=>modal.classList.add('is-visible'));
+}
+
 function collectRoutineEditValues(id){
  const p=getProfile();
  const r=p?.routines?.[id];
  if(!r)return;
- const editedName=(document.getElementById('routineNameEdit_'+id)?.value||'').trim();
- if(editedName)r.name=editedName;
  (r.ex||[]).forEach((e,i)=>{
   const name=document.getElementById('ename_'+id+'_'+i)?.value.trim();
   const series=document.getElementById('series_'+id+'_'+i)?.value;
   const min=document.getElementById('minReps_'+id+'_'+i)?.value??'';
   const max=document.getElementById('maxReps_'+id+'_'+i)?.value??'';
+  const restSelect=document.getElementById('restSeconds_'+id+'_'+i)?.value??'';
+  const restCustom=document.getElementById('restCustom_'+id+'_'+i)?.value??'';
+  const rest=restSelect==='custom'?restCustom:restSelect;
   if(name) e.name=name;
   const resolvedCategory=getExerciseCategoryByName(e.name);
   if(resolvedCategory)e.category=resolvedCategory;
   e.series=Math.max(1,Math.min(20,Number(series||3)));
   e.minReps=min;
   e.maxReps=max;
+  e.restSeconds=rest===''?'':Math.max(0,Math.min(3600,Number(rest)||0));
  });
 }
 
@@ -7638,9 +7766,7 @@ function showRoutineDetails(id){
 
    <div class="card">
     <div class="routine-details-header">
-     ${editing
-      ? `<div class="routine-name-edit-field"><label for="routineNameEdit_${esc(r.id)}">Nome da ficha</label><input id="routineNameEdit_${esc(r.id)}" class="routine-name-edit-input" type="text" value="${esc(r.name)}" placeholder="Ex.: Treino A" oninput="markRoutineEditDirty()" autocomplete="off"></div>`
-      : `<h2>${esc(r.name)}</h2>`}
+     <h2>${esc(r.name)}</h2>
      ${editing
       ? `<button type="button" class="routine-details-info routine-details-info-editable" onclick="openRoutineBasicInfoEditor('${esc(r.id)}')" aria-label="Editar informações básicas">${esc(r.description||"Clique para adicionar informações básicas")} <span aria-hidden="true">›</span></button>`
       : `<div class="routine-details-info">${esc(r.description||"Sem informações básicas cadastradas")}</div>`}
@@ -7716,6 +7842,22 @@ function renderConfigExerciseEditor(r,e,i,editing){
     <div class="routine-series-field"><label>Séries</label><input id="series_${r.id}_${i}" type="number" min="1" max="20" value="${esc(e.series||3)}" ${dis} oninput="markRoutineEditDirty()"></div>
     <div><label>Mín. reps</label><input id="minReps_${r.id}_${i}" type="number" min="0" value="${esc(e.minReps??"")}" placeholder="Opcional" ${dis} oninput="markRoutineEditDirty()"></div>
     <div><label>Máx. reps</label><input id="maxReps_${r.id}_${i}" type="number" min="0" value="${esc(e.maxReps??"")}" placeholder="Opcional" ${dis} oninput="markRoutineEditDirty()"></div>
+    <div class="routine-rest-field evolute-rest-picker-field"><label>Tempo de descanso</label><button type="button" class="evolute-rest-picker-trigger" id="restPickerBtn_${r.id}_${i}" ${dis} onclick="openRestOptions('${r.id}',${i})"><span class="evolute-rest-picker-icon">◷</span><span class="evolute-rest-picker-current" id="restPickerLabel_${r.id}_${i}">${e.restSeconds!==""&&e.restSeconds!=null?({30:'30 segundos',45:'45 segundos',60:'1 minuto',90:'1 minuto e meio',120:'2 minutos',150:'2 minutos e meio',180:'3 minutos'}[Number(e.restSeconds)]||'Tempo personalizado'): 'Selecione o descanso'}</span><span class="evolute-rest-picker-chevron">⌄</span></button><select class="evolute-rest-native-select" id="restSeconds_${r.id}_${i}" ${dis} onchange="handleRestPresetChange('${r.id}',${i})" aria-hidden="true" tabindex="-1">
+      <option value="" ${e.restSeconds===""||e.restSeconds==null?'selected':''}>Selecione o descanso</option>
+      <option value="30" ${Number(e.restSeconds)===30?'selected':''}>30 segundos</option>
+      <option value="45" ${Number(e.restSeconds)===45?'selected':''}>45 segundos</option>
+      <option value="60" ${Number(e.restSeconds)===60?'selected':''}>1 minuto</option>
+      <option value="90" ${Number(e.restSeconds)===90?'selected':''}>1 minuto e meio</option>
+      <option value="120" ${Number(e.restSeconds)===120?'selected':''}>2 minutos</option>
+      <option value="150" ${Number(e.restSeconds)===150?'selected':''}>2 minutos e meio</option>
+      <option value="180" ${Number(e.restSeconds)===180?'selected':''}>3 minutos</option>
+      <option value="custom" ${e.restSeconds!==""&&e.restSeconds!=null&&![30,45,60,90,120,150,180].includes(Number(e.restSeconds))?'selected':''}>Criar novo tempo</option>
+     </select>
+     <div id="restCustomWrap_${r.id}_${i}" style="margin-top:8px;${e.restSeconds!==""&&e.restSeconds!=null&&![30,45,60,90,120,150,180].includes(Number(e.restSeconds))?'':'display:none;'}">
+      <label for="restCustom_${r.id}_${i}">Novo tempo (segundos)</label>
+      <input id="restCustom_${r.id}_${i}" type="number" min="1" max="3600" step="1" value="${e.restSeconds!==""&&e.restSeconds!=null&&![30,45,60,90,120,150,180].includes(Number(e.restSeconds))?esc(e.restSeconds):''}" placeholder="Digite o tempo em segundos" ${dis} oninput="markRoutineEditDirty()">
+     </div>
+    </div>
    </div>
    <div class="small" style="margin-top:6px">Defina quantas séries serão feitas e a faixa de repetições desejada.</div>
 
@@ -8345,8 +8487,8 @@ function initExerciseDragAndDrop(rid){
    [...app.querySelectorAll('.config-exercise-item.editing[data-exercise-index]')].forEach((el,newIndex)=>{
     el.dataset.exerciseIndex=String(newIndex); el.dataset.originalIndex=String(newIndex);
     const badge=el.querySelector('.exercise-position-number'); if(badge)badge.textContent=String(newIndex+1);
-    const name=el.querySelector('input[id^="ename_"]'),series=el.querySelector('input[id^="series_"]'),min=el.querySelector('input[id^="minReps_"]'),max=el.querySelector('input[id^="maxReps_"]');
-    [['ename',name],['series',series],['minReps',min],['maxReps',max]].forEach(([prefix,input])=>{if(input)input.id=`${prefix}_${rid}_${newIndex}`;});
+    const name=el.querySelector('input[id^="ename_"]'),series=el.querySelector('input[id^="series_"]'),min=el.querySelector('input[id^="minReps_"]'),max=el.querySelector('input[id^="maxReps_"]'),rest=el.querySelector('input[id^="restSeconds_"]');
+    [['ename',name],['series',series],['minReps',min],['maxReps',max],['restSeconds',rest]].forEach(([prefix,input])=>{if(input)input.id=`${prefix}_${rid}_${newIndex}`;});
     const del=el.querySelector('.routine-exercise-delete'); if(del)del.setAttribute('onclick',`removeExercise('${String(rid).replace(/'/g,"\'")}',${newIndex})`);
    });
   }
@@ -8866,7 +9008,7 @@ function confirmYouTubeRoutineImport(){
   name:'Treino do YouTube',
   description:title,
   basicInfo:[],
-  ex:matches.map(x=>({name:x.name,category:'',image:'',images:[],video:'',targetLoad:'',targetReps:'',series:3,minReps:'',maxReps:'',refLoad:'',refReps:''}))
+  ex:matches.map(x=>({name:x.name,category:'',image:'',images:[],video:'',targetLoad:'',targetReps:'',series:3,minReps:'',maxReps:'',restSeconds:'',refLoad:'',refReps:''}))
  };
  closeRoutineImport();
  importRoutineObject(routine,'Treino do YouTube');
@@ -9252,6 +9394,7 @@ function confirmRoutineTextImport(){
     series:3,
     minReps:"",
     maxReps:"",
+   restSeconds:"",
     refLoad:"",
     refReps:"",
     targetLoad:"",
@@ -11336,6 +11479,80 @@ span.home-community-cta {
   position: relative !important;
   left: clamp(88px, 29vw, 176px) !important;
 }
+</style>
+
+
+<style id="evolute-exercise-rest-timer-v1">
+.exercise-rest-timer{position:relative;margin:14px 0 12px;padding:10px 12px 12px;border:1px solid rgba(254,100,5,.28);border-radius:13px;background:rgba(10,10,10,.72);overflow:hidden;}
+.exercise-rest-top{display:flex;align-items:center;gap:10px;min-height:34px;}
+.exercise-rest-label{font-size:12px;font-weight:800;color:#d1d5db;flex:1;}
+.exercise-rest-readout{font-variant-numeric:tabular-nums;font-size:15px;font-weight:900;color:#ff760e;min-width:48px;text-align:right;}
+.exercise-rest-play{width:30px;height:30px;min-width:30px;border:1px solid #ff760e;border-radius:50%;background:#ff760e;color:#111;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+.exercise-rest-play:disabled{opacity:.35;cursor:not-allowed;}
+.exercise-rest-track{height:4px;border-radius:10px;background:rgba(255,255,255,.13);overflow:hidden;margin-top:8px;}
+.exercise-rest-progress{height:100%;width:0%;border-radius:10px;background:linear-gradient(90deg,#ff5b00,#ff9b26);transition:width .1s linear;}
+.exercise-rest-finished{display:none;color:#ff8a2a;font-size:11px;font-weight:900;letter-spacing:1px;text-align:center;padding-top:7px;}
+.training-exercise-card.rest-timer-last-five{position:relative;isolation:isolate;overflow:hidden;}
+.training-exercise-card.rest-timer-last-five>*:not(.rest-countdown-overlay){opacity:.28!important;transition:opacity .35s ease;}
+.training-exercise-card.rest-timer-last-five::after{content:attr(data-rest-countdown);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(64px,18vw,104px);font-weight:1000;line-height:1;color:#fff;text-shadow:0 0 24px rgba(255,100,0,.9);background:rgba(0,0,0,.62);border-radius:inherit;z-index:20;opacity:1;pointer-events:none;}
+.training-exercise-card.rest-timer-last-five .exercise-rest-readout{font-size:15px;}
+.training-exercise-card.rest-timer-last-five .exercise-rest-timer{opacity:1!important;}
+@media(max-width:480px){.exercise-rest-timer{padding:9px 10px}.exercise-rest-label{font-size:11px}}
+</style>
+
+<script id="evolute-exercise-card-tap-expand-fix-v1">
+/* Tocar no corpo do card expande/recolhe; controles internos mantêm suas ações. */
+document.addEventListener('click', function(event) {
+  const card = event.target.closest('.training-exercise-card[data-exercise-index]');
+  if (!card) return;
+  if (event.target.closest('button, input, select, textarea, label, a, [contenteditable="true"], .training-drag-handle')) return;
+  const index = card.getAttribute('data-exercise-index');
+  if (index === null) return;
+  const expanded = card.classList.contains('training-card-expanded');
+  if (typeof window.toggleTrainingExerciseExpanded === 'function') {
+    window.toggleTrainingExerciseExpanded(Number(index), null);
+  } else {
+    card.classList.toggle('training-card-expanded', !expanded);
+    card.classList.toggle('training-card-collapsed', expanded);
+  }
+});
+</script>
+
+<style id="evolute-rest-picker-custom-sheet-v1">
+.routine-rest-field.evolute-rest-picker-field{position:relative;min-width:0}
+.evolute-rest-picker-trigger{width:100%;min-height:48px;display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid rgba(254,100,5,.48);border-radius:13px;background:linear-gradient(135deg,rgba(254,100,5,.12),rgba(25,25,27,.96) 62%);color:#f6f6f6;text-align:left;box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 5px 15px rgba(0,0,0,.18);font:inherit;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s}
+.evolute-rest-picker-trigger:active{transform:scale(.985)}
+.evolute-rest-picker-trigger:focus-visible{outline:2px solid #fe6405;outline-offset:2px}
+.evolute-rest-picker-icon{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:#fe6405;color:#fff;font-size:21px;font-weight:800;box-shadow:0 0 14px rgba(254,100,5,.24)}
+.evolute-rest-picker-current{flex:1;min-width:0;font-weight:750;font-size:14px}
+.evolute-rest-picker-chevron{font-size:21px;color:#fe7a2a}
+.evolute-rest-native-select{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;left:0;bottom:0}
+body.evolute-rest-modal-open{overflow:hidden!important}
+.evolute-rest-options-backdrop{position:fixed;inset:0;z-index:100000;display:flex;align-items:flex-end;justify-content:center;padding:16px;background:rgba(0,0,0,.68);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transition:opacity .22s ease}
+.evolute-rest-options-backdrop.is-visible{opacity:1}
+.evolute-rest-options-sheet{width:min(100%,460px);max-height:min(82dvh,720px);overflow:auto;padding:10px 18px calc(20px + env(safe-area-inset-bottom));border:1px solid rgba(254,100,5,.38);border-bottom:0;border-radius:25px 25px 18px 18px;background:radial-gradient(ellipse at top right,rgba(254,100,5,.17),transparent 48%),linear-gradient(155deg,#202022,#0a0a0b 70%);color:#f8f8f8;box-shadow:0 -18px 65px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.07);transform:translateY(28px);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+.evolute-rest-options-backdrop.is-visible .evolute-rest-options-sheet{transform:translateY(0)}
+.evolute-rest-sheet-handle{width:42px;height:4px;margin:2px auto 18px;border-radius:99px;background:#686868}
+.evolute-rest-sheet-heading{display:flex;align-items:center;gap:12px;margin:0 0 18px}
+.evolute-rest-sheet-icon{display:grid;place-items:center;width:47px;height:47px;flex:0 0 47px;border-radius:15px;background:linear-gradient(140deg,#ff8a32,#fe6405 70%);color:white;font-size:29px;font-weight:800;box-shadow:0 5px 20px rgba(254,100,5,.24)}
+.evolute-rest-sheet-heading h3{margin:0;font-size:19px;line-height:1.2;font-weight:850;letter-spacing:-.35px}
+.evolute-rest-sheet-heading p{margin:5px 0 0;color:#aaa;font-size:12px}
+.evolute-rest-close{margin-left:auto;align-self:flex-start;width:34px;height:34px;border:1px solid rgba(255,255,255,.1);border-radius:50%;background:#29292b;color:#ddd;font-size:24px;line-height:1;cursor:pointer}
+.evolute-rest-options-list{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.evolute-rest-option{display:flex;align-items:center;gap:9px;min-height:68px;min-width:0;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:15px;background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));color:#f4f4f4;text-align:left;cursor:pointer;transition:background .18s,border-color .18s,transform .18s;}
+.evolute-rest-option:active{transform:scale(.975)}
+.evolute-rest-option.is-selected{border-color:#fe6405;background:linear-gradient(135deg,rgba(254,100,5,.23),rgba(254,100,5,.07));box-shadow:inset 0 0 0 1px rgba(254,100,5,.1)}
+.evolute-rest-option-symbol{display:grid;place-items:center;width:31px;height:31px;flex:0 0 31px;border-radius:10px;background:rgba(254,100,5,.14);color:#ff853d;font-size:20px}
+.evolute-rest-option-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.evolute-rest-option-copy strong{font-size:13px;line-height:1.2;font-weight:800}
+.evolute-rest-option-copy small{font-size:10px;line-height:1.25;color:#a6a6a6}
+.evolute-rest-option-check{color:#ff7a2b;font-size:18px;font-weight:900}
+.evolute-rest-option.is-custom{grid-column:1/-1;min-height:62px;border-color:rgba(254,100,5,.45);background:linear-gradient(100deg,rgba(254,100,5,.16),rgba(254,100,5,.045))}
+.evolute-rest-option.is-custom .custom-symbol{background:#fe6405;color:#fff;font-size:24px}
+.evolute-rest-option-arrow{margin-left:auto;color:#ff853d;font-size:27px}
+.evolute-rest-sheet-footer{margin-top:15px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);color:#999;font-size:11px;text-align:center}
+@media(min-width:560px){.evolute-rest-options-backdrop{align-items:center;padding:20px}.evolute-rest-options-sheet{border-bottom:1px solid rgba(254,100,5,.38);border-radius:25px;padding-bottom:20px}}
+@media(max-width:360px){.evolute-rest-options-sheet{padding-left:13px;padding-right:13px}.evolute-rest-options-list{gap:7px}.evolute-rest-option{gap:7px;padding:8px}.evolute-rest-option-symbol{width:27px;height:27px;flex-basis:27px}.evolute-rest-option-copy strong{font-size:12px}}
 </style>
 
 </body>
