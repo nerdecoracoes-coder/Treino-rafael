@@ -3725,6 +3725,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--evo-orange) !importan
 #evoluteSharedAvatar{cursor:pointer!important;}
 </style>
 
+
+<style id="routine-name-edit-style">
+.routine-name-edit-field{display:flex;flex-direction:column;gap:7px;width:100%;margin:0 0 8px}
+.routine-name-edit-field label{font-size:.82rem;font-weight:600;color:var(--muted,#a7a7a7)}
+.routine-name-edit-input{box-sizing:border-box;width:100%;min-width:0;border:1px solid rgba(255,115,0,.58);border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.035);color:inherit;font:inherit;font-size:1.15rem;font-weight:700;outline:none}
+.routine-name-edit-input:focus{border-color:#ff6900;box-shadow:0 0 0 3px rgba(255,105,0,.14)}
+</style>
 </head>
 
 <body>
@@ -7508,6 +7515,8 @@ function collectRoutineEditValues(id){
  const p=getProfile();
  const r=p?.routines?.[id];
  if(!r)return;
+ const editedName=(document.getElementById('routineNameEdit_'+id)?.value||'').trim();
+ if(editedName)r.name=editedName;
  (r.ex||[]).forEach((e,i)=>{
   const name=document.getElementById('ename_'+id+'_'+i)?.value.trim();
   const series=document.getElementById('series_'+id+'_'+i)?.value;
@@ -7629,7 +7638,9 @@ function showRoutineDetails(id){
 
    <div class="card">
     <div class="routine-details-header">
-     <h2>${esc(r.name)}</h2>
+     ${editing
+      ? `<div class="routine-name-edit-field"><label for="routineNameEdit_${esc(r.id)}">Nome da ficha</label><input id="routineNameEdit_${esc(r.id)}" class="routine-name-edit-input" type="text" value="${esc(r.name)}" placeholder="Ex.: Treino A" oninput="markRoutineEditDirty()" autocomplete="off"></div>`
+      : `<h2>${esc(r.name)}</h2>`}
      ${editing
       ? `<button type="button" class="routine-details-info routine-details-info-editable" onclick="openRoutineBasicInfoEditor('${esc(r.id)}')" aria-label="Editar informações básicas">${esc(r.description||"Clique para adicionar informações básicas")} <span aria-hidden="true">›</span></button>`
       : `<div class="routine-details-info">${esc(r.description||"Sem informações básicas cadastradas")}</div>`}
