@@ -2648,7 +2648,7 @@ header .profile-selector{
   position:absolute;
   inset:0;
   background:rgba(3,6,9,.62);
-  pointer-events:auto;
+  pointer-events:none;
 }
 .evolute-guide-target{
   position:fixed !important;
@@ -2657,7 +2657,32 @@ header .profile-selector{
   outline-offset:5px !important;
   box-shadow:0 0 0 9999px rgba(3,6,9,.62),0 0 0 8px rgba(255,145,31,.13),0 0 30px rgba(255,145,31,.28) !important;
   border-radius:inherit !important;
-  pointer-events:none !important;
+  pointer-events:auto !important;
+  cursor:pointer !important;
+  animation:evoluteGuidePulse 1.5s ease-in-out infinite;
+}
+.evolute-guide-indicator{
+  position:fixed;
+  z-index:100002;
+  padding:8px 12px;
+  border-radius:999px;
+  background:#ff8a18;
+  color:#111;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+  box-shadow:0 5px 22px rgba(255,138,24,.42);
+  white-space:nowrap;
+  pointer-events:none;
+  transform:translate(-50%,-100%);
+}
+.evolute-guide-indicator:after{
+  content:'';position:absolute;left:50%;bottom:-6px;width:12px;height:12px;
+  background:#ff8a18;transform:translateX(-50%) rotate(45deg);
+}
+@keyframes evoluteGuidePulse{
+  0%,100%{outline-color:rgba(255,145,31,.95);box-shadow:0 0 0 9999px rgba(3,6,9,.62),0 0 0 8px rgba(255,145,31,.13),0 0 30px rgba(255,145,31,.28)}
+  50%{outline-color:#fff;box-shadow:0 0 0 9999px rgba(3,6,9,.62),0 0 0 12px rgba(255,145,31,.28),0 0 38px rgba(255,145,31,.55)}
 }
 .evolute-guide-card{
   position:fixed;
@@ -5297,7 +5322,7 @@ function showRoutines(){
   const r=id&&p.routines[id];
   html+=`<div class="weekly-day-row" data-weekday="${index}"><div class="weekly-day-label">${day}</div><div class="weekly-day-slot ${r?'has-routine':'empty'}" data-drop-day="${index}">`;
   if(r){
-   html+=`<div class="weekly-routine-card" data-routine-id="${esc(id)}" data-weekday="${index}"><button type="button" class="weekly-drag-handle" aria-label="Deslizar ${esc(r.name)} para outro dia" onpointerdown="weeklyRoutineDragStart(event,'${esc(id)}',${index})"><span>⠿</span></button><button type="button" class="weekly-routine-open" onclick="chooseRoutine('${esc(id)}')"><span class="weekly-routine-name">${esc(r.name)}</span>${r.description?`<span class="weekly-routine-description">${esc(r.description)}</span>`:''}${id===recommendedId?'<span class="weekly-routine-recommended">Recomendado</span>':''}</button></div>`;
+   html+=`<div class="weekly-routine-card" data-routine-id="${esc(id)}" data-weekday="${index}"><button type="button" class="weekly-drag-handle" aria-label="Deslizar ${esc(r.name)} para outro dia" onpointerdown="weeklyRoutineDragStart(event,'${esc(id)}',${index})"><span>⠿</span></button><button type="button" class="weekly-routine-open" onclick="chooseRoutine('${esc(id)}')"><span class="weekly-routine-name">${esc(r.name)}</span>${r.description?`<span class="weekly-routine-description">${esc(r.description)}</span>`:''}${id===recommendedId?'<span class="weekly-routine-recommended">Recomendado</span>':''}<span class="weekly-routine-chevron" aria-hidden="true">›</span></button></div>`;
   }else{
    html+=`<div class="weekly-rest-label">Descanso</div>`;
   }
@@ -9731,6 +9756,7 @@ showHome();
 const EVOLUTE_GUIDE_KEY = 'evoluteTraining_firstGuide_v1';
 let evoluteGuideStep = 0;
 let evoluteGuideTarget = null;
+let evoluteGuideTestMode = false; // Simulação isolada: não marca o guia real como concluído.
 
 const EVOLUTE_GUIDE_STEPS = [
   {
@@ -9807,6 +9833,18 @@ function evoluteGuideShouldStart(){
 
 function evoluteGuideStart(){
   if(document.getElementById('evoluteGuideOverlay'))return;
+  evoluteGuideTestMode=false;
+  evoluteHelpSteps=null;
+  evoluteGuideStep=0;
+  evoluteGuideBuild();
+  evoluteGuideOpen();
+}
+
+
+function evoluteGuideStartTest(){
+  if(document.getElementById('evoluteGuideOverlay'))return;
+  evoluteGuideTestMode=true;
+  evoluteHelpSteps=null;
   evoluteGuideStep=0;
   evoluteGuideBuild();
   evoluteGuideOpen();
@@ -9852,6 +9890,8 @@ function evoluteGuideRender(){
     evoluteGuideTarget.classList.remove('evolute-guide-target');
     evoluteGuideTarget=null;
   }
+  const oldIndicator=document.getElementById('evoluteGuideIndicator');
+  if(oldIndicator)oldIndicator.remove();
 
   const card=overlay.querySelector('.evolute-guide-card');
   card.classList.toggle('evolute-guide-welcome',!!step.welcome);
@@ -9874,6 +9914,21 @@ function evoluteGuideRender(){
     evoluteGuideTarget=el;
     el.classList.add('evolute-guide-target');
     try{el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});}catch(e){el.scrollIntoView();}
+    const indicator=document.createElement('div');
+    indicator.id='evoluteGuideIndicator';
+    indicator.className='evolute-guide-indicator';
+    indicator.textContent='👆 TOQUE AQUI';
+    document.body.appendChild(indicator);
+    const placeIndicator=()=>{
+      if(!evoluteGuideTarget||!indicator.isConnected)return;
+      const r=evoluteGuideTarget.getBoundingClientRect();
+      indicator.style.left=Math.max(78,Math.min(window.innerWidth-78,r.left+r.width/2))+'px';
+      indicator.style.top=Math.max(48,r.top-12)+'px';
+    };
+    setTimeout(placeIndicator,180);
+    window.addEventListener('scroll',placeIndicator,{passive:true});
+    window.addEventListener('resize',placeIndicator);
+    el.addEventListener('click',()=>{setTimeout(()=>{if(indicator.isConnected)indicator.remove();},120);},{once:true});
   }));
 }
 
@@ -9892,12 +9947,14 @@ function evoluteGuideSkip(){
 }
 
 function evoluteGuideFinish(){
-  localStorage.setItem(EVOLUTE_GUIDE_KEY,'done');
+  if(!evoluteGuideTestMode)localStorage.setItem(EVOLUTE_GUIDE_KEY,'done');
+  evoluteGuideTestMode=false;
   const overlay=document.getElementById('evoluteGuideOverlay');
   if(evoluteGuideTarget){
     evoluteGuideTarget.classList.remove('evolute-guide-target');
     evoluteGuideTarget=null;
   }
+  const indicator=document.getElementById('evoluteGuideIndicator');if(indicator)indicator.remove();
   if(overlay)overlay.remove();
   showHome();
 }
@@ -9957,6 +10014,7 @@ function showFirstStepsMenu(){
     <h1>Primeiros passos</h1>
     <p class="first-steps-intro">O que você precisa de ajuda para fazer?</p>
     <div class="first-steps-list">
+      <button type="button" class="first-steps-item" onclick="evoluteGuideStartTest()"><strong><span class="first-steps-icon">${evoIcon('play')}</span>Testar primeiro acesso</strong><span>Simule o guia inicial sem alterar seus dados nem marcar o guia como concluído.</span><b>›</b></button>
       <button type="button" class="first-steps-item" onclick="evoluteHelpStart('profile')"><strong><span class="first-steps-icon">${evoIcon('user')}</span>Editar perfil</strong><span>Foto, nome, data de nascimento e gênero.</span><b>›</b></button>
       <button type="button" class="first-steps-item" onclick="evoluteHelpStart('routine')"><strong><span class="first-steps-icon">${evoIcon('clipboard')}</span>Editar uma ficha de treino</strong><span>Nome, informações e exercícios de uma ficha.</span><b>›</b></button>
       <button type="button" class="first-steps-item" onclick="evoluteHelpStart('exercises')"><strong><span class="first-steps-icon">${evoIcon('settings')}</span>Editar exercícios</strong><span>Biblioteca, novos exercícios e organização.</span><b>›</b></button>
@@ -9981,6 +10039,7 @@ function evoluteHelpStart(topic){
 function evoluteHelpFinish(){
   const overlay=document.getElementById('evoluteGuideOverlay');
   if(evoluteGuideTarget){evoluteGuideTarget.classList.remove('evolute-guide-target');evoluteGuideTarget=null;}
+  const indicator=document.getElementById('evoluteGuideIndicator');if(indicator)indicator.remove();
   if(overlay)overlay.remove();
   evoluteHelpSteps=null;
   showFirstStepsMenu();
@@ -11763,6 +11822,130 @@ body:not(:has(.home-reference-dashboard)) main#app .weekly-planner-page .routine
   font-weight:400 !important;
 }
 </style>
+
+<style id="evolute-visual-system-pass-1">
+/* Primeira etapa visual segura: reforça consistência e acessibilidade sem alterar lógica ou estrutura funcional. */
+:root{--evo-ui-line:rgba(255,255,255,.10);--evo-ui-focus:rgba(254,100,5,.42);}
+#app button,#app a,[role="button"]{ -webkit-tap-highlight-color:transparent; }
+#app button:focus-visible,#app a:focus-visible,#app [role="button"]:focus-visible,
+#app input:focus-visible,#app select:focus-visible,#app textarea:focus-visible{
+ outline:2px solid #FE6405!important;outline-offset:3px!important;
+ box-shadow:0 0 0 4px var(--evo-ui-focus)!important;
+}
+#app .routine-list-card,#app .settings-menu-card,#app .config-routine-summary,
+#app .card,#app .training-exercise-card{
+ transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease!important;
+}
+#app .routine-list-card:hover,#app .settings-menu-card:hover,#app .config-routine-summary:hover{
+ border-color:rgba(254,100,5,.42)!important;
+}
+@media(prefers-reduced-motion:reduce){
+ #app .routine-list-card,#app .settings-menu-card,#app .config-routine-summary,#app .card,#app .training-exercise-card{transition:none!important;}
+}
+</style>
+
+<style id="evolute-unified-community-page-pattern-v2">
+/* Unifica Treinos ao padrão leve da página Comunidades: fundo integrado, divisórias finas e laranja sem painéis marrons. */
+:root{--evo-accent:#ff7626;--evo-orange:#ff7626}
+html body{background:#090a0b!important}
+#app{background:transparent!important}
+#app .weekly-planner-page{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;margin:0!important}
+#app .weekly-planner-page .routines-page-title{font-size:28px!important;font-weight:800!important;color:#f5f5f5!important;margin:24px 6px 10px!important}
+#app .weekly-planner-page .routines-page-subtitle{font-size:18px!important;line-height:1.55!important;color:#aaa9ad!important;margin:0 6px 24px!important}
+#app .weekly-planner-list{margin-top:0!important;border-top:1px solid rgba(255,255,255,.2)!important;border-bottom:0!important}
+#app .weekly-day-row{grid-template-columns:118px minmax(0,1fr)!important;gap:12px!important;min-height:96px!important;padding:14px 0!important;border-bottom:1px solid rgba(255,255,255,.18)!important;background:transparent!important}
+#app .weekly-day-label{font-size:16px!important;font-weight:800!important;border-right:3px solid rgba(255,118,38,.55)!important;color:#ff7626!important;padding:8px 5px!important}
+#app .weekly-day-slot{border-radius:0!important;background:transparent!important;outline:0!important;min-width:0!important}
+#app .weekly-routine-card{position:relative!important;display:flex!important;align-items:stretch!important;gap:0!important;width:100%!important;min-height:70px!important;border:0!important;border-radius:0!important;background:transparent!important;overflow:visible!important;box-shadow:none!important}
+#app .weekly-drag-handle{flex:0 0 42px!important;width:42px!important;min-width:42px!important;background:transparent!important;border:0!important;color:#ff7626!important;font-size:28px!important}
+#app .weekly-routine-open{padding:12px 8px 12px 10px!important;gap:5px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#f5f5f5!important}
+#app .weekly-routine-name{font-size:19px!important;font-weight:800!important;color:#f5f5f5!important}
+#app .weekly-routine-description{font-size:15px!important;line-height:1.4!important;color:#a4a4a8!important}
+#app .weekly-routine-recommended{font-size:12px!important;padding:5px 10px!important;margin-top:3px!important}
+#app .weekly-day-slot.empty{border:1px dashed rgba(255,255,255,.18)!important;border-radius:16px!important;background:transparent!important}
+#app .weekly-rest-label{font-size:16px!important;color:#77787c!important}
+#app .weekly-day-row.drop-target .weekly-day-slot{background:rgba(255,118,38,.07)!important;outline:1px solid #ff7626!important;outline-offset:1px!important}
+#app .weekly-planner-page .primary{background:#ff7626!important;color:#111!important;border-color:#ff7626!important}
+#app .weekly-planner-page .secondary{background:transparent!important;color:#ff7626!important;border:1px solid rgba(255,118,38,.55)!important}
+#app .routine-list-card,#app .settings-menu-card,#app .config-routine-summary{border:0!important;border-bottom:1px solid rgba(255,255,255,.2)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#app .routine-list-card:hover,#app .settings-menu-card:hover{background:rgba(255,118,38,.045)!important;border-color:rgba(255,255,255,.2)!important;transform:none!important;box-shadow:none!important}
+#app .routine-list-card:active,#app .settings-menu-card:active{transform:scale(.995)!important}
+#app .routine-list-card::before,#app .settings-menu-card::before{display:none!important;content:none!important}
+#app .training-exercise-card{border-radius:16px!important;background:rgba(18,19,20,.68)!important;border-color:rgba(255,255,255,.15)!important;box-shadow:none!important}
+#app .training-exercise-card.training-card-expanded{border-color:rgba(255,118,38,.55)!important;background:linear-gradient(110deg,rgba(255,118,38,.055),rgba(14,15,16,.72))!important}
+#app .training-card-category{color:#ff7626!important}
+#app .training-card-expand{background:transparent!important;border-color:rgba(255,118,38,.45)!important;color:#ff7626!important}
+@media(max-width:380px){#app .weekly-day-row{grid-template-columns:86px minmax(0,1fr)!important;gap:8px!important}#app .weekly-day-label{font-size:13px!important}#app .weekly-routine-name{font-size:17px!important}#app .weekly-routine-description{font-size:13px!important}#app .weekly-drag-handle{flex-basis:30px!important;width:30px!important;min-width:30px!important}}
+</style>
+
+
+<style id="evolute-weekly-planner-light-rows-v2">
+/* Agenda semanal mais leve: linhas e tipografia, sem excesso de caixas e divisórias verticais. */
+#app .weekly-planner-list{margin-top:12px!important;border-top:1px solid rgba(255,255,255,.16)!important;border-bottom:1px solid rgba(255,255,255,.16)!important}
+#app .weekly-day-row{grid-template-columns:82px minmax(0,1fr)!important;gap:10px!important;padding:5px 0!important;border-bottom:1px solid rgba(255,255,255,.13)!important;background:transparent!important}
+#app .weekly-day-label{justify-content:flex-start!important;text-align:left!important;padding:6px 4px!important;border-right:0!important;color:#ff7626!important;font-size:13px!important;font-weight:700!important;letter-spacing:0!important}
+#app .weekly-day-slot{border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;min-height:0!important}
+#app .weekly-routine-card{position:relative!important;gap:6px!important;min-height:48px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+#app .weekly-drag-handle{flex:0 0 24px!important;width:24px!important;min-width:24px!important;background:transparent!important;color:#ff7626!important;font-size:21px!important;opacity:.9!important}
+#app .weekly-routine-open{padding:7px 4px!important;gap:3px!important}
+#app .weekly-routine-name{font-size:16px!important;font-weight:750!important}
+#app .weekly-routine-description{font-size:12px!important;color:#a5a5a5!important}
+#app .weekly-routine-recommended{right:0!important;font-size:10px!important;padding:3px 7px!important}
+#app .weekly-day-slot.empty{min-height:42px!important;border:0!important;border-radius:0!important;background:transparent!important}
+#app .weekly-rest-label{font-size:13px!important;color:#777!important;text-align:left!important;padding-left:8px!important}
+#app .weekly-day-row.drop-target .weekly-day-slot{background:rgba(254,100,5,.07)!important;outline:1px solid rgba(254,100,5,.7)!important;outline-offset:-1px!important;border-radius:6px!important}
+#app .weekly-planner-page .primary,#app .weekly-planner-page .secondary{box-shadow:none!important}
+@media(max-width:380px){#app .weekly-day-row{grid-template-columns:74px minmax(0,1fr)!important;gap:7px!important}#app .weekly-day-label{font-size:12px!important}#app .weekly-routine-name{font-size:15px!important}}
+</style>
+
+<style id="evolute-menu-label-contrast-fix-v2">
+/* Corrige o contraste dos textos do menu suspenso sem alterar dimensões ou espaçamento. */
+.home-nav-dropdown,
+.home-nav-dropdown button,
+.home-nav-dropdown button span,
+.home-nav-dropdown button strong,
+.home-nav-dropdown button em,
+.home-nav-dropdown button div,
+.home-nav-dropdown button p,
+.home-nav-dropdown button label {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+}
+.home-nav-dropdown button .evo-ui-icon,
+.home-nav-dropdown button svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  opacity: 1 !important;
+}
+.home-nav-dropdown button:hover,
+.home-nav-dropdown button:active,
+.home-nav-dropdown button[aria-current="page"],
+.home-nav-dropdown button.active {
+  background: #292b2e !important;
+}
+.home-nav-dropdown button:hover,
+.home-nav-dropdown button:active,
+.home-nav-dropdown button[aria-current="page"],
+.home-nav-dropdown button.active,
+.home-nav-dropdown button:hover span,
+.home-nav-dropdown button:active span,
+.home-nav-dropdown button[aria-current="page"] span,
+.home-nav-dropdown button.active span {
+  color: #ff7928 !important;
+  -webkit-text-fill-color: #ff7928 !important;
+}
+.home-nav-dropdown button:hover .evo-ui-icon,
+.home-nav-dropdown button:active .evo-ui-icon,
+.home-nav-dropdown button[aria-current="page"] .evo-ui-icon,
+.home-nav-dropdown button.active .evo-ui-icon {
+  color: #ff7928 !important;
+  stroke: #ff7928 !important;
+}
+</style>
+
 </body>
 
 <style id="evolute-strong-orange-final">
@@ -12159,6 +12342,997 @@ body:has(.home-page) .evolute-global-page-menu-wrap{
 }
 </style>
 
+
+<style id="evolute-visual-refresh-treinos-actual">
+/* EVOLUTE — refinamento visual real da área de treino; sem alterar lógica ou dados. */
+#app .routine-detail-page .routine-details-header{
+  padding:4px 2px 16px!important;
+  border-bottom:1px solid rgba(254,100,5,.34)!important;
+}
+#app .routine-detail-page .routine-details-header h2{
+  font-size:clamp(25px,6vw,30px)!important;
+  letter-spacing:-.035em!important;
+  font-weight:850!important;
+}
+#app .routine-detail-page .routine-details-info{color:#b5bbc2!important;}
+#app .training-exercise-card{
+  background:linear-gradient(145deg,rgba(31,34,37,.98),rgba(17,19,21,.98))!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  border-radius:17px!important;
+  box-shadow:0 7px 22px rgba(0,0,0,.20)!important;
+  margin-bottom:13px!important;
+}
+#app .training-exercise-card.training-card-expanded{
+  border-color:rgba(242,100,3,.62)!important;
+  box-shadow:0 0 0 1px rgba(242,100,3,.12),0 12px 28px rgba(0,0,0,.26)!important;
+}
+#app .training-exercise-card .exercise-main-row h3{
+  font-size:17px!important;line-height:1.3!important;font-weight:850!important;letter-spacing:-.015em!important;
+}
+#app .training-exercise-card .last,
+#app .training-exercise-card .target{
+  color:#c3c8ce!important;line-height:1.45!important;
+}
+#app .training-exercise-card .target{
+  border-left:2px solid #F26403!important;padding-left:9px!important;
+}
+#app .training-exercise-card .training-rest-timer{
+  background:linear-gradient(100deg,rgba(242,100,3,.13),rgba(242,100,3,.045))!important;
+  border:1px solid rgba(242,100,3,.48)!important;border-radius:12px!important;
+}
+#app .training-exercise-card .training-rest-timer-display{font-size:24px!important;}
+#app .training-exercise-card .training-card-expand{
+  background:rgba(242,100,3,.16)!important;border:1px solid rgba(242,100,3,.34)!important;
+}
+#app .routines-list .routine-list-card{
+  min-height:78px!important;padding-top:16px!important;padding-bottom:16px!important;
+  transition:background .18s ease,border-color .18s ease!important;
+}
+#app .routines-list .routine-list-card:focus-visible{
+  outline:2px solid #F26403!important;outline-offset:3px!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #app .training-exercise-card,#app .routines-list .routine-list-card{transition:none!important;}
+}
+</style>
+<style id="evolute-visual-redesign-step1">
+/* Evolute Training — etapa 1: identidade visual mais forte, sem alterar funções ou estrutura de dados. */
+:root{
+  --evo-orange:#ff6908;
+  --evo-orange-soft:rgba(255,105,8,.14);
+  --evo-surface:#17191c;
+  --evo-surface-raised:#202327;
+  --evo-stroke:rgba(255,255,255,.13);
+}
+/* Superfícies mais definidas: diferenciação real entre fundo, conteúdo e ação. */
+#app .card,
+#app .selected-routine-panel,
+#app .routine-unsaved-sheet,
+#app .weekly-planner-page .card{
+  background:linear-gradient(145deg,#1c1f22 0%,#121416 100%)!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  border-radius:18px!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.24)!important;
+}
+/* Fichas: superfície elevada e acento laranja lateral visível. */
+#app .routine-list-card,
+#app .config-routine-summary,
+#app .settings-menu-card{
+  position:relative!important;
+  overflow:hidden!important;
+  background:linear-gradient(112deg,#222529 0%,#17191c 72%,#141618 100%)!important;
+  border:1px solid rgba(255,255,255,.13)!important;
+  border-radius:16px!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.18)!important;
+}
+#app .routine-list-card::before,
+#app .config-routine-summary::before,
+#app .settings-menu-card::before{
+  content:""!important;position:absolute!important;left:0!important;top:12px!important;bottom:12px!important;
+  width:3px!important;border-radius:0 4px 4px 0!important;background:#ff6908!important;
+}
+#app .routine-list-card:hover,
+#app .config-routine-summary:hover,
+#app .settings-menu-card:hover{
+  border-color:rgba(255,105,8,.65)!important;
+  background:linear-gradient(112deg,#292b2f 0%,#1a1c1f 72%,#151719 100%)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.30),0 0 0 1px rgba(255,105,8,.08)!important;
+}
+#app .routine-list-card:active,
+#app .config-routine-summary:active,
+#app .settings-menu-card:active{transform:scale(.99)!important}
+/* Detalhe do treino: cabeçalho mais editorial e separação clara da lista. */
+#app .routine-detail-page .routine-details-header{
+  padding:5px 2px 17px!important;margin-bottom:18px!important;
+  border-bottom:1px solid rgba(255,105,8,.45)!important;
+}
+#app .routine-detail-page .routine-details-header h2{
+  font-size:clamp(27px,7vw,32px)!important;line-height:1.08!important;
+  font-weight:900!important;letter-spacing:-.04em!important;
+}
+#app .routine-detail-page .routine-exercises-title{
+  display:flex!important;align-items:center!important;gap:10px!important;
+  font-size:19px!important;font-weight:850!important;letter-spacing:-.02em!important;
+}
+#app .routine-detail-page .routine-exercises-title::before{
+  content:""!important;display:block!important;width:4px!important;height:22px!important;
+  flex:0 0 4px!important;border-radius:4px!important;background:#ff6908!important;
+}
+/* Exercícios: cards destacados, leitura por níveis e foco visual no exercício ativo. */
+#app .training-exercise-card{
+  background:linear-gradient(135deg,#25282c 0%,#1b1e21 52%,#151719 100%)!important;
+  border:1px solid rgba(255,255,255,.15)!important;
+  border-radius:17px!important;
+  box-shadow:0 8px 20px rgba(0,0,0,.25)!important;
+  margin-bottom:14px!important;
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease!important;
+}
+#app .training-exercise-card.training-card-expanded{
+  border:1px solid rgba(255,105,8,.82)!important;
+  background:linear-gradient(135deg,#29241f 0%,#1c1d1f 58%,#151719 100%)!important;
+  box-shadow:0 0 0 1px rgba(255,105,8,.18),0 12px 28px rgba(0,0,0,.34)!important;
+}
+#app .training-exercise-card .exercise-main-row h3{
+  color:#fff!important;font-size:17px!important;line-height:1.28!important;
+  font-weight:900!important;letter-spacing:-.025em!important;
+}
+#app .training-exercise-card .training-card-category{
+  color:#ff8738!important;font-size:11px!important;font-weight:850!important;
+  letter-spacing:.045em!important;text-transform:uppercase!important;
+}
+#app .training-exercise-card .last,
+#app .training-exercise-card .target{
+  color:#d6d9dc!important;font-size:13px!important;line-height:1.5!important;
+}
+#app .training-exercise-card .target{
+  background:rgba(255,105,8,.08)!important;border-left:3px solid #ff6908!important;
+  border-radius:0 8px 8px 0!important;padding:7px 10px!important;margin-top:8px!important;
+}
+#app .training-exercise-card .training-card-expand{
+  background:linear-gradient(135deg,#ff7b1a,#ff5b00)!important;
+  color:#111!important;border:0!important;border-radius:10px!important;
+  box-shadow:0 3px 10px rgba(255,105,8,.2)!important;
+}
+#app .training-exercise-card .training-rest-timer{
+  background:linear-gradient(110deg,rgba(255,105,8,.19),rgba(255,105,8,.055))!important;
+  border:1px solid rgba(255,105,8,.62)!important;border-radius:13px!important;
+  padding:13px!important;
+}
+#app .training-exercise-card .training-rest-timer-label{font-weight:850!important;letter-spacing:.01em!important}
+#app .training-exercise-card .training-rest-timer-display{
+  color:#ff8738!important;font-size:26px!important;font-weight:950!important;
+  text-shadow:0 0 18px rgba(255,105,8,.15)!important;
+}
+#app .training-exercise-card .training-rest-timer-actions button.timer-start{
+  background:linear-gradient(135deg,#ff7b1a,#ff5b00)!important;border-color:#ff6908!important;
+  color:#111!important;font-weight:900!important;
+}
+/* Ações principais com laranja sólido, secundárias permanecem discretas. */
+#app button.primary,
+#app button.btn-primary,
+#app .routine-details-actions button.primary{
+  background:linear-gradient(135deg,#ff7b1a 0%,#ff5b00 100%)!important;
+  border:1px solid #ff7b1a!important;color:#151515!important;
+  font-weight:900!important;box-shadow:0 5px 14px rgba(255,105,8,.17)!important;
+}
+#app button.secondary{border:1px solid rgba(255,255,255,.17)!important;background:#222529!important;color:#f5f5f5!important}
+#app input:focus,#app select:focus,#app textarea:focus{
+  border-color:#ff6908!important;box-shadow:0 0 0 3px rgba(255,105,8,.15)!important;outline:none!important;
+}
+@media(prefers-reduced-motion:reduce){#app .training-exercise-card,#app .routine-list-card,#app .config-routine-summary,#app .settings-menu-card{transition:none!important}}
+</style>
+
+
+<style id="evolute-cohesive-community-inspired-theme-v1">
+/* Identidade visual unificada inspirada na página Comunidades de referência */
+:root{
+  --evo-bg:#090b0d;
+  --evo-surface:#101214;
+  --evo-surface-soft:#151719;
+  --evo-line:rgba(190,190,190,.24);
+  --evo-orange:#ff7928;
+  --evo-orange-bright:#ff8738;
+  --evo-text:#f5f5f5;
+  --evo-muted:#a5a8ad;
+}
+html,body{background:#090b0d!important;color:var(--evo-text)}
+body{
+ background:
+  radial-gradient(ellipse at 94% 19%,rgba(119,53,17,.20),transparent 38%),
+  radial-gradient(ellipse at 4% 48%,rgba(94,43,17,.13),transparent 34%),
+  #090b0d!important;
+}
+#app,.app,.app-shell,.main-content,.page-content,.content,.screen,.page,.home-page,.community-page,.routine-detail-page,.profile-page{
+ color:var(--evo-text);
+}
+/* Pages: same warm black canvas and consistent spacing */
+.page-description,.page-subtitle,.description,.muted,.community-description,.history-description,.configuracoes-description,.configurations-description,.profile-page-subtitle,.home-subtitle{
+ color:var(--evo-muted)!important;
+}
+.page-title,.page h1,.page h2,.page-title h1,.community-page h1,.community-section-title h2,.history-title,.history-heading,.profile-page-title,.routine-details-header h1,.routine-exercises-title{
+ color:#f5f5f5!important;
+}
+/* Content groups are separated by fine lines, not heavy boxes */
+.community-line,.community-list-line,.community-search-line,.community-info-line,.community-member-line,.community-request-line,
+.history-item,.history-list>*,.config-routine-summary,.routine-list-card,.settings-menu-card,
+.profile-page-card,.profile-objectives-card,.objectives-page-card,.completed-section-card,
+.home-week-progress-title,.home-calendar-card,.home-training-panel,.home-reference-training-card{
+ border-color:var(--evo-line)!important;
+}
+.community-line,.community-list-line,.community-search-line,.community-info-line,.community-member-line,.community-request-line{
+ background:transparent!important;
+ border-left:0!important;border-right:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+}
+.community-line{padding-top:22px!important;padding-bottom:22px!important;min-height:86px}
+.community-line strong,.community-list-main strong,.community-info-line strong,.community-member-line strong,.community-request-line strong{
+ color:#f5f5f5!important;font-size:16px!important;font-weight:750!important;
+}
+.community-line small,.community-list-main small,.community-info-line small,.community-member-line small,.community-request-line small{
+ color:var(--evo-muted)!important;font-size:14px!important;line-height:1.45!important;
+}
+.community-line>svg,.community-line .icon,.community-list-icon,.community-line>b,.community-section-title>span,
+.community-detail-icon,.routine-action-icon,.nav-icon,.home-community-arrow{
+ color:var(--evo-orange)!important;stroke:var(--evo-orange)!important;
+}
+.community-section-title{border-bottom:0!important;margin-top:28px!important}
+.community-section-title h2{font-size:21px!important;font-weight:800!important}
+.community-section-title>span{font-size:14px!important}
+.community-empty,.empty,.profile-page-empty{color:var(--evo-muted)!important;background:transparent!important;border-color:var(--evo-line)!important}
+/* Header stays dark, crisp and consistent */
+.evolute-shared-page-header,.community-head,.page-header,.app-header,.top-header{
+ background:rgba(12,14,16,.96)!important;
+ border-color:rgba(255,255,255,.08)!important;
+ box-shadow:none!important;
+}
+.evolute-shared-page-header h1,.community-head h1,.page-header h1,.app-header h1,.top-header h1{color:#f7f7f7!important;font-weight:850!important}
+/* Cards use restrained graphite; avoid bright green/blue mismatches */
+.card,.routine-list-card,.config-routine-summary,.settings-menu-card,.profile-page-card,.profile-objectives-card,.objectives-page-card,.completed-section-card,.home-calendar-card,.home-training-panel,.home-reference-training-card{
+ background:linear-gradient(145deg,rgba(25,27,29,.92),rgba(13,15,17,.97))!important;
+ border:1px solid rgba(255,255,255,.12)!important;
+ box-shadow:0 8px 22px rgba(0,0,0,.18)!important;
+}
+input,textarea,select,.routine-form-field input,.routine-form-field select,.routine-form-field textarea{
+ background:#111416!important;color:#f5f5f5!important;border-color:rgba(255,255,255,.2)!important;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--evo-orange)!important;box-shadow:0 0 0 2px rgba(255,121,40,.15)!important;outline:none!important}
+button.primary,.primary,.community-primary,.home-training-cta,.routine-action-button.primary{
+ background:var(--evo-orange)!important;color:#101010!important;border-color:var(--evo-orange)!important;font-weight:800!important;box-shadow:none!important;
+}
+button.secondary,.secondary{background:#202326!important;color:#f5f5f5!important;border-color:rgba(255,255,255,.18)!important}
+button:focus-visible{outline:2px solid var(--evo-orange)!important;outline-offset:3px}
+/* Orange is an accent, not a wash over every surface */
+.category,.routine-custom-tag,.community-section-title>span,.target,.home-community-kicker{color:var(--evo-orange)!important}
+@media(max-width:600px){
+ .community-line{gap:14px!important;padding-top:20px!important;padding-bottom:20px!important}
+ .community-line strong,.community-list-main strong,.community-info-line strong,.community-member-line strong,.community-request-line strong{font-size:16px!important}
+ .community-line small,.community-list-main small,.community-info-line small,.community-member-line small,.community-request-line small{font-size:14px!important}
+ .community-section-title h2{font-size:21px!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+
+
+<style id="evolute-recommended-right-aligned">
+/* Mantém o selo Recomendado no canto direito da ficha semanal. */
+#app .weekly-routine-card{position:relative!important}
+#app .weekly-routine-open{position:relative!important;padding-right:112px!important}
+#app .weekly-routine-recommended{position:absolute!important;right:8px!important;top:50%!important;transform:translateY(-50%)!important;margin:0!important;white-space:nowrap!important;z-index:2!important}
+@media(max-width:380px){#app .weekly-routine-open{padding-right:98px!important}#app .weekly-routine-recommended{right:5px!important;font-size:10px!important;padding:4px 7px!important}}
+</style>
+
+<style id="evolute-weekly-ultra-light-final">
+/* Agenda semanal: retirar o aspecto de botões e reduzir a carga visual. */
+#app .weekly-planner-list{margin-top:8px!important;border-top:1px solid rgba(255,255,255,.12)!important;border-bottom:1px solid rgba(255,255,255,.12)!important}
+#app .weekly-day-row{grid-template-columns:76px minmax(0,1fr)!important;gap:8px!important;padding:3px 0!important;min-height:0!important;border-bottom:1px solid rgba(255,255,255,.10)!important}
+#app .weekly-day-label{border:0!important;justify-content:flex-start!important;padding:4px 0 4px 5px!important;color:#e77a3b!important;font-size:12px!important;font-weight:650!important}
+#app .weekly-day-slot{min-height:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#app .weekly-routine-card{display:flex!important;align-items:center!important;gap:5px!important;min-height:40px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+#app .weekly-drag-handle{flex:0 0 18px!important;width:18px!important;min-width:18px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:#e77a3b!important;font-size:18px!important;opacity:.72!important}
+#app .weekly-routine-open{position:relative!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:2px!important;min-height:40px!important;padding:5px 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#app .weekly-routine-name{font-size:15px!important;font-weight:700!important;line-height:1.2!important}
+#app .weekly-routine-description{font-size:11px!important;line-height:1.25!important;color:#999!important}
+#app .weekly-routine-recommended{position:absolute!important;right:0!important;top:50%!important;transform:translateY(-50%)!important;margin:0!important;padding:3px 7px!important;font-size:9px!important}
+#app .weekly-day-slot.empty{min-height:38px!important;border:0!important;border-radius:0!important;background:transparent!important}
+#app .weekly-rest-label{padding:4px 0!important;text-align:left!important;font-size:12px!important;color:#777!important}
+#app .weekly-day-row.drop-target .weekly-day-slot{background:rgba(254,100,5,.04)!important;outline:1px solid rgba(254,100,5,.35)!important;outline-offset:-1px!important;border-radius:4px!important}
+@media(max-width:380px){#app .weekly-day-row{grid-template-columns:70px minmax(0,1fr)!important;gap:6px!important}#app .weekly-day-label{font-size:11px!important}#app .weekly-routine-name{font-size:14px!important}#app .weekly-routine-description{font-size:10px!important}}
+</style>
+
+
+<style id="evolute-weekly-cards-chevron">
+/* Seta discreta no lado direito de cada ficha semanal, seguindo o padrão de Comunidades. */
+#app .weekly-routine-open{position:relative!important;padding-right:30px!important;}
+#app .weekly-routine-chevron{position:absolute!important;right:5px!important;top:50%!important;transform:translateY(-50%)!important;color:#ff7626!important;font-size:29px!important;font-weight:500!important;line-height:1!important;pointer-events:none!important;}
+#app .weekly-routine-recommended{right:28px!important;}
+#app .weekly-day-slot.empty{position:relative!important;}
+#app .weekly-day-slot.empty::after{content:'›';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#ff7626;font-size:26px;font-weight:500;line-height:1;pointer-events:none;}
+</style>
+
+<style id="evolute-light-theme-global-v1">
+/* Tema claro global: superfícies brancas, texto escuro e laranja como cor de destaque. */
+:root {
+  color-scheme: light !important;
+  --bg: #f5f5f5 !important;
+  --background: #f5f5f5 !important;
+  --surface: #ffffff !important;
+  --card: #ffffff !important;
+  --text: #202124 !important;
+  --muted: #65676b !important;
+  --border: #dedede !important;
+}
+html, body {
+  background: #f5f5f5 !important;
+  color: #202124 !important;
+}
+body, #app, #app main, #app .page, #app .page-content,
+#app .content, #app .screen, #app .main-content,
+#app .settings-page, #app .history-page, #app .communities-page,
+#app .training-page, #app .routine-page {
+  background-color: #f5f5f5 !important;
+  color: #202124 !important;
+}
+#app .card, #app .panel, #app .section-card, #app .routine-list-card,
+#app .config-routine-summary, #app .settings-menu-card,
+#app .training-exercise-card, #app .selected-routine-panel,
+#app .routine-detail-page, #app .routine-details-header,
+#app .community-card, #app .history-card, #app .modal-content,
+#app .dialog, #app .form-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #202124 !important;
+  border-color: #e0e0e0 !important;
+  box-shadow: 0 2px 9px rgba(0,0,0,.055) !important;
+}
+#app h1, #app h2, #app h3, #app h4, #app .title, #app .section-title,
+#app .routine-list-card-title, #app .training-exercise-title,
+#app .settings-menu-card b, #app .config-routine-summary b,
+#app label, #app strong, #app .day-label, #app .routine-day-name {
+  color: #202124 !important;
+}
+#app p, #app .muted, #app .description, #app .subtitle,
+#app .routine-list-card-description, #app .empty-state {
+  color: #65676b !important;
+}
+#app input, #app select, #app textarea,
+#app .form-control, #app .search-input {
+  background: #ffffff !important;
+  color: #202124 !important;
+  border-color: #d5d5d5 !important;
+}
+#app input::placeholder, #app textarea::placeholder { color: #858585 !important; }
+#app .routine-list-card-arrow, #app .settings-menu-card-arrow,
+#app .training-card-expand, #app .category-label, #app .accent,
+#app .icon-accent { color: #f36b16 !important; }
+#app .routine-list-card::before, #app .settings-menu-card::before,
+#app .config-routine-summary::before { background: #f36b16 !important; }
+#app .training-rest-timer-track { background: #e5e5e5 !important; }
+#app .training-rest-timer-display { color: #333333 !important; }
+/* Mantém o cabeçalho de navegação escuro para preservar a identidade do app. */
+#app header, #app .app-header, #app .top-header, #app .page-header {
+  background-color: #111313 !important;
+  color: #ffffff !important;
+}
+#app header h1, #app header h2, #app .app-header h1,
+#app .top-header h1, #app .page-header h1 { color: #ffffff !important; }
+</style>
+
+
+<style id="evolute-light-theme-separators-v2">
+/* Reforça as divisórias no tema claro sem voltar a criar cartões pesados. */
+#app .routine-list-card,
+#app .settings-menu-card,
+#app .config-routine-summary,
+#app .history-item,
+#app .history-list > *,
+#app .training-exercise-card,
+#app .weekly-day-row,
+#app .weekly-routine-row,
+#app .community-action-row,
+#app .community-option,
+#app .settings-section,
+#app .routine-exercise-row {
+  border-color: #D5D9DE !important;
+}
+#app .routines-list .routine-list-card,
+#app .weekly-day-row,
+#app .weekly-routine-row,
+#app .community-action-row,
+#app .community-option,
+#app .history-list > * {
+  border-bottom: 1px solid #D5D9DE !important;
+}
+#app hr, #app .divider, #app .section-divider,
+#app .routine-list-divider, #app .weekly-divider {
+  border-color: #D5D9DE !important;
+  background-color: #D5D9DE !important;
+  opacity: 1 !important;
+}
+</style>
+
+<style id="community-last-divider-fix-v1">
+/* Tema claro: mantém a divisória também após a última ação de Comunidades. */
+.community-page .community-line {
+  border-bottom: 1px solid #dedede !important;
+}
+.community-page .community-line:last-of-type {
+  border-bottom: 1px solid #dedede !important;
+}
+</style>
+
+<style id="evolute-light-theme-community-intro-fix-v1">
+/* Remove o retângulo preto atrás da descrição da página Comunidades no tema claro. */
+#app .community-page,
+#app .community-head,
+#app .community-head > div,
+#app .community-head p {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+#app .community-head p {
+  color: #65676b !important;
+  border: 0 !important;
+}
+</style>
+
+
+<style id="evolute-settings-orange-details-v1">
+/* Identidade laranja da página Treinos aplicada aos detalhes da página Configurações. */
+#app .settings-menu .settings-menu-card {
+  border-bottom: 1px solid #d5d8dc !important;
+  position: relative !important;
+}
+#app .settings-menu .settings-menu-card::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 12px !important;
+  top: 50% !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-top: 3px solid #FE6405 !important;
+  border-right: 3px solid #FE6405 !important;
+  transform: translateY(-50%) rotate(45deg) !important;
+  opacity: 1 !important;
+}
+#app .settings-menu .settings-menu-card b,
+#app .settings-menu .settings-menu-card strong,
+#app .settings-menu .settings-menu-card .title {
+  color: #292b2f !important;
+}
+#app .settings-menu .settings-menu-card .icon,
+#app .settings-menu .settings-menu-card svg {
+  color: #FE6405 !important;
+  stroke: #FE6405 !important;
+}
+#app .settings-menu .settings-menu-card:last-child {
+  border-bottom: 1px solid #d5d8dc !important;
+}
+</style>
+
+<style id="evolute-weekly-chevron-orange-final">
+/* Mantém todas as setas de abertura das fichas semanais na cor laranja da marca. */
+#app .weekly-routine-chevron,
+#app .weekly-routine-open .weekly-routine-chevron,
+#app .weekly-routine-card .weekly-routine-chevron {
+  color: #ff7626 !important;
+  -webkit-text-fill-color: #ff7626 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+</style>
+
+
+<style id="evolute-weekly-chevron-uniform-size-final">
+/* Padroniza o tamanho e o alinhamento das setas em todos os dias, inclusive descanso. */
+#app .weekly-routine-open .weekly-routine-chevron {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 30px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 29px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  color: #ff7626 !important;
+  -webkit-text-fill-color: #ff7626 !important;
+  transform: translateY(-50%) !important;
+  box-sizing: border-box !important;
+}
+</style>
+
+<style id="evolute-weekly-chevron-exact-match-v4">
+/* As setas dos dias de descanso são geradas por ::after; igualar sua caixa e tipografia às setas das fichas. */
+#app .weekly-routine-open .weekly-routine-chevron,
+#app .weekly-day-slot.empty::after {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 30px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: Arial, sans-serif !important;
+  font-size: 29px !important;
+  font-weight: 500 !important;
+  line-height: 30px !important;
+  color: #ff7626 !important;
+  -webkit-text-fill-color: #ff7626 !important;
+  opacity: 1 !important;
+}
+#app .weekly-day-slot.empty::after {
+  right: 5px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  position: absolute !important;
+  content: '›' !important;
+  pointer-events: none !important;
+}
+#app .weekly-routine-open .weekly-routine-chevron {
+  right: 5px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+</style>
+
+<style id="evolute-timer-no-orange-box-final">
+/* O temporizador fica integrado ao card, sem caixa laranja ao redor. */
+#app .training-exercise-card .training-rest-timer,
+#app .training-rest-timer {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+</style>
+
+<style id="evolute-timer-and-position-minimal-v2">
+/* Timer sem caixa e número da posição sem badge/caixa laranja. */
+#app .training-rest-timer,
+#app .training-exercise-card .training-rest-timer{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  outline:0!important;
+  padding:0!important;
+  border-radius:0!important;
+}
+#app .training-position-number{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  color:#FE6405!important;
+  border-radius:0!important;
+}
+#app .training-position-number.position-changing{
+  background:transparent!important;
+  border:0!important;
+  color:#FE6405!important;
+}
+</style>
+
+
+<style id="evolute-timer-play-clean-and-position-size-v3">
+/* O play do descanso fica sem caixa circular; apenas o símbolo laranja. */
+#app .training-rest-timer .timer-start,
+#app .training-rest-timer .timer-start:hover,
+#app .training-rest-timer .timer-start:focus,
+#app .training-rest-timer .timer-start:active {
+  width:34px !important; height:34px !important; min-width:34px !important; min-height:34px !important;
+  padding:0 !important; margin:0 !important;
+  background:transparent !important; background-image:none !important;
+  border:0 !important; outline:0 !important; box-shadow:none !important;
+  border-radius:0 !important; color:#FE6405 !important;
+  -webkit-text-fill-color:#FE6405 !important; font-size:20px !important;
+}
+#app .training-rest-timer .timer-start svg {
+  width:22px !important; height:22px !important; color:#FE6405 !important;
+  stroke:#FE6405 !important; fill:#FE6405 !important;
+}
+/* Aumenta o algarismo da posição sem voltar a criar uma caixa laranja. */
+#app .training-exercise-card .training-position-number {
+  font-size:27px !important; font-weight:900 !important; line-height:1 !important;
+  min-width:42px !important; min-height:42px !important;
+  display:inline-flex !important; align-items:center !important; justify-content:center !important;
+  background:transparent !important; border:0 !important; border-radius:0 !important;
+  box-shadow:none !important; color:#FE6405 !important;
+  -webkit-text-fill-color:#FE6405 !important; padding:0 !important;
+}
+#app .training-exercise-card .training-position-number.position-changing {
+  background:transparent !important; border:0 !important; box-shadow:none !important;
+  color:#FE6405 !important; -webkit-text-fill-color:#FE6405 !important;
+}
+</style>
+
+
+<style id="evolute-timer-time-size-adjustment">
+/* Reduz apenas os algarismos do tempo do temporizador, mantendo a posição e o play. */
+#app .training-rest-timer .training-rest-timer-display,
+#app .training-exercise-card .training-rest-timer-display {
+  font-size: 20px !important;
+  line-height: 1 !important;
+  font-weight: 850 !important;
+  text-shadow: none !important;
+  flex-basis: 39px !important;
+  min-width: 39px !important;
+}
+@media (max-width: 480px) {
+  #app .training-rest-timer .training-rest-timer-display,
+  #app .training-exercise-card .training-rest-timer-display { font-size: 20px !important; }
+}
+</style>
+
+<style id="evolute-exercise-title-contrast-fix-v1">
+/* Corrige títulos dos exercícios invisíveis no tema claro: texto escuro sobre card branco. */
+#app .training-exercise-card .exercise-main-row h3,
+#app .training-exercise-card .exercise-main-row h3 *,
+#app .training-exercise-card .exercise-name-line {
+  color: #25272a !important;
+  -webkit-text-fill-color: #25272a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+}
+#app .training-exercise-card .exercise-main-row h3 {
+  font-size: 17px !important;
+  font-weight: 850 !important;
+}
+#app .training-exercise-card .exercise-main-row h3 .exercise-name-line + .exercise-name-line {
+  display: block !important;
+}
+</style>
+
+<style id="evolute-exercise-cards-line-layout-v1">
+/* Cards de exercícios no mesmo padrão de lista com divisórias da página Comunidades. */
+#app .training-exercise-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-bottom: 1px solid #d5d8dc !important;
+  margin: 0 !important;
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+}
+#app .training-exercise-card + .training-exercise-card {
+  margin-top: 0 !important;
+}
+#app .training-exercise-card.training-card-expanded,
+#app .training-exercise-card.training-card-collapsed {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-bottom: 1px solid #d5d8dc !important;
+}
+#app .training-exercise-card .training-rest-timer {
+  border-radius: 0 !important;
+  border: 0 !important;
+  border-top: 1px solid #e0e2e5 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#app .training-exercise-card .training-position-number {
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+</style>
+
+<style id="evolute-reference-primary-buttons-v2">
+/* Referência visual: botão Importar treino — aplicado também ao botão Finalizar treino. */
+button.primary, button.btn-primary, .primary, .btn-primary, #finishWorkoutButton, input[type="submit"] {
+  background: #ff7626 !important;
+  background-image: linear-gradient(180deg, #ff7d29 0%, #ff6b18 100%) !important;
+  color: #171717 !important;
+  -webkit-text-fill-color: #171717 !important;
+  border: 1px solid #ff7626 !important;
+  border-radius: 28px !important;
+  box-shadow: 0 5px 0 rgba(190, 75, 10, .18) !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+#finishWorkoutButton {
+  min-height: 76px !important;
+  padding: 18px 24px !important;
+  font-size: clamp(20px, 5vw, 28px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 18px !important;
+}
+#finishWorkoutButton svg, #finishWorkoutButton i {
+  color: #171717 !important;
+  stroke: #171717 !important;
+  flex: 0 0 auto !important;
+}
+button.primary:active, button.btn-primary:active, .primary:active, .btn-primary:active, #finishWorkoutButton:active, input[type="submit"]:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 2px 0 rgba(190, 75, 10, .18) !important;
+}
+</style>
+
+<style id="evolute-import-export-matching-outline">
+/* Importar e Exportar usam o mesmo contorno, raio e espessura de borda. */
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button.primary,
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button.secondary {
+  border: 2px solid #efc9a5 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.8) !important;
+  box-sizing: border-box !important;
+}
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button.primary {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e96d1b !important;
+  -webkit-text-fill-color: #e96d1b !important;
+}
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button.secondary {
+  background: transparent !important;
+  background-image: none !important;
+  color: #e96d1b !important;
+  -webkit-text-fill-color: #e96d1b !important;
+}
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button.primary svg,
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button.secondary svg {
+  color: #e96d1b !important;
+  stroke: currentColor !important;
+}
+</style>
+
+
+<style id="evolute-history-tabs-outline-match-v2">
+/* Histórico e Evolução: mesmo contorno arredondado dos botões Importar/Exportar. */
+#app .history-section-switch .history-section-tab {
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  background: #f7f7f7 !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+}
+#app .history-section-switch .history-section-tab.active {
+  background: #f9eadb !important;
+  background-image: none !important;
+  border-color: #edc9a6 !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+}
+#app .history-section-switch .history-section-tab:hover {
+  background: #f9eadb !important;
+  background-image: none !important;
+  border-color: #edc9a6 !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+}
+</style>
+
+<style id="evolute-history-action-buttons-reference-v2">
+/* Ações do Histórico seguem as cores e o contorno da aba Evolução. */
+#app .history-item button.secondary,
+#app .history-item button[onclick*="viewHistory"],
+#app .history-item button[onclick*="exportWorkout"] {
+  background: #f7f7f7 !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+  min-height: 58px !important;
+  padding: 14px 20px !important;
+}
+#app .history-item button.secondary:hover,
+#app .history-item button[onclick*="viewHistory"]:hover,
+#app .history-item button[onclick*="exportWorkout"]:hover {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+<style id="evolute-profile-edit-button-history-color-final">
+/* Botão Editar perfil com as mesmas cores da aba Histórico: fundo pêssego, texto laranja e contorno suave. */
+html body #app button.profile-action-main,
+html body #app .profile-page-card button.profile-action-main,
+html body.profile-page-mode #app button.profile-action-main {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+}
+html body #app button.profile-action-main:hover,
+html body #app button.profile-action-main:focus,
+html body #app button.profile-action-main:active {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+
+<style id="evolute-objectives-colors-reference">
+/* Objetivos do perfil: cores alinhadas ao botão Evolução */
+#app .objectives-page-card .objectives-option{
+  background:#f7f7f7 !important;
+  background-color:#f7f7f7 !important;
+  background-image:none !important;
+  color:#e2762d !important;
+  -webkit-text-fill-color:#e2762d !important;
+  border:2px solid #edc9a6 !important;
+  border-radius:999px !important;
+  box-shadow:0 2px 0 rgba(237,201,166,.22) !important;
+}
+#app .objectives-page-card .objectives-option.selected{
+  background:#f8e9da !important;
+  background-color:#f8e9da !important;
+  background-image:none !important;
+  color:#d96d25 !important;
+  -webkit-text-fill-color:#d96d25 !important;
+  border-color:#e8c39d !important;
+  box-shadow:0 0 0 1px rgba(237,201,166,.25) inset !important;
+}
+#app .objectives-page-card .objectives-option.selected::after{color:#d96d25 !important;}
+#app .objectives-page-card .objectives-option:focus-visible{outline:3px solid rgba(226,118,45,.25) !important;outline-offset:2px;}
+</style>
+
+<style id="evolute-objective-buttons-match-create-profile">
+/* Objetivos: mesmo padrão claro do botão Criar novo perfil. */
+html body #app .objectives-page-card .objectives-option,
+html body #app .objectives-page-card .objectives-option:not(.selected),
+html body #app .objectives-page-card .objectives-option.selected {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+html body #app .objectives-page-card .objectives-option::before,
+html body #app .objectives-page-card .objectives-option::after {
+  color: #e2762d !important;
+}
+html body #app .objectives-page-card .objectives-option:active,
+html body #app .objectives-page-card .objectives-option:focus,
+html body #app .objectives-page-card .objectives-option:focus-visible {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+  outline-color: rgba(226,118,45,.25) !important;
+}
+</style>
+
+<style id="evolute-home-light-screen">
+/* Página inicial no mesmo padrão claro das demais telas */
+body:has(.home-page){
+  background:#f7f7f7 !important;
+  background-image:none !important;
+}
+main:has(.home-page), .home-page{
+  background:#f7f7f7 !important;
+  background-image:none !important;
+  color:#25272a !important;
+}
+.home-page .home-profile-card,
+.home-page .home-training-panel,
+.home-page .home-calendar-card,
+.home-page .home-stat,
+.home-page .home-motivation,
+.home-page .home-dashboard > section,
+.home-page .card{
+  background:#fff !important;
+  background-image:none !important;
+  color:#25272a !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+.home-page .home-profile-card,
+.home-page .home-training-panel,
+.home-page .home-calendar-card,
+.home-page .home-stat{
+  border-bottom:1px solid #d9dadd !important;
+}
+.home-page h1,
+.home-page h2,
+.home-page h3,
+.home-page .home-profile-name,
+.home-page .home-next-name,
+.home-page .home-stat-value,
+.home-page .home-calendar-title{
+  color:#25272a !important;
+}
+.home-page .home-welcome{color:#25272a !important;}
+.home-page .home-subtitle,
+.home-page .home-next-description,
+.home-page .home-stat-label,
+.home-page .home-calendar-legend{color:#73777c !important;}
+.home-page .home-calendar-day{color:#303338 !important;}
+.home-page .home-calendar-day.empty{background:transparent !important;}
+.home-page .home-calendar-nav{color:#df762e !important;}
+</style>
+
+
+<style id="evolute-home-white-screen-force-v2">
+/* Início: força o mesmo fundo claro usado nas demais páginas, sem alterar o cabeçalho escuro. */
+html body:has(.home-reference-dashboard),
+body:has(.home-reference-dashboard) #app,
+body:has(.home-reference-dashboard) main#app,
+#app .home-reference-dashboard {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
+  background-image: none !important;
+  color: #292c30 !important;
+}
+body:has(.home-reference-dashboard) main#app {
+  color: #292c30 !important;
+}
+#app .home-reference-dashboard .home-week-calendar,
+#app .home-reference-dashboard .home-reference-training,
+#app .home-reference-dashboard .home-community-promo,
+#app .home-reference-dashboard .home-week-progress,
+#app .home-reference-dashboard .home-reference-training-content,
+#app .home-reference-dashboard .home-week-progress-grid {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: #292c30 !important;
+  box-shadow: none !important;
+}
+#app .home-reference-dashboard .home-hero-greeting,
+#app .home-reference-dashboard .home-hero-copy h2,
+#app .home-reference-dashboard .home-hero-copy p,
+#app .home-reference-dashboard .home-week-calendar,
+#app .home-reference-dashboard .home-week-day-name,
+#app .home-reference-dashboard .home-week-day-number,
+#app .home-reference-dashboard .home-week-progress-title,
+#app .home-reference-dashboard .home-week-metric-value,
+#app .home-reference-dashboard .home-week-metric-label {
+  color: #292c30 !important;
+  -webkit-text-fill-color: #292c30 !important;
+}
+#app .home-reference-dashboard .home-week-calendar,
+#app .home-reference-dashboard .home-week-progress {
+  border-color: #dedede !important;
+}
+#app .home-reference-dashboard .home-week-metric {
+  background: #fff !important;
+  background-color: #fff !important;
+  border: 1px solid #e3e3e3 !important;
+  box-shadow: none !important;
+}
+</style>
 </html>
 
 <style id="evolute-home-compact-mobile-v1">
@@ -14379,4 +15553,695 @@ span.home-community-cta svg {
 <style id="evolute-rest-timer-expanded-visible">
 /* O temporizador permanece visível tanto no card recolhido quanto no expandido. */
 .training-exercise-card.training-card-expanded .training-rest-timer{display:flex!important;}
+</style>
+
+<style id="evolute-weekly-planner-compact-v1">
+/* Treinos: reduzir altura e densidade visual dos dias, aproximando-os das linhas leves de Comunidades. */
+#app .weekly-planner-list{margin-top:0!important}
+#app .weekly-day-row{grid-template-columns:94px minmax(0,1fr)!important;gap:9px!important;min-height:0!important;padding:7px 0!important}
+#app .weekly-day-label{font-size:14px!important;padding:5px 3px!important;border-right:2px solid rgba(255,118,38,.48)!important}
+#app .weekly-routine-card{min-height:0!important;align-items:center!important}
+#app .weekly-drag-handle{flex:0 0 32px!important;width:32px!important;min-width:32px!important;font-size:23px!important}
+#app .weekly-routine-open{padding:8px 5px 8px 6px!important;gap:3px!important}
+#app .weekly-routine-name{font-size:17px!important;line-height:1.2!important}
+#app .weekly-routine-description{font-size:13px!important;line-height:1.3!important}
+#app .weekly-routine-recommended{font-size:10px!important;padding:3px 8px!important;margin-top:2px!important}
+#app .weekly-day-slot.empty{min-height:54px!important;border-radius:12px!important}
+#app .weekly-rest-label{font-size:14px!important}
+@media(max-width:380px){#app .weekly-day-row{grid-template-columns:80px minmax(0,1fr)!important;gap:7px!important}#app .weekly-day-label{font-size:12px!important}#app .weekly-routine-name{font-size:16px!important}#app .weekly-routine-description{font-size:12px!important}}
+</style>
+
+
+<style id="evolute-settings-contrast-and-dividers-fix">
+/* Corrige contraste e separadores da página Configurações no tema claro. */
+#app .settings-page .settings-menu-card,
+#app .settings-page .settings-menu-card *,
+#app .settings-page .settings-section,
+#app .settings-page .settings-section * {
+  color: #292929 !important;
+}
+#app .settings-page .settings-menu-card,
+#app .settings-page .settings-section,
+#app .settings-page .settings-menu-card:not(:last-child) {
+  border-bottom: 1px solid #d7dbe0 !important;
+}
+#app .settings-page .settings-menu-card b,
+#app .settings-page .settings-menu-card strong,
+#app .settings-page .settings-menu-card .title {
+  color: #202124 !important;
+}
+#app .settings-page .settings-menu-card p,
+#app .settings-page .settings-menu-card small,
+#app .settings-page .settings-menu-card .description,
+#app .settings-page .settings-menu-card .subtitle {
+  color: #62666b !important;
+}
+#app .settings-page .settings-menu-card-arrow,
+#app .settings-page .settings-menu-card .arrow,
+#app .settings-page .settings-menu-card .icon {
+  color: #f36b16 !important;
+}
+#app .settings-page hr, #app .settings-page .divider,
+#app .settings-page .section-divider {
+  display: block !important; border: 0 !important;
+  height: 1px !important; background: #d7dbe0 !important;
+  opacity: 1 !important;
+}
+</style>
+
+<style id="evolute-settings-dividers-final-fix">
+/* Ajuste final: os itens reais do menu Configurações usam .settings-menu, não .settings-page. */
+#app .settings-menu .settings-menu-card,
+#app .settings-menu .settings-menu-card:visited {
+  color: #242629 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d5d8dc !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  padding: 20px 38px 20px 7px !important;
+  margin: 0 !important;
+}
+#app .settings-menu .settings-menu-card strong,
+#app .settings-menu .settings-menu-card b,
+#app .settings-menu .settings-menu-card .title,
+#app .settings-menu .settings-menu-card *:not(svg):not(path) {
+  color: #292b2f !important;
+}
+#app .settings-menu .settings-menu-card span,
+#app .settings-menu .settings-menu-card small,
+#app .settings-menu .settings-menu-card .description,
+#app .settings-menu .settings-menu-card .subtitle {
+  color: #666b72 !important;
+}
+#app .settings-menu .settings-menu-card b,
+#app .settings-menu .settings-menu-card .arrow,
+#app .settings-menu .settings-menu-card .icon {
+  color: #f36b16 !important;
+}
+#app .settings-menu .settings-menu-card:last-child {
+  border-bottom: 1px solid #d5d8dc !important;
+}
+#app .settings-menu hr,
+#app .settings-menu .divider,
+#app .settings-menu .section-divider {
+  display: block !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  background: #d5d8dc !important;
+  border: 0 !important;
+  opacity: 1 !important;
+}
+</style>
+
+<style id="evolute-weekly-routine-name-visibility-fix">
+/* Restaura os nomes das fichas na lista semanal após a mudança para o tema claro. */
+#app .weekly-routine-name,
+#app .weekly-routine-open .weekly-routine-name,
+#app .weekly-routine-card .weekly-routine-name {
+  display: block !important;
+  color: #202124 !important;
+  -webkit-text-fill-color: #202124 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+#app .weekly-routine-open {
+  color: #202124 !important;
+  -webkit-text-fill-color: #202124 !important;
+  opacity: 1 !important;
+}
+#app .weekly-routine-name * {
+  color: #202124 !important;
+  -webkit-text-fill-color: #202124 !important;
+}
+</style>
+
+<style id="evolute-weekly-chevron-orange-force-v2">
+/* Força a cor laranja nas setas de todos os dias com ficha, não apenas nos dias de descanso. */
+#app .weekly-routine-card .weekly-routine-chevron,
+#app .weekly-routine-open .weekly-routine-chevron,
+#app .weekly-routine-card > .weekly-routine-chevron,
+#app .weekly-routine-open > span:last-child,
+#app .weekly-routine-open > b:last-child,
+#app .weekly-routine-open > i:last-child,
+#app .weekly-day-row .weekly-routine-chevron {
+  color: #ff7626 !important;
+  -webkit-text-fill-color: #ff7626 !important;
+  stroke: #ff7626 !important;
+  opacity: 1 !important;
+}
+#app .weekly-routine-card .weekly-routine-chevron svg,
+#app .weekly-routine-open .weekly-routine-chevron svg,
+#app .weekly-routine-card .weekly-routine-chevron path,
+#app .weekly-routine-open .weekly-routine-chevron path {
+  color: #ff7626 !important;
+  stroke: #ff7626 !important;
+  fill: none !important;
+}
+</style>
+
+<style id="evolute-timer-time-size-adjustment-v3">
+/* Reduz mais os algarismos do temporizador sem alterar o botão ou a barra. */
+#app .training-rest-timer .training-rest-timer-display,
+#app .training-exercise-card .training-rest-timer-display {
+  font-size: 15px !important;
+  line-height: 1.1 !important;
+  flex-basis: 36px !important;
+  min-width: 36px !important;
+  font-weight: 750 !important;
+}
+@media (max-width: 480px) {
+  #app .training-rest-timer .training-rest-timer-display,
+  #app .training-exercise-card .training-rest-timer-display {
+    font-size: 14px !important;
+    flex-basis: 34px !important;
+    min-width: 34px !important;
+  }
+}
+</style>
+<style id="evolute-exercise-category-meta-contrast-fix">
+/* Recupera o contraste dos rótulos Categoria e Meta nos cards de exercício claros. */
+#app .training-exercise-card .training-card-category-wrap,
+#app .training-exercise-card .training-card-category-label,
+#app .training-exercise-card .training-card-category-value,
+#app .training-exercise-card .exercise-category-value,
+#app .training-exercise-card .training-card-compact-target,
+#app .training-exercise-card .training-card-compact-target > span {
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+#app .training-exercise-card .training-card-category-label,
+#app .training-exercise-card .training-card-compact-target {
+  color: #555b62 !important;
+  font-weight: 700 !important;
+}
+#app .training-exercise-card .training-card-category-value,
+#app .training-exercise-card .exercise-category-value,
+#app .training-exercise-card .training-card-compact-target > span {
+  color: #e96513 !important;
+  -webkit-text-fill-color: #e96513 !important;
+  font-weight: 800 !important;
+}
+</style>
+
+<style id="evolute-primary-buttons-standard-v1">
+/* Padroniza ações principais no app pelo botão laranja sólido usado em Importar treino. */
+#app button.primary,
+#app .primary,
+#app button.btn-primary,
+#app .btn-primary,
+#app .community-primary,
+#app .home-training-cta,
+#app .profile-save,
+#app .routine-action-button.primary,
+#app .routine-details-actions button.primary,
+#app button[type="submit"]:not(.secondary):not(.danger),
+#app input[type="submit"] {
+  background: #ff7626 !important;
+  background-image: linear-gradient(180deg, #ff812f 0%, #ff6b18 100%) !important;
+  color: #171717 !important;
+  -webkit-text-fill-color: #171717 !important;
+  border: 1px solid #ff7626 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 0 rgba(190, 75, 10, .16) !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  opacity: 1 !important;
+  transition: background .18s ease, box-shadow .18s ease, transform .18s ease !important;
+}
+#app button.primary:hover,
+#app .primary:hover,
+#app button.btn-primary:hover,
+#app .btn-primary:hover,
+#app .community-primary:hover,
+#app .home-training-cta:hover,
+#app .profile-save:hover,
+#app .routine-action-button.primary:hover,
+#app button[type="submit"]:not(.secondary):not(.danger):hover,
+#app input[type="submit"]:hover {
+  background: #ff8a3d !important;
+  background-image: linear-gradient(180deg, #ff9148 0%, #ff7626 100%) !important;
+  box-shadow: 0 6px 14px rgba(255, 118, 38, .24) !important;
+  transform: translateY(-1px);
+}
+#app button.primary:active,
+#app .primary:active,
+#app button.btn-primary:active,
+#app .btn-primary:active,
+#app .community-primary:active,
+#app .home-training-cta:active,
+#app .profile-save:active,
+#app .routine-action-button.primary:active,
+#app button[type="submit"]:not(.secondary):not(.danger):active,
+#app input[type="submit"]:active {
+  transform: translateY(1px) scale(.99) !important;
+  box-shadow: 0 1px 0 rgba(190, 75, 10, .16) !important;
+}
+#app button.primary:disabled,
+#app .primary:disabled,
+#app button.btn-primary:disabled,
+#app .btn-primary:disabled,
+#app .community-primary:disabled,
+#app .home-training-cta:disabled,
+#app button[type="submit"]:disabled {
+  opacity: .55 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+/* Mantém ações destrutivas vermelhas e ações secundárias discretas. */
+#app button.danger,
+#app .danger,
+#app .routine-action-button.danger {
+  background: #b93832 !important;
+  background-image: none !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  border-color: #b93832 !important;
+  box-shadow: none !important;
+}
+#app button.secondary,
+#app .button.secondary,
+#app .routine-action-button:not(.primary):not(.danger) {
+  box-shadow: none !important;
+}
+</style>
+
+<style id="evolute-import-finish-reference-style">
+/* Botões Importar treino e Finalizar treino no padrão do botão secundário de referência */
+#app button.primary[onclick*="openRoutineImport"],
+#app #finishWorkoutButton {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e96d1b !important;
+  -webkit-text-fill-color: #e96d1b !important;
+  border: 2px solid #f0cda9 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.8) !important;
+  font-weight: 800 !important;
+}
+#app button.primary[onclick*="openRoutineImport"] svg,
+#app #finishWorkoutButton svg,
+#app #finishWorkoutButton .icon {
+  color: #e96d1b !important;
+  stroke: currentColor !important;
+  fill: none;
+}
+#app button.primary[onclick*="openRoutineImport"]:hover,
+#app #finishWorkoutButton:hover {
+  background: #f6e1ce !important;
+  background-image: none !important;
+  color: #df6415 !important;
+  -webkit-text-fill-color: #df6415 !important;
+}
+#app button.primary[onclick*="openRoutineImport"]:active,
+#app #finishWorkoutButton:active {
+  transform: translateY(1px);
+}
+</style>
+
+<style id="evolute-import-export-inline-layout">
+/* Mantém Importar treino e Exportar treino lado a lado na página Treinos. */
+#app .weekly-planner-page > div[style*="margin-top:18px"] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+}
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button {
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 14px 8px !important;
+  white-space: normal !important;
+  font-size: clamp(12px, 3.5vw, 16px) !important;
+  line-height: 1.2 !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+#app .weekly-planner-page > div[style*="margin-top:18px"] > button svg {
+  flex: 0 0 auto !important;
+  width: 19px !important;
+  height: 19px !important;
+}
+</style>
+
+<style id="evolute-community-primary-outline-reference">
+/* Criar comunidade e Entrar na comunidade seguem o padrão claro do botão de referência. */
+#app .community-page .community-primary {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e96d1b !important;
+  -webkit-text-fill-color: #e96d1b !important;
+  border: 2px solid #f0cda9 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.8) !important;
+  min-height: 58px !important;
+  padding: 14px 20px !important;
+  font-weight: 800 !important;
+}
+#app .community-page .community-primary svg,
+#app .community-page .community-primary .icon {
+  color: #e96d1b !important;
+  stroke: currentColor !important;
+}
+#app .community-page .community-primary:hover {
+  background: #f6e1ce !important;
+  background-image: none !important;
+  color: #df6415 !important;
+  -webkit-text-fill-color: #df6415 !important;
+}
+#app .community-page .community-primary:active {
+  transform: translateY(1px) scale(.99) !important;
+}
+</style>
+
+<style id="evolute-evolution-button-outline-reference-v1">
+/* Botão Evolução no mesmo padrão claro e contornado de Exportar treino. */
+#app button.history-section-tab[onclick*="showHistory('evolution')"] {
+  background: #f7f7f7 !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+}
+#app button.history-section-tab[onclick*="showHistory('evolution')"]:hover,
+#app button.history-section-tab[onclick*="showHistory('evolution')"].active {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+<style id="evolute-history-export-filled-reference-v1">
+/* Exportar no Histórico usa o mesmo padrão de cor da aba Histórico selecionada. */
+#app .history-item button[onclick*="exportWorkout"] {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+#app .history-item button[onclick*="exportWorkout"] svg,
+#app .history-item button[onclick*="exportWorkout"] .icon {
+  color: #e2762d !important;
+  stroke: currentColor !important;
+}
+#app .history-item button[onclick*="exportWorkout"]:hover,
+#app .history-item button[onclick*="exportWorkout"]:active {
+  background: #f6e1ce !important;
+  background-image: none !important;
+  color: #df6415 !important;
+  -webkit-text-fill-color: #df6415 !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+<style id="evolute-history-export-match-active-tab-final">
+/* Histórico: o botão Exportar recebe o mesmo preenchimento da aba Histórico selecionada. */
+#app .history-item button[onclick*="exportWorkout"] {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  opacity: 1 !important;
+}
+#app .history-item button[onclick*="exportWorkout"]:hover,
+#app .history-item button[onclick*="exportWorkout"]:active {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+<style id="evolute-profile-light-background-fix">
+/* Corrige contraste da página Meu perfil: painel claro e textos legíveis. */
+body.profile-page-mode .profile-page-card,
+#app .profile-page-card {
+  background: #f4f4f4 !important;
+  background-color: #f4f4f4 !important;
+  border: 1px solid #dedede !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08) !important;
+}
+body.profile-page-mode .profile-page-title,
+#app .profile-page-title {
+  color: #242629 !important;
+  -webkit-text-fill-color: #242629 !important;
+}
+body.profile-page-mode .profile-page-subtitle,
+#app .profile-page-subtitle {
+  color: #686b70 !important;
+  -webkit-text-fill-color: #686b70 !important;
+}
+body.profile-page-mode .profile-field label,
+#app .profile-field label {
+  color: #42464b !important;
+  -webkit-text-fill-color: #42464b !important;
+}
+body.profile-page-mode .profile-field input,
+body.profile-page-mode .profile-field select,
+#app .profile-field input,
+#app .profile-field select {
+  background: #fff !important;
+  background-color: #fff !important;
+  color: #292c30 !important;
+  -webkit-text-fill-color: #292c30 !important;
+  border: 1px solid #d2d2d2 !important;
+}
+body.profile-page-mode .profile-field input::placeholder,
+#app .profile-field input::placeholder {
+  color: #85898e !important;
+  -webkit-text-fill-color: #85898e !important;
+  opacity: 1 !important;
+}
+body.profile-page-mode .profile-switch-row,
+#app .profile-switch-row {
+  border-top-color: #d7d7d7 !important;
+}
+</style>
+
+<style id="evolute-profile-buttons-match-history-tabs">
+/* Página Meu perfil: botões no mesmo padrão visual das abas Histórico/Evolução. */
+#app .profile-action-main,
+#app .profile-action-secondary {
+  border-radius: 999px !important;
+  border: 2px solid #edc9a6 !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  opacity: 1 !important;
+  background-image: none !important;
+}
+#app .profile-action-main {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+}
+#app .profile-action-secondary {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
+}
+#app .profile-action-main:hover,
+#app .profile-action-main:active {
+  background: #f9eadb !important;
+  background-color: #f9eadb !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+#app .profile-action-secondary:hover,
+#app .profile-action-secondary:active {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+<style id="evolute-create-profile-button-evolution-style">
+/* Criar novo perfil segue o padrão claro e contornado do botão Evolução. */
+#app button[onclick*="createNewProfileFromPage"] {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border: 2px solid #edc9a6 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 0 1px rgba(233,109,27,.035), inset 0 1px 0 rgba(255,255,255,.85) !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+#app button[onclick*="createNewProfileFromPage"] svg,
+#app button[onclick*="createNewProfileFromPage"] .icon {
+  color: #e2762d !important;
+  stroke: currentColor !important;
+}
+#app button[onclick*="createNewProfileFromPage"]:hover,
+#app button[onclick*="createNewProfileFromPage"]:focus,
+#app button[onclick*="createNewProfileFromPage"]:active {
+  background: #f7f7f7 !important;
+  background-color: #f7f7f7 !important;
+  background-image: none !important;
+  color: #e2762d !important;
+  -webkit-text-fill-color: #e2762d !important;
+  border-color: #edc9a6 !important;
+}
+</style>
+
+<style id="evolute-training-card-white-theme-v1">
+/* Treino recomendado: altera somente o tema visual, preservando dimensões e posicionamento. */
+body:has(.home-reference-dashboard) .home-reference-training{
+  background:#ffffff!important;
+  color:#25282c!important;
+}
+body:has(.home-reference-dashboard) .home-training-overlay{
+  background:linear-gradient(90deg,#ffffff 0%,#ffffff 34%,rgba(255,255,255,.96) 46%,rgba(255,255,255,.48) 64%,rgba(255,255,255,0) 100%)!important;
+}
+body:has(.home-reference-dashboard) .home-reference-training-content h3{
+  color:#25282c!important;
+}
+body:has(.home-reference-dashboard) .home-reference-training-content>p{
+  color:#666a70!important;
+}
+body:has(.home-reference-dashboard) .home-reference-stats b{
+  color:#25282c!important;
+}
+body:has(.home-reference-dashboard) .home-reference-stats small{
+  color:#777b80!important;
+}
+body:has(.home-reference-dashboard) .home-reference-stats span{
+  border-right-color:rgba(37,40,44,.16)!important;
+}
+</style>
+
+<style id="evolute-all-page-headers-white-black-actions-v1">
+/* Cabeçalhos de todas as páginas no padrão branco; preserva dimensões e posicionamento. */
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header),
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) > .evolute-shared-page-header{
+  background:#ffffff!important;
+  background-color:#ffffff!important;
+  background-image:none!important;
+  color:#25282c!important;
+  box-shadow:none!important;
+}
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2 strong,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2:not(span){
+  color:#25282c!important;
+}
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy p,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-profile-label{
+  color:#666a70!important;
+}
+/* Ícones de menu e notificações pretos em todas as páginas, inclusive Home. */
+html body .home-notification,
+html body .home-menu-button,
+html body .evolute-shared-page-header .home-notification,
+html body .evolute-shared-page-header .home-menu-button{
+  color:#000000!important;
+}
+html body .home-notification .evo-ui-icon,
+html body .home-menu-button .evo-ui-icon,
+html body .evolute-shared-page-header .home-notification .evo-ui-icon,
+html body .evolute-shared-page-header .home-menu-button .evo-ui-icon{
+  color:#000000!important;
+  stroke:#000000!important;
+}
+</style>
+
+<style id="evolute-remove-week-progress-card-frame-v1">
+/* Remove apenas a moldura externa do card de progresso semanal. */
+body:has(.home-reference-dashboard) .home-week-progress {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+</style>
+
+<style id="evolute-restore-menu-list-visibility-v1">
+/* Restaura a lista de navegação do botão de menu sem alterar o cabeçalho. */
+#evoluteSharedPageHeader .home-action-wrap.home-menu-wrap {
+  position: relative !important;
+  overflow: visible !important;
+}
+#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown {
+  display: block;
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 99999 !important;
+  min-width: 210px !important;
+  width: max-content !important;
+  max-width: calc(100vw - 28px) !important;
+  padding: 8px !important;
+  background: #24272b !important;
+  border: 1px solid #3b3f44 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.28) !important;
+  overflow: visible !important;
+}
+#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown[hidden] {
+  display: none !important;
+}
+#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown button {
+  display: flex !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 11px 13px !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  text-align: left !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  font-size: 15px !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+}
+#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown button:hover,
+#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown button:active {
+  background: #fff0e5 !important;
+  color: #e85f00 !important;
+}
+</style>
+
+<style id="evolute-create-routine-button-contour-match">
+/* Botão Criar nova ficha: contorno no mesmo padrão do botão Importar ficha,
+   preservando o preenchimento laranja, texto e dimensões atuais. */
+#app button.primary[onclick="openRoutineForm()"] {
+  border: 2px solid #efc9a5 !important;
+  outline: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 5px 0 rgba(190, 75, 10, .16), inset 0 1px 0 rgba(255,255,255,.8) !important;
+  box-sizing: border-box !important;
+}
+#app button.primary[onclick="openRoutineForm()"]:focus,
+#app button.primary[onclick="openRoutineForm()"]:focus-visible {
+  outline: 2px solid rgba(254, 100, 5, .28) !important;
+  outline-offset: 2px !important;
+}
 </style>
