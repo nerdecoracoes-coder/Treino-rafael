@@ -3842,6 +3842,19 @@ body:has(.home-reference-dashboard) .home-hero-actions .home-menu-button .evo-ui
   opacity: 1 !important;
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style id="evolute-cloud-auth-styles">
+#evoluteCloudGate{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(5,7,9,.96);overflow:auto}
+#evoluteCloudGate .cloud-panel{width:100%;max-width:440px;background:#191c1f;border:1px solid #383d42;border-radius:22px;padding:24px;color:#f4f4f2;box-shadow:0 20px 70px #0009}
+#evoluteCloudGate h2{margin:0 0 8px;font-size:25px}#evoluteCloudGate p{color:#b7b9bb;line-height:1.45;font-size:14px}
+#evoluteCloudGate label{display:block;margin:14px 0 6px;color:#ddd;font-size:14px}
+#evoluteCloudGate input{width:100%;padding:13px;border-radius:10px;background:#0f1113;border:1px solid #454b51;color:#fff;font-size:16px}
+#evoluteCloudGate button{width:100%;margin-top:12px;padding:13px;border:0;border-radius:10px;background:#FE6405;color:#fff;font-weight:800;font-size:15px}
+#evoluteCloudGate button.alt{background:#282d32;border:1px solid #454b51}#evoluteCloudMessage{font-size:13px;color:#ffbd91;white-space:pre-wrap;margin-top:12px}
+#evoluteCloudStatus{position:fixed;z-index:9998;top:8px;left:50%;transform:translateX(-50%);padding:6px 11px;border-radius:20px;background:#222;color:#fff;font-size:11px;display:none}
+</style>
+
 </head>
 
 <body>
@@ -3981,6 +3994,21 @@ button .evo-ui-icon{vertical-align:-5px}
 </style>
 
 <main id="app"></main>
+<div id="evoluteCloudStatus">Evolute • conectado</div>
+<div id="evoluteCloudGate" role="dialog" aria-modal="true" aria-labelledby="evoluteCloudTitle">
+ <div class="cloud-panel">
+  <h2 id="evoluteCloudTitle">Evolute Training</h2>
+  <p>Entre com sua conta para acessar seus dados sincronizados entre dispositivos. Cada conta mantém seus próprios treinos e histórico.</p>
+  <form id="evoluteCloudForm">
+   <label for="evoluteCloudEmail">E-mail</label><input id="evoluteCloudEmail" type="email" autocomplete="email" required placeholder="voce@exemplo.com">
+   <label for="evoluteCloudPassword">Senha</label><input id="evoluteCloudPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres">
+   <button type="submit" id="evoluteCloudLogin">Entrar</button>
+   <button type="button" class="alt" id="evoluteCloudRegister">Criar conta</button>
+   <button type="button" class="alt" id="evoluteCloudForgot">Esqueci minha senha</button>
+  </form>
+  <div id="evoluteCloudMessage" role="status"></div>
+ </div>
+</div>
 
 <script>
 "use strict";
@@ -12283,6 +12311,88 @@ body > .training-exercise-card.training-dragging-preview,
 }
 .training-exercise-card.training-dragging-preview .training-order-controls{z-index:5!important;}
 </style>
+
+<script id="evolute-cloud-auth-sync-v1">
+(function(){
+ 'use strict';
+ const SUPABASE_URL='https://nzkjpeggckvjhfsyluar.supabase.co';
+ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_lpEVZFxgVnTe4-ME8pWkhA__4Uza1RS';
+ const TABLE='evolute_sync_data';
+ let client=null, cloudUser=null, syncTimer=null, syncing=false, cloudReady=false;
+ const gate=()=>document.getElementById('evoluteCloudGate');
+ const message=(t)=>{const el=document.getElementById('evoluteCloudMessage');if(el)el.textContent=t||'';};
+ const status=(t,show=true)=>{const el=document.getElementById('evoluteCloudStatus');if(el){el.textContent=t;el.style.display=show?'block':'none';}};
+ function showGate(){if(gate())gate().style.display='flex';document.getElementById('app').style.visibility='hidden';const nav=document.querySelector('nav');if(nav)nav.style.visibility='hidden';}
+ function hideGate(){if(gate())gate().style.display='none';document.getElementById('app').style.visibility='';const nav=document.querySelector('nav');if(nav)nav.style.visibility='';}
+ async function loadCloud(user){
+   const {data,error}=await client.from(TABLE).select('user_id,payload,updated_at').eq('user_id',user.id).maybeSingle();
+   if(error)throw error;
+   return data;
+ }
+ async function pushCloud(){
+   if(!client||!cloudUser||!cloudReady||syncing)return;
+   syncing=true;
+   try{
+    const payload=JSON.parse(JSON.stringify(db));
+    const {error}=await client.from(TABLE).upsert({user_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error)throw error;
+    status('Evolute • sincronizado');
+   }catch(e){console.error('Evolute cloud sync failed',e);status('Evolute • falha na sincronização');}
+   finally{syncing=false;}
+ }
+ function schedulePush(){if(!cloudUser||!cloudReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushCloud,1200);}
+ // Save the existing local copy first; cloud writes only after an explicit account/data decision.
+ const originalSaveDB=window.saveDB;
+ if(typeof originalSaveDB==='function'){
+  window.saveDB=function(){const result=originalSaveDB.apply(this,arguments);if(result)schedulePush();return result;};
+ }
+ async function enterAccount(user){
+  cloudUser=user; message('Carregando seus dados...');
+  let record;
+  try{record=await loadCloud(user);}catch(e){cloudUser=null;message('Não foi possível carregar os dados da nuvem. Confira a configuração de segurança da tabela e tente novamente.');console.error(e);return;}
+  if(record && record.payload && typeof record.payload==='object'){
+    // Cloud data is authoritative for this account. Preserve a backup of the device copy first.
+    try{localStorage.setItem('evolute_local_backup_before_cloud_'+user.id,localStorage.getItem('treinoRafaelDB_v7')||'');}catch(e){}
+    db=record.payload;
+    try{localStorage.setItem('treinoRafaelDB_v7',JSON.stringify(db));}catch(e){}
+    cloudReady=true;hideGate();status('Evolute • sincronizado');
+    if(typeof showHome==='function')showHome();
+  }else{
+    const localRaw=localStorage.getItem('treinoRafaelDB_v7');
+    const hasLocal=!!localRaw && localRaw!=='null';
+    const useLocal=hasLocal && confirm('Esta conta ainda não tem dados na nuvem.\n\nOK = copiar os dados deste aparelho para esta conta.\nCancelar = começar esta conta vazia, sem enviar os dados locais.');
+    if(useLocal){
+      try{db=JSON.parse(localRaw);}catch(e){cloudUser=null;message('Os dados locais não puderam ser lidos. Eles não foram enviados.');return;}
+    }else{
+      // Start with an empty database structure from the app's own initializer, without uploading another user's local data.
+      const old=db;
+      try{db=typeof createInitialDB==='function'?createInitialDB():{profiles:[],history:[],evolution:[],communities:[]};}catch(e){db={profiles:[],history:[],evolution:[],communities:[]};}
+      try{localStorage.setItem('treinoRafaelDB_v7',JSON.stringify(db));}catch(e){}
+    }
+    cloudReady=true;hideGate();
+    const {error}=await client.from(TABLE).upsert({user_id:user.id,payload:db,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error){cloudReady=false;status('Evolute • erro ao salvar na nuvem');message('Login realizado, mas não foi possível salvar os dados. Verifique as políticas RLS da tabela.');console.error(error);showGate();return;}
+    status('Evolute • sincronizado');if(typeof showHome==='function')showHome();
+  }
+ }
+ async function init(){
+  if(!window.supabase||!window.supabase.createClient){showGate();message('Não foi possível carregar o módulo de conexão. Verifique a internet e recarregue a página.');return;}
+  client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const form=document.getElementById('evoluteCloudForm');
+  form.addEventListener('submit',async ev=>{ev.preventDefault();message('Entrando...');const email=document.getElementById('evoluteCloudEmail').value.trim();const password=document.getElementById('evoluteCloudPassword').value;const {data,error}=await client.auth.signInWithPassword({email,password});if(error){message(error.message);return;}await enterAccount(data.user);});
+  document.getElementById('evoluteCloudRegister').addEventListener('click',async()=>{message('Criando conta...');const email=document.getElementById('evoluteCloudEmail').value.trim();const password=document.getElementById('evoluteCloudPassword').value;if(!email||password.length<6){message('Informe um e-mail válido e uma senha com pelo menos 6 caracteres.');return;}const {data,error}=await client.auth.signUp({email,password});if(error){message(error.message);return;}if(data.session){await enterAccount(data.user);}else{message('Cadastro iniciado. Confira seu e-mail para confirmar a conta e depois entre.');}});
+  document.getElementById('evoluteCloudForgot').addEventListener('click',async()=>{const email=document.getElementById('evoluteCloudEmail').value.trim();if(!email){message('Digite seu e-mail primeiro.');return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.href});message(error?error.message:'Se houver uma conta para esse e-mail, você receberá instruções para redefinir a senha.');});
+  const {data,error}=await client.auth.getSession();
+  if(error){showGate();message('Não foi possível verificar sua sessão: '+error.message);return;}
+  if(data.session){await enterAccount(data.session.user);}else{showGate();}
+  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;cloudReady=false;showGate();} });
+ }
+ // Explicit logout helper for future settings UI; no app controls are changed in this patch.
+ window.evoluteCloudSignOut=async function(){if(!client)return;cloudReady=false;cloudUser=null;await client.auth.signOut();showGate();};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0));else setTimeout(init,0);
+})();
+</script>
+
 </body>
 
 <style id="evolute-strong-orange-final">
