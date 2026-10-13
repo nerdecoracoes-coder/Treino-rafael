@@ -3793,6 +3793,55 @@ input:focus,select:focus,textarea:focus{border-color:var(--evo-orange) !importan
 .weekly-routine-dragging .weekly-drag-handle{cursor:grabbing}
 @media(max-width:380px){.weekly-day-row{grid-template-columns:66px minmax(0,1fr);gap:7px}.weekly-day-label{font-size:12px}.weekly-routine-name{font-size:15px}}
 </style>
+
+<style id="evolute-design-tokens-foundation-v1">
+/* EVOLUTE DESIGN TOKENS — base sem efeitos visuais por si só.
+   Tokens novos e namespaced para migração gradual; não substituir os estilos existentes
+   em massa. Cada componente só deve migrar depois de comparação visual. */
+:root {
+  --evo-color-bg: #0a0b0d;
+  --evo-color-surface: #191c1f;
+  --evo-color-surface-raised: #1c2024;
+  --evo-color-orange: #FE6405;
+  --evo-color-orange-strong: #FE6405;
+  --evo-color-text: #f4f5f6;
+  --evo-color-text-muted: #aeb4ba;
+  --evo-color-border: rgba(255,255,255,.12);
+  --evo-radius-sm: 8px;
+  --evo-radius-md: 12px;
+  --evo-radius-lg: 18px;
+  --evo-space-1: 4px;
+  --evo-space-2: 8px;
+  --evo-space-3: 12px;
+  --evo-space-4: 16px;
+  --evo-space-5: 20px;
+  --evo-font-body: inherit;
+  --evo-motion-fast: 160ms;
+  --evo-motion-standard: 240ms;
+}
+</style>
+
+<style id="evolute-home-header-icons-color-v1">
+/* Página Início: ícones de notificações e menu em preto, conforme referência aprovada. */
+body:has(.home-reference-dashboard) .home-hero-actions .home-notification,
+body:has(.home-reference-dashboard) .home-hero-actions .home-menu-button {
+  color: #111111 !important;
+}
+body:has(.home-reference-dashboard) .home-hero-actions .home-notification .evo-ui-icon,
+body:has(.home-reference-dashboard) .home-hero-actions .home-menu-button .evo-ui-icon {
+  color: #111111 !important;
+  stroke: currentColor !important;
+}
+</style>
+
+<style id="evolute-global-menu-text-white-20261012">
+/* Ajuste pontual: textos do menu global em branco. */
+#evoluteGlobalPageDropdown button,
+#evoluteGlobalPageDropdown button span {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+</style>
 </head>
 
 <body>
@@ -4100,27 +4149,34 @@ function formatDate(v){
    SALVAR BANCO
    ========================================================= */
 
+let evoluteStorageWarningShown=false;
+
 function saveDB(){
 
  try{
 
-  const ok=storageSet(
-   DBKEY,
-   JSON.stringify(db)
-  );
+  const serialized=JSON.stringify(db);
+  const ok=storageSet(DBKEY,serialized);
 
   if(!ok){
-
-   console.warn(
-    "Não foi possível salvar no armazenamento."
-   );
-
+   console.error("Evolute Training: falha ao salvar no armazenamento local. O armazenamento pode estar cheio ou indisponível.");
+   if(!evoluteStorageWarningShown){
+    evoluteStorageWarningShown=true;
+    alert("Atenção: não foi possível salvar os dados neste aparelho. O armazenamento do navegador pode estar cheio. Não feche nem atualize a página antes de fazer uma cópia dos seus dados.");
+   }
+   return false;
   }
 
+  evoluteStorageWarningShown=false;
+  return true;
+
  }catch(e){
-
-  console.error(e);
-
+  console.error("Evolute Training: erro ao salvar os dados.",e);
+  if(!evoluteStorageWarningShown){
+   evoluteStorageWarningShown=true;
+   alert("Atenção: ocorreu um erro ao salvar os dados neste aparelho. Evite fechar ou atualizar a página até verificar o armazenamento.");
+  }
+  return false;
  }
 
 }
@@ -4885,6 +4941,8 @@ function readDB(){
 
 let db=readDB();
 let currentRoutine=null;
+// Tela de origem da ficha aberta: home (recomendado) ou routines (lista de treinos).
+let trainingReturnPage="routines";
 
 function getProfile(){
 
@@ -5039,7 +5097,7 @@ function showHome(){
       <span><b>50–60</b><small>minutos</small></span>
       <span><b>~500</b><small>calorias</small></span>
     </div>
-    <button type="button" class="home-reference-cta" onclick="event.stopPropagation(); ${next?`chooseRoutine('${esc(nextId)}')`:'showConfig()'}">${evoIcon('play')} <span>Iniciar treino</span><strong>›</strong></button>
+    <button type="button" class="home-reference-cta" onclick="event.stopPropagation(); ${next?`chooseRoutine('${esc(nextId)}','home')`:'showConfig()'}">${evoIcon('play')} <span>Iniciar treino</span><strong>›</strong></button>
    </div>
   </section>
 
@@ -5375,12 +5433,18 @@ function weeklyRoutineDragStart(event,routineId,fromDay){
  document.addEventListener('pointermove',move,true);document.addEventListener('pointerup',end,true);document.addEventListener('pointercancel',end,true);
 }
 
-function chooseRoutine(id){
+function chooseRoutine(id, returnPage='routines'){
 
  currentRoutine=id;
+ trainingReturnPage=returnPage==='home'?'home':'routines';
 
  showTraining();
 
+}
+
+function returnToTrainingOrigin(){
+ const destination=trainingReturnPage==='home'?showHome:showRoutines;
+ requestLeaveCurrentView(destination);
 }
 
 function routineButtons(){
@@ -5698,6 +5762,61 @@ function toggleTrainingExerciseExpanded(index,button){
  }
 }
 
+function setTrainingExerciseTab(index,tab,button){
+ const card=document.querySelector(`.training-exercise-card[data-exercise-index="${index}"]`);
+ if(!card)return;
+ card.querySelectorAll('.exercise-detail-tab').forEach(el=>{
+  const active=el.dataset.tab===tab;
+  el.classList.toggle('active',active);
+  el.setAttribute('aria-selected',active?'true':'false');
+ });
+ card.querySelectorAll('.exercise-tab-panel').forEach(el=>{
+  el.hidden=el.dataset.panel!==tab;
+ });
+ if(tab==='evolution'){
+  const chart=card.querySelector('.exercise-progress-chart');
+  if(chart&&!chart.dataset.rendered){
+   chart.innerHTML=renderExerciseLoadProgress(index);
+   chart.dataset.rendered='true';
+  }
+ }
+}
+
+function renderExerciseLoadProgress(index){
+ const p=getProfile();
+ const routine=getRoutine();
+ const exercise=routine?.ex?.[index];
+ if(!p||!exercise)return '<div class="exercise-progress-empty">Não foi possível localizar este exercício.</div>';
+ const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const targetName=normalize(exercise.name);
+ const entries=(Array.isArray(db.history)?db.history:[])
+  .filter(h=>h.profileId===p.id)
+  .map(h=>{
+   const match=(h.exercises||[]).find(ex=>normalize(ex.name)===targetName);
+   if(!match)return null;
+   const sets=Array.isArray(match.sets)?match.sets:[];
+   const loads=sets.map(set=>Number(set.load)).filter(n=>Number.isFinite(n)&&n>0);
+   if(!loads.length)return null;
+   return {date:String(h.date||''),load:Math.max(...loads),workout:String(h.workout||'')};
+  })
+  .filter(Boolean)
+  .sort((a,b)=>a.date.localeCompare(b.date));
+ if(!entries.length)return '<div class="exercise-progress-empty"><strong>Ainda não há dados de carga.</strong><p>Conclua este exercício em um treino registrando a carga de pelo menos uma série. Seus registros aparecerão aqui.</p></div>';
+ const points=entries.slice(-10);
+ const width=320,height=190,left=38,right=12,top=16,bottom=38;
+ const vals=points.map(x=>x.load),min=Math.min(...vals),max=Math.max(...vals),range=max-min||Math.max(max*.15,1);
+ const yMin=Math.max(0,min-range*.18),yMax=max+range*.18;
+ const x=i=>left+(points.length===1?(width-left-right)/2:i*(width-left-right)/(points.length-1));
+ const y=v=>top+(yMax-v)/(yMax-yMin||1)*(height-top-bottom);
+ const grid=[0,1,2,3].map(i=>{const v=yMin+(yMax-yMin)*i/3,yy=y(v);return `<line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" stroke="rgba(255,255,255,.10)"/><text x="${left-7}" y="${yy+4}" text-anchor="end" fill="#aeb7bf" font-size="9">${Number(v.toFixed(1))}</text>`}).join('');
+ const coords=points.map((pt,i)=>`${x(i)},${y(pt.load)}`).join(' ');
+ const dots=points.map((pt,i)=>`<circle cx="${x(i)}" cy="${y(pt.load)}" r="4" fill="#ff6908" stroke="#17191c" stroke-width="2"><title>${esc(formatDate(pt.date))}: ${esc(pt.load)} kg</title></circle>`).join('');
+ const labels=points.map((pt,i)=>points.length<=5||i===0||i===points.length-1?`<text x="${x(i)}" y="${height-17}" text-anchor="middle" fill="#aeb7bf" font-size="9">${esc(formatDate(pt.date).slice(0,5))}</text>`:'').join('');
+ const first=points[0].load,last=points[points.length-1].load,diff=last-first,change=first?diff/first*100:0;
+ const summary=points.length===1?'1 registro':`${points.length} registros • ${diff>0?'+':''}${Number(diff.toFixed(1))} kg (${diff>0?'+':''}${Number(change.toFixed(1))}%)`;
+ return `<div class="exercise-progress-summary"><span>${points.length===1?'Última carga registrada':'Últimos registros'}</span><strong>${esc(last)} kg</strong><small>${esc(summary)}</small></div><svg class="exercise-progress-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Gráfico da evolução da carga em quilogramas">${grid}<polyline points="${coords}" fill="none" stroke="#ff6908" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${dots}${labels}</svg><p class="exercise-progress-note">O gráfico usa a maior carga registrada entre as séries de cada treino, por data. São exibidos até os 10 registros mais recentes.</p>`;
+}
+
 function validateTrainingTarget(index){
  const card=document.querySelector(`.training-exercise-card[data-exercise-index="${index}"]`);
  if(!card)return true;
@@ -5951,7 +6070,7 @@ function showTraining(){
 
  let html=`
  <div class="training-back-wrap">
-  <button type="button" class="back-to-routines" onclick="requestLeaveCurrentView(showRoutines)">‹&nbsp; voltar para treinos</button>
+  <button type="button" class="back-to-routines" onclick="returnToTrainingOrigin()">‹&nbsp; voltar para a página anterior</button>
  </div>
  <div class="card">
   <h2>${esc(r.name)}</h2>
@@ -5984,13 +6103,20 @@ function showTraining(){
    </div>
    <div class="training-card-category-wrap"><span class="training-card-category-label">Categoria:</span><span class="training-card-category-value">${esc(e.category||getExerciseCategoryByName(e.name)||"Sem categoria")}</span></div>
    <div class="training-card-compact-target">Meta: <span>${(state.targetLoad??e.targetLoad)!==""&&((state.targetLoad??e.targetLoad)!=null)?esc(state.targetLoad??e.targetLoad)+" kg":"não definida"}</span></div>
-   <div class="training-target-warning" hidden>Defina sua meta para esse exercício no próximo treino.</div>
-   <div class="last">Última S1: ${e.refLoad!==""&&e.refLoad!=null?esc(e.refLoad)+" kg × "+esc(e.refReps||"-")+" reps":"sem registro"}</div>
    <div class="training-rest-timer" id="trainingRestTimer${i}" aria-label="Temporizador de descanso">
     <button type="button" class="timer-start" id="trainingRestTimerStart${i}" onclick="toggleRestTimer(${i})" aria-label="Iniciar temporizador" title="Iniciar">${trainingRestTimers[i]&&trainingRestTimers[i].interval?'Ⅱ':'▶'}</button>
     <div class="training-rest-timer-track" role="progressbar" aria-label="Tempo restante" aria-valuemin="0" aria-valuemax="60" aria-valuenow="${(trainingRestTimers[i]&&trainingRestTimers[i].remaining)??getRoutineRestSeconds(i)}"><span class="training-rest-timer-progress" id="trainingRestTimerProgress${i}" style="width:${(getRoutineRestSeconds(i)-((trainingRestTimers[i]&&trainingRestTimers[i].remaining)??getRoutineRestSeconds(i)))/getRoutineRestSeconds()*100}%"></span></div>
     <span class="training-rest-timer-display" id="trainingRestTimerDisplay${i}">${formatRestTime((trainingRestTimers[i]&&trainingRestTimers[i].remaining)??getRoutineRestSeconds(i))}</span>
    </div>
+   <div class="training-target-warning" hidden>Defina sua meta para esse exercício no próximo treino.</div>
+   <div class="training-expanded-content">
+   <div class="exercise-detail-tabs" role="tablist" aria-label="Detalhes do exercício">
+    <button type="button" class="exercise-detail-tab active" data-tab="sets" role="tab" aria-selected="true" onclick="setTrainingExerciseTab(${i},'sets',this)">Séries</button>
+    <button type="button" class="exercise-detail-tab" data-tab="evolution" role="tab" aria-selected="false" onclick="setTrainingExerciseTab(${i},'evolution',this)">Evolução de carga</button>
+   </div>
+   <div class="exercise-tab-panel" data-panel="sets">
+   <div class="last">Última S1: ${e.refLoad!==""&&e.refLoad!=null?esc(e.refLoad)+" kg × "+esc(e.refReps||"-")+" reps":"sem registro"}</div>
+
    <div class="target">
     <strong>${evoIcon('target')} Meta para o próximo treino</strong>
     <div class="grid" style="margin-top:7px">
@@ -6005,7 +6131,7 @@ function showTraining(){
   });
   block+=`</div>`;
   if(e.minReps!==""||e.maxReps!=="")block+=`<div class="small" style="margin-top:8px">Faixa de repetições: ${e.minReps!==""?"mín. "+esc(e.minReps):""}${e.minReps!==""&&e.maxReps!==""?" • ":""}${e.maxReps!==""?"máx. "+esc(e.maxReps):""}</div>`;
-  block+=`<br><label>Observação</label><input id="o${i}" type="text" value="${esc(state.observation)}" placeholder="Opcional" ${locked?'disabled':''} oninput="saveTrainingDraftFromDOM()"></div>`;
+  block+=`<br><label>Observação</label><input id="o${i}" type="text" value="${esc(state.observation)}" placeholder="Opcional" ${locked?'disabled':''} oninput="saveTrainingDraftFromDOM()"></div><div class="exercise-tab-panel" data-panel="evolution" hidden><div class="exercise-progress-chart"></div></div></div></div>`;
   return block;
  }
 
@@ -7375,18 +7501,55 @@ function autoSaveProfilePage(){
  refreshProfiles();
 }
 
-function handleProfilePagePhoto(input){
+function compressProfilePhoto(file){
+ return new Promise((resolve,reject)=>{
+  if(!file || !file.type || !file.type.startsWith("image/")){
+   reject(new Error("Arquivo selecionado não é uma imagem válida."));
+   return;
+  }
+  const reader=new FileReader();
+  reader.onerror=()=>reject(new Error("Não foi possível ler a imagem."));
+  reader.onload=()=>{
+   const img=new Image();
+   img.onerror=()=>reject(new Error("Não foi possível processar a imagem."));
+   img.onload=()=>{
+    const maxSide=512;
+    const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    const ctx=canvas.getContext("2d");
+    if(!ctx){reject(new Error("Não foi possível comprimir a imagem."));return;}
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    try{resolve(canvas.toDataURL("image/jpeg",0.78));}
+    catch(e){reject(e);}
+   };
+   img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+ });
+}
+
+async function handleProfilePagePhoto(input){
  const f=input?.files?.[0];
  if(!f)return;
- const rd=new FileReader();
- rd.onload=()=>{
+ try{
+  const photo=await compressProfilePhoto(f);
   const p=getProfile();
   if(!p)return;
-  p.photo=rd.result;
-  saveDB();
+  const previousPhoto=p.photo;
+  p.photo=photo;
+  if(!saveDB()){
+   p.photo=previousPhoto;
+   return;
+  }
   showProfilePage();
- };
- rd.readAsDataURL(f);
+ }catch(e){
+  console.error("Falha ao atualizar foto do perfil.",e);
+  alert("Não foi possível processar essa foto. Tente selecionar outra imagem.");
+ }finally{
+  if(input)input.value="";
+ }
 }
 
 function saveProfilePage(){
@@ -8499,8 +8662,14 @@ function initTrainingExerciseDragAndDrop(){
   state.startHeight=68;state.pointerOffsetY=Math.min(e.clientY-rect.top,34);state.lastClientY=e.clientY;state.autoScrollFrame=requestAnimationFrame(autoScroll);
   const placeholder=document.createElement('div');placeholder.className='training-drag-placeholder training-drag-compact-placeholder';placeholder.style.height='68px';placeholder.style.margin=getComputedStyle(item).margin;state.placeholder=placeholder;
   item.replaceWith(placeholder);item.style.display='none';
-  const floating=item.cloneNode(true);floating.classList.add('training-drag-floating','training-drag-compact');floating.removeAttribute('data-exercise-index');
-  Object.assign(floating.style,{position:'fixed',left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,height:'68px',margin:'0',transform:'scale(1.018)',transformOrigin:'center center',pointerEvents:'none',zIndex:'2000',display:'block',visibility:'visible',opacity:'1',willChange:'top,transform'});
+  const floating=item.cloneNode(true);
+  /* O cartão flutuante deve representar o card reduzido, nunca a ficha expandida. */
+  floating.classList.remove('training-card-expanded');
+  floating.classList.add('training-card-collapsed','training-drag-floating','training-dragging-preview');
+  floating.classList.remove('training-drag-compact');
+  floating.removeAttribute('data-exercise-index');
+  floating.querySelectorAll('.training-expanded-content').forEach(el=>{el.hidden=true;el.style.setProperty('display','none','important');});
+  Object.assign(floating.style,{position:'fixed',left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,height:'auto',minHeight:'0',maxHeight:'none',margin:'0',transform:'scale(1.018)',transformOrigin:'top center',pointerEvents:'none',zIndex:'2000',display:'block',visibility:'visible',opacity:'1',willChange:'top,transform',overflow:'visible'});
   document.body.appendChild(floating);state.floating=floating;document.body.classList.add('evolute-dragging');moveFloating(e);movePlaceholder(e.clientY);
  };
  const onPointerMove=e=>{if(!state||state.pointerId!==e.pointerId)return;state.lastClientY=e.clientY;if(!state.dragging){const dx=e.clientX-state.startX,dy=e.clientY-state.startY;if(Math.hypot(dx,dy)<6)return;e.preventDefault();startDrag(e);}if(state.dragging){e.preventDefault();moveFloating(e);movePlaceholder(e.clientY);}};
@@ -8721,35 +8890,27 @@ function saveProfileGender(gender){
  showConfig();
 }
 
-function saveProfilePhoto(){
-
- const f=document.getElementById(
-  "profilePhotoInput"
- )?.files?.[0];
-
- if(!f){
-
-  alert(
-   "Selecione uma foto primeiro."
-  );
-
-  return;
-
- }
-
- const rd=new FileReader();
-
- rd.onload=()=>{
-
-  getProfile().photo=rd.result;
-
-  saveDB();
+async function saveProfilePhoto(){
+ const input=document.getElementById("profilePhotoInput");
+ const f=input?.files?.[0];
+ if(!f){alert("Selecione uma foto primeiro.");return;}
+ try{
+  const photo=await compressProfilePhoto(f);
+  const p=getProfile();
+  if(!p)return;
+  const previousPhoto=p.photo;
+  p.photo=photo;
+  if(!saveDB()){
+   p.photo=previousPhoto;
+   return;
+  }
   showConfig();
-
- };
-
- rd.readAsDataURL(f);
-
+ }catch(e){
+  console.error("Falha ao atualizar foto do perfil.",e);
+  alert("Não foi possível processar essa foto. Tente selecionar outra imagem.");
+ }finally{
+  if(input)input.value="";
+ }
 }
 
 /* =========================================================
@@ -10926,9 +11087,40 @@ button.primary:hover,.primary:hover{background:#FF751B !important}
   if(name)name.textContent=(profile&&profile.name?profile.name:'Rafael')+'!';
   if(avatar){ if(profile&&profile.photo){avatar.innerHTML='<img src="'+String(profile.photo).replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" alt="">';} else {avatar.innerHTML='<svg class="evo-ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.8-3.5 3-5.2 6.5-5.2s5.7 1.7 6.5 5.2"/></svg>';}}
  }
- window.toggleSharedNotifications=function(event){if(event)event.stopPropagation();const d=document.getElementById('evoluteSharedNotifications');if(!d)return;const opening=d.hidden;d.hidden=!opening;const b=document.querySelector('#evoluteSharedPageHeader .home-notification');if(b)b.setAttribute('aria-expanded',String(opening));};
+ function closeSharedHeaderDropdowns(except){
+  const pairs=[
+   ['evoluteSharedNotifications','#evoluteSharedPageHeader .home-notification'],
+   ['evoluteGlobalPageDropdownShared','#evoluteSharedPageHeader .home-menu-button'],
+   ['homeNotificationDropdown','.home-notification:not(#evoluteSharedPageHeader .home-notification)'],
+   ['homeNavDropdown','.home-menu-button:not(#evoluteSharedPageHeader .home-menu-button)']
+  ];
+  pairs.forEach(([id,selector])=>{
+   const d=document.getElementById(id);
+   if(d&&d!==except)d.hidden=true;
+   const b=document.querySelector(selector);
+   if(b&&(!d||d!==except))b.setAttribute('aria-expanded','false');
+  });
+ }
+ window.toggleSharedNotifications=function(event){
+  if(event)event.stopPropagation();
+  const d=document.getElementById('evoluteSharedNotifications');if(!d)return;
+  const opening=d.hidden;closeSharedHeaderDropdowns(opening?d:null);d.hidden=!opening;
+  const b=document.querySelector('#evoluteSharedPageHeader .home-notification');if(b)b.setAttribute('aria-expanded',String(opening));
+ };
  const oldToggle=window.toggleGlobalPageMenu;
- window.toggleGlobalPageMenu=function(event){if(event)event.stopPropagation();const d=document.getElementById('evoluteGlobalPageDropdownShared');if(!d){if(oldToggle)return oldToggle(event);return;}const opening=d.hidden;d.hidden=!opening;const b=document.querySelector('#evoluteSharedPageHeader .home-menu-button');if(b)b.setAttribute('aria-expanded',String(opening));};
+ window.toggleGlobalPageMenu=function(event){
+  if(event)event.stopPropagation();
+  const d=document.getElementById('evoluteGlobalPageDropdownShared');
+  if(!d){if(oldToggle)return oldToggle(event);return;}
+  const opening=d.hidden;closeSharedHeaderDropdowns(opening?d:null);d.hidden=!opening;
+  const b=document.querySelector('#evoluteSharedPageHeader .home-menu-button');if(b)b.setAttribute('aria-expanded',String(opening));
+ };
+ // Fecha qualquer painel aberto ao clicar fora dele; o menu e as notificações
+ // também são mutuamente exclusivos quando seus respectivos botões são acionados.
+ document.addEventListener('click',function(event){
+  const insideDropdown=event.target.closest('#evoluteSharedNotifications,#evoluteGlobalPageDropdownShared,#homeNotificationDropdown,#homeNavDropdown');
+  if(!insideDropdown)closeSharedHeaderDropdowns(null);
+ });
  const observer=new MutationObserver(updateSharedHeader);
  function init(){updateSharedHeader();const app=document.getElementById('app');if(app)observer.observe(app,{childList:true,subtree:false});const select=document.getElementById('profileSelect');if(select)select.addEventListener('change',()=>setTimeout(updateSharedHeader,0));}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
@@ -11898,54 +12090,199 @@ html body{background:#090a0b!important}
 @media(max-width:380px){#app .weekly-day-row{grid-template-columns:74px minmax(0,1fr)!important;gap:7px!important}#app .weekly-day-label{font-size:12px!important}#app .weekly-routine-name{font-size:15px!important}}
 </style>
 
-<style id="evolute-menu-label-contrast-fix-v2">
-/* Corrige o contraste dos textos do menu suspenso sem alterar dimensões ou espaçamento. */
-.home-nav-dropdown,
-.home-nav-dropdown button,
-.home-nav-dropdown button span,
-.home-nav-dropdown button strong,
-.home-nav-dropdown button em,
-.home-nav-dropdown button div,
-.home-nav-dropdown button p,
-.home-nav-dropdown button label {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-  opacity: 1 !important;
-  visibility: visible !important;
+<style id="evolute-home-recommended-card-light-v1">
+/* Estilo legado mantido apenas para a estrutura antiga .home-training-panel.
+   O card atual .home-reference-training é controlado pelo bloco consolidado
+   evolute-home-recommended-card-white-final-v2, evitando regras concorrentes. */
+.home-page .home-training-panel {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #25272a !important;
+  border-color: #e0e2e5 !important;
+  box-shadow: 0 5px 18px rgba(0,0,0,.08) !important;
+}
+.home-page .home-training-panel h3,
+.home-page .home-training-panel .home-next-name,
+.home-page .home-training-panel .home-next-description,
+.home-page .home-training-panel .home-stat-value,
+.home-page .home-training-panel .home-stat-label,
+.home-page .home-training-panel .home-motivation {
+  color: #25272a !important;
+  -webkit-text-fill-color: #25272a !important;
   text-shadow: none !important;
 }
-.home-nav-dropdown button .evo-ui-icon,
-.home-nav-dropdown button svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
-  opacity: 1 !important;
+.home-page .home-training-panel .home-recommended-label {
+  color: #FE6405 !important;
+  -webkit-text-fill-color: #FE6405 !important;
 }
-.home-nav-dropdown button:hover,
-.home-nav-dropdown button:active,
-.home-nav-dropdown button[aria-current="page"],
-.home-nav-dropdown button.active {
-  background: #292b2e !important;
-}
-.home-nav-dropdown button:hover,
-.home-nav-dropdown button:active,
-.home-nav-dropdown button[aria-current="page"],
-.home-nav-dropdown button.active,
-.home-nav-dropdown button:hover span,
-.home-nav-dropdown button:active span,
-.home-nav-dropdown button[aria-current="page"] span,
-.home-nav-dropdown button.active span {
-  color: #ff7928 !important;
-  -webkit-text-fill-color: #ff7928 !important;
-}
-.home-nav-dropdown button:hover .evo-ui-icon,
-.home-nav-dropdown button:active .evo-ui-icon,
-.home-nav-dropdown button[aria-current="page"] .evo-ui-icon,
-.home-nav-dropdown button.active .evo-ui-icon {
-  color: #ff7928 !important;
-  stroke: #ff7928 !important;
+.home-page .home-training-panel .home-stat {
+  border-color: #d9dde1 !important;
 }
 </style>
 
+
+<style id="evolute-notifications-dropdown-white-text-20261012">
+/* Menu de notificações: título e mensagem legíveis em branco sobre o fundo escuro. */
+html body .home-notification-dropdown .home-dropdown-title,
+html body .home-notification-dropdown .home-notification-empty,
+html body #evoluteSharedNotifications .home-dropdown-title,
+html body #evoluteSharedNotifications .home-notification-empty {
+  color: #ffffff !important;
+}
+</style>
+
+<style id="evolute-fix-card-expanded-mobile-20261012">
+/* No celular, a área superior do card mantém uma única linha legível; as abas ficam abaixo. */
+@media (max-width: 600px){
+ #app .training-exercise-card.training-card-collapsed,
+ #app .training-exercise-card.training-card-expanded{
+  padding:12px 14px 12px 66px!important; box-sizing:border-box!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-order-controls,
+ #app .training-exercise-card.training-card-expanded .training-order-controls{
+  left:10px!important; top:32px!important; transform:translateY(-50%)!important; gap:3px!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-position-number,
+ #app .training-exercise-card.training-card-expanded .training-position-number{
+  width:26px!important;height:30px!important;min-width:26px!important;border-radius:8px!important;font-size:15px!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-drag-handle,
+ #app .training-exercise-card.training-card-expanded .training-drag-handle{
+  width:18px!important;height:28px!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row{
+  display:flex!important;align-items:center!important;gap:8px!important;
+  width:100%!important;min-width:0!important;min-height:58px!important;
+  margin:0!important;padding:0 0 0 0!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row h3,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row h3{
+  flex:1 1 auto!important;min-width:0!important;width:auto!important;max-width:none!important;
+  margin:0!important;padding:0!important;white-space:normal!important;overflow-wrap:normal!important;
+  word-break:normal!important;line-height:1.18!important;font-size:16px!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+  display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:3!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-card,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-card,
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-placeholder,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-placeholder{
+  position:relative!important;inset:auto!important;flex:0 0 64px!important;width:64px!important;height:46px!important;
+  margin:0!important;display:block!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-complete,
+ #app .training-exercise-card.training-card-expanded .exercise-complete{
+  position:relative!important;inset:auto!important;flex:0 0 24px!important;width:24px!important;
+  margin:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-card-category-wrap,
+ #app .training-exercise-card.training-card-expanded .training-card-category-wrap{
+  display:flex!important;flex-wrap:wrap!important;gap:4px!important;margin-top:5px!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-card-compact-target,
+ #app .training-exercise-card.training-card-expanded .training-card-compact-target{
+  display:block!important;margin-top:4px!important;white-space:normal!important;
+ }
+ #app .training-exercise-card.training-card-expanded .training-card-expand{
+  top:12px!important;right:10px!important;bottom:auto!important;
+ }
+ #app .training-exercise-card.training-card-expanded .training-expanded-content{
+  clear:both!important;width:100%!important;margin-top:14px!important;padding-top:14px!important;
+ }
+}
+</style>
+
+
+<style id="evolute-fix-exercise-card-top-preserve-20261012-v2">
+/* Correção objetiva: a expansão acrescenta as abas abaixo, sem alterar a composição superior. */
+#app .training-exercise-card .training-card-category-wrap,
+#app .training-exercise-card .training-card-compact-target{display:flex!important;}
+#app .training-exercise-card .training-card-compact-target{display:block!important;}
+#app .training-exercise-card .exercise-main-row{box-sizing:border-box!important;min-width:0!important;}
+@media(max-width:600px){
+ #app .training-exercise-card.training-card-collapsed,
+ #app .training-exercise-card.training-card-expanded{
+  display:block!important;position:relative!important;box-sizing:border-box!important;
+  padding:12px 12px 14px 64px!important;overflow:visible!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-order-controls,
+ #app .training-exercise-card.training-card-expanded .training-order-controls{
+  position:absolute!important;left:8px!important;top:32px!important;right:auto!important;
+  display:flex!important;align-items:center!important;gap:3px!important;transform:translateY(-50%)!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row{
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;gap:7px!important;
+  width:100%!important;min-width:0!important;min-height:58px!important;padding:0!important;margin:0!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row h3,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row h3{
+  display:block!important;flex:1 1 0%!important;width:0!important;min-width:0!important;max-width:none!important;
+  margin:0!important;padding:0!important;white-space:normal!important;word-break:normal!important;
+  overflow-wrap:break-word!important;overflow:hidden!important;text-overflow:ellipsis!important;
+  font-size:clamp(15px,4vw,18px)!important;line-height:1.2!important;font-weight:850!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-card,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-card,
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-placeholder,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-placeholder{
+  position:relative!important;inset:auto!important;display:block!important;flex:0 0 64px!important;
+  width:64px!important;min-width:64px!important;height:46px!important;margin:0!important;align-self:center!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-complete,
+ #app .training-exercise-card.training-card-expanded .exercise-complete{
+  position:relative!important;inset:auto!important;display:flex!important;flex:0 0 24px!important;
+  width:24px!important;min-width:24px!important;margin:0!important;padding:0!important;align-items:center!important;justify-content:center!important;
+ }
+ #app .training-exercise-card .training-card-category-wrap{
+  display:flex!important;position:static!important;flex-flow:row wrap!important;align-items:baseline!important;
+  gap:4px!important;min-width:0!important;margin:5px 0 0!important;
+ }
+ #app .training-exercise-card .training-card-compact-target{
+  display:block!important;position:static!important;min-width:0!important;margin:4px 0 0!important;
+  white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+ }
+ #app .training-exercise-card.training-card-expanded .training-card-expand{top:8px!important;right:8px!important;bottom:auto!important;}
+ #app .training-exercise-card .training-expanded-content{
+  display:none;
+ }
+ #app .training-exercise-card.training-card-expanded .training-expanded-content{
+  display:block!important;clear:both!important;box-sizing:border-box!important;width:100%!important;
+  min-width:0!important;margin:14px 0 0!important;padding:14px 0 0!important;
+  border-top:1px solid rgba(255,255,255,.14)!important;
+ }
+}
+</style>
+
+
+<style id="evolute-drag-preview-collapsed-white-20261013">
+/* Durante o arraste, o card flutuante usa o visual reduzido e o fundo branco normal. */
+#app .training-exercise-card.training-dragging-preview,
+body > .training-exercise-card.training-dragging-preview,
+.training-exercise-card.training-dragging-preview{
+  background:#fff!important;background-color:#fff!important;background-image:none!important;
+  color:#25272a!important;border:1px solid #dedede!important;border-radius:16px!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.16)!important;opacity:1!important;
+}
+.training-exercise-card.training-dragging-preview .training-expanded-content,
+.training-exercise-card.training-dragging-preview .exercise-detail-tabs,
+.training-exercise-card.training-dragging-preview .exercise-tab-panel{
+  display:none!important;
+}
+.training-exercise-card.training-dragging-preview .exercise-main-row h3,
+.training-exercise-card.training-dragging-preview .training-card-category-wrap,
+.training-exercise-card.training-dragging-preview .training-card-compact-target,
+.training-exercise-card.training-dragging-preview .training-position-number{
+  color:#25272a!important;-webkit-text-fill-color:#25272a!important;
+}
+.training-exercise-card.training-dragging-preview .training-card-category-wrap strong,
+.training-exercise-card.training-dragging-preview .training-card-compact-target strong,
+.training-exercise-card.training-dragging-preview .training-position-number{
+  color:#e96508!important;-webkit-text-fill-color:#e96508!important;
+}
+.training-exercise-card.training-dragging-preview .training-order-controls{z-index:5!important;}
+</style>
 </body>
 
 <style id="evolute-strong-orange-final">
@@ -15529,7 +15866,7 @@ span.home-community-cta svg {
 .training-rest-timer .timer-start:active{transform:scale(.92);}
 .training-rest-timer-track{height:5px;flex:1 1 auto;min-width:30px;overflow:hidden;border-radius:99px;background:#36383b;}
 .training-rest-timer-progress{display:block;height:100%;width:100%;border-radius:inherit;background:#FE6405;transition:width .25s linear,background .2s ease;}
-.training-rest-timer-display{flex:0 0 43px;min-width:43px;color:#f3f3f3;font-size:12px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;}
+.training-rest-timer-display{flex:0 0 43px;min-width:43px;color:#333333;font-size:12px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;}
 .training-rest-timer.timer-finished .training-rest-timer-progress{background:#e65d65;}
 .training-rest-timer.timer-finished .training-rest-timer-display{color:#e65d65;}
 @media(max-width:480px){.training-exercise-card.training-card-collapsed .training-rest-timer{max-width:calc(100% - 8px);}}
@@ -15538,7 +15875,7 @@ span.home-community-cta svg {
 
 <style id="evolute-timer-fill-and-last-five">
 /* Progresso cresce durante o descanso; nos últimos cinco segundos, destaque central. */
-.training-rest-timer-track{background:#36383b!important;}
+.training-rest-timer-track{background:#dedede!important;}
 .training-rest-timer-progress{width:0%;transition:width .25s linear!important;}
 .training-exercise-card.timer-last-five{opacity:1!important;}
 .training-exercise-card .training-last-five-overlay{
@@ -16112,136 +16449,417 @@ body.profile-page-mode .profile-switch-row,
 }
 </style>
 
-<style id="evolute-training-card-white-theme-v1">
-/* Treino recomendado: altera somente o tema visual, preservando dimensões e posicionamento. */
-body:has(.home-reference-dashboard) .home-reference-training{
-  background:#ffffff!important;
-  color:#25282c!important;
+<style id="evolute-routine-detail-light-theme-fix-v1">
+/* Detalhe/edição da ficha: restaura o padrão claro do Evolute Training. */
+#app .routine-detail-page .training-exercise-card,
+#app .routine-detail-page .training-exercise-card.training-card-expanded,
+#app .routine-detail-page .training-exercise-card.training-card-collapsed {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #25272a !important;
+  border: 1px solid #dedede !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 9px rgba(0,0,0,.055) !important;
+  margin: 0 0 14px !important;
 }
-body:has(.home-reference-dashboard) .home-training-overlay{
-  background:linear-gradient(90deg,#ffffff 0%,#ffffff 34%,rgba(255,255,255,.96) 46%,rgba(255,255,255,.48) 64%,rgba(255,255,255,0) 100%)!important;
+#app .routine-detail-page .training-exercise-card .exercise-main-row h3,
+#app .routine-detail-page .training-exercise-card .exercise-main-row h3 *,
+#app .routine-detail-page .training-exercise-card .exercise-name-line,
+#app .routine-detail-page .training-exercise-card label,
+#app .routine-detail-page .training-exercise-card .last,
+#app .routine-detail-page .training-exercise-card .target,
+#app .routine-detail-page .training-exercise-card .training-rest-timer-label {
+  color: #25272a !important;
+  -webkit-text-fill-color: #25272a !important;
+  text-shadow: none !important;
 }
-body:has(.home-reference-dashboard) .home-reference-training-content h3{
-  color:#25282c!important;
+#app .routine-detail-page .training-exercise-card .training-card-category,
+#app .routine-detail-page .training-exercise-card .training-card-category-value,
+#app .routine-detail-page .training-exercise-card .exercise-category-value {
+  color: #f36b16 !important;
+  -webkit-text-fill-color: #f36b16 !important;
 }
-body:has(.home-reference-dashboard) .home-reference-training-content>p{
-  color:#666a70!important;
+#app .routine-detail-page .training-exercise-card .target {
+  background: #fff7f0 !important;
+  border-left: 3px solid #f36b16 !important;
 }
-body:has(.home-reference-dashboard) .home-reference-stats b{
-  color:#25282c!important;
-}
-body:has(.home-reference-dashboard) .home-reference-stats small{
-  color:#777b80!important;
-}
-body:has(.home-reference-dashboard) .home-reference-stats span{
-  border-right-color:rgba(37,40,44,.16)!important;
-}
-</style>
-
-<style id="evolute-all-page-headers-white-black-actions-v1">
-/* Cabeçalhos de todas as páginas no padrão branco; preserva dimensões e posicionamento. */
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header),
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) > .evolute-shared-page-header{
-  background:#ffffff!important;
-  background-color:#ffffff!important;
-  background-image:none!important;
-  color:#25282c!important;
-  box-shadow:none!important;
-}
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2,
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2 strong,
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2:not(span){
-  color:#25282c!important;
-}
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy p,
-html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-profile-label{
-  color:#666a70!important;
-}
-/* Ícones de menu e notificações pretos em todas as páginas, inclusive Home. */
-html body .home-notification,
-html body .home-menu-button,
-html body .evolute-shared-page-header .home-notification,
-html body .evolute-shared-page-header .home-menu-button{
-  color:#000000!important;
-}
-html body .home-notification .evo-ui-icon,
-html body .home-menu-button .evo-ui-icon,
-html body .evolute-shared-page-header .home-notification .evo-ui-icon,
-html body .evolute-shared-page-header .home-menu-button .evo-ui-icon{
-  color:#000000!important;
-  stroke:#000000!important;
-}
-</style>
-
-<style id="evolute-remove-week-progress-card-frame-v1">
-/* Remove apenas a moldura externa do card de progresso semanal. */
-body:has(.home-reference-dashboard) .home-week-progress {
-  border: none !important;
-  outline: none !important;
+#app .routine-detail-page .training-exercise-card .training-rest-timer {
+  background: #fff8f2 !important;
+  border: 1px solid #edc9a6 !important;
+  border-radius: 12px !important;
   box-shadow: none !important;
 }
-</style>
-
-<style id="evolute-restore-menu-list-visibility-v1">
-/* Restaura a lista de navegação do botão de menu sem alterar o cabeçalho. */
-#evoluteSharedPageHeader .home-action-wrap.home-menu-wrap {
-  position: relative !important;
-  overflow: visible !important;
+#app .routine-detail-page .training-exercise-card .training-rest-timer-display {
+  color: #e96d1b !important;
+  text-shadow: none !important;
 }
-#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown {
-  display: block;
-  position: absolute !important;
-  top: calc(100% + 8px) !important;
-  right: 0 !important;
-  left: auto !important;
-  z-index: 99999 !important;
-  min-width: 210px !important;
-  width: max-content !important;
-  max-width: calc(100vw - 28px) !important;
-  padding: 8px !important;
-  background: #24272b !important;
-  border: 1px solid #3b3f44 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 12px 30px rgba(0,0,0,.28) !important;
-  overflow: visible !important;
-}
-#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown[hidden] {
-  display: none !important;
-}
-#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown button {
-  display: flex !important;
-  width: 100% !important;
-  min-height: 44px !important;
-  padding: 11px 13px !important;
-  background: transparent !important;
-  color: #ffffff !important;
-  text-align: left !important;
-  border: 0 !important;
-  border-radius: 8px !important;
-  font-size: 15px !important;
-  font-weight: 750 !important;
-  cursor: pointer !important;
-}
-#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown button:hover,
-#evoluteSharedPageHeader #evoluteGlobalPageDropdownShared.home-nav-dropdown button:active {
-  background: #fff0e5 !important;
-  color: #e85f00 !important;
-}
-</style>
-
-<style id="evolute-create-routine-button-contour-match">
-/* Botão Criar nova ficha: contorno no mesmo padrão do botão Importar ficha,
-   preservando o preenchimento laranja, texto e dimensões atuais. */
-#app button.primary[onclick="openRoutineForm()"] {
-  border: 2px solid #efc9a5 !important;
-  outline: none !important;
+#app .routine-detail-page button:not(.danger):not(.delete):not([onclick*="delete"]),
+#app .routine-detail-page .routine-details-header button:not(.danger):not(.delete) {
+  background: #f9eadb !important;
+  background-image: none !important;
+  color: #e96d1b !important;
+  -webkit-text-fill-color: #e96d1b !important;
+  border: 2px solid #edc9a6 !important;
   border-radius: 999px !important;
-  box-shadow: 0 5px 0 rgba(190, 75, 10, .16), inset 0 1px 0 rgba(255,255,255,.8) !important;
-  box-sizing: border-box !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85) !important;
 }
-#app button.primary[onclick="openRoutineForm()"]:focus,
-#app button.primary[onclick="openRoutineForm()"]:focus-visible {
-  outline: 2px solid rgba(254, 100, 5, .28) !important;
-  outline-offset: 2px !important;
+#app .routine-detail-page button[onclick*="delete"],
+#app .routine-detail-page button.danger,
+#app .routine-detail-page button.delete {
+  background: #fff1f0 !important;
+  background-image: none !important;
+  color: #b83232 !important;
+  -webkit-text-fill-color: #b83232 !important;
+  border: 2px solid #e8b8b8 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+#app .routine-detail-page .training-exercise-card .training-card-expand,
+#app .routine-detail-page .training-exercise-card .training-rest-timer-actions button.timer-start {
+  background: #ff6908 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+}
+</style>
+
+<style id="evolute-home-approved-final-styles-20261012">
+/* Consolidação segura dos cinco blocos finais da página Início.
+   Regras e ordem originais preservadas; sem alteração de comportamento. */
+/* Início — Treino recomendado no mesmo padrão claro do card Comunidades.
+   Preserva imagem, dimensões, conteúdo dinâmico e CTA laranja. */
+.home-page .home-reference-training,
+.home-reference-dashboard .home-reference-training{
+  background:#fff !important;
+  color:#25272a !important;
+  border-top:1px solid rgba(203,213,225,.28) !important;
+  border-bottom:1px solid rgba(203,213,225,.28) !important;
+  box-shadow:none !important;
+}
+.home-page .home-reference-training .home-training-photo,
+.home-reference-dashboard .home-reference-training .home-training-photo{
+  left:auto !important;
+  right:0 !important;
+  width:46% !important;
+  height:100% !important;
+  z-index:0 !important;
+}
+.home-page .home-reference-training .home-training-photo img,
+.home-reference-dashboard .home-reference-training .home-training-photo img{
+  filter:saturate(.82) contrast(.98) brightness(1) !important;
+}
+.home-page .home-reference-training .home-training-overlay,
+.home-reference-dashboard .home-reference-training .home-training-overlay{
+  z-index:1 !important;
+  background:linear-gradient(90deg,#fff 0%,#fff 38%,rgba(255,255,255,.94) 49%,rgba(255,255,255,.60) 61%,rgba(255,255,255,0) 78%) !important;
+}
+.home-page .home-reference-training .home-reference-training-content,
+.home-reference-dashboard .home-reference-training .home-reference-training-content{
+  z-index:2 !important;
+  color:#25272a !important;
+}
+.home-page .home-reference-training .home-reference-training-content h3,
+.home-reference-dashboard .home-reference-training .home-reference-training-content h3{
+  color:#25272a !important;
+  -webkit-text-fill-color:#25272a !important;
+  text-shadow:none !important;
+}
+.home-page .home-reference-training .home-reference-training-content>p,
+.home-reference-dashboard .home-reference-training .home-reference-training-content>p{
+  color:#60666d !important;
+  -webkit-text-fill-color:#60666d !important;
+}
+.home-page .home-reference-training .home-reference-stats b,
+.home-reference-dashboard .home-reference-training .home-reference-stats b{
+  color:#25272a !important;
+  -webkit-text-fill-color:#25272a !important;
+}
+.home-page .home-reference-training .home-reference-stats small,
+.home-reference-dashboard .home-reference-training .home-reference-stats small{
+  color:#686e75 !important;
+  -webkit-text-fill-color:#686e75 !important;
+}
+.home-page .home-reference-training .home-reference-stats span,
+.home-reference-dashboard .home-reference-training .home-reference-stats span{
+  border-color:rgba(37,39,42,.18) !important;
+}
+.home-page .home-reference-training .home-reference-kicker,
+.home-reference-dashboard .home-reference-training .home-reference-kicker{
+  color:#FE6405 !important;
+  -webkit-text-fill-color:#FE6405 !important;
+}
+@media(max-width:600px){
+  .home-page .home-reference-training .home-training-photo,
+  .home-reference-dashboard .home-reference-training .home-training-photo{width:46% !important}
+  .home-page .home-reference-training .home-training-overlay,
+  .home-reference-dashboard .home-reference-training .home-training-overlay{
+    background:linear-gradient(90deg,#fff 0%,#fff 38%,rgba(255,255,255,.94) 50%,rgba(255,255,255,.60) 63%,rgba(255,255,255,0) 80%) !important;
+  }
+}
+
+/* Início: ampliar a área da foto para a esquerda, mantendo a borda direita fixa.
+   A intenção é colocar o botão laranja que vem na imagem por trás do CTA real. */
+.home-page .home-reference-training .home-training-photo,
+.home-reference-dashboard .home-reference-training .home-training-photo{
+  left:auto !important;
+  right:0 !important;
+  width:58% !important;
+  overflow:hidden !important;
+}
+.home-page .home-reference-training .home-training-photo img,
+.home-reference-dashboard .home-reference-training .home-training-photo img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+}
+@media(max-width:600px){
+  .home-page .home-reference-training .home-training-photo,
+  .home-reference-dashboard .home-reference-training .home-training-photo{
+    width:58% !important;
+  }
+}
+
+/* Início: ampliar um pouco o botão verdadeiro para a direita, cobrindo o CTA embutido na foto. */
+@media (max-width: 600px) {
+  body:has(.home-reference-dashboard) .home-reference-training-content .home-reference-cta {
+    width: calc(100vw - 36px) !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Correção específica: os nomes do menu da Home devem ser brancos sobre o fundo escuro. */
+body:has(.home-reference-dashboard) #evoluteGlobalPageDropdownShared button,
+body:has(.home-reference-dashboard) #evoluteGlobalPageDropdownShared button span,
+body:has(.home-reference-dashboard) #homeNavDropdown button,
+body:has(.home-reference-dashboard) #homeNavDropdown button span,
+#evoluteGlobalPageDropdownShared button,
+#evoluteGlobalPageDropdownShared button span,
+.home-nav-dropdown button,
+.home-nav-dropdown button span {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+#evoluteGlobalPageDropdownShared button:hover,
+#evoluteGlobalPageDropdownShared button:hover span,
+#homeNavDropdown button:hover,
+#homeNavDropdown button:hover span,
+.home-nav-dropdown button:hover,
+.home-nav-dropdown button:hover span {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Correção final do painel de notificações da Home e do cabeçalho compartilhado. */
+html body .home-notification-dropdown .home-dropdown-title,
+html body .home-notification-dropdown .home-notification-empty,
+html body #homeNotificationDropdown .home-dropdown-title,
+html body #homeNotificationDropdown .home-notification-empty,
+html body #evoluteSharedNotifications .home-dropdown-title,
+html body #evoluteSharedNotifications .home-notification-empty,
+html body .evolute-shared-page-header .home-notification-dropdown .home-dropdown-title,
+html body .evolute-shared-page-header .home-notification-dropdown .home-notification-empty {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+</style>
+
+<style id="evolute-treinos-header-white-final-20261012">
+/* Cabeçalho das páginas internas no padrão branco; a Home permanece inalterada. */
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header),
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) > .evolute-shared-page-header {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #171717 !important;
+  border-color: #e2e2e2 !important;
+  box-shadow: none !important;
+}
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy h2,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-copy p,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-profile .profile-label,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-hero-profile .home-profile-label {
+  color: #171717 !important;
+  -webkit-text-fill-color: #171717 !important;
+}
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-notification,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-menu-button {
+  color: #171717 !important;
+}
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-notification .evo-ui-icon,
+html body:not(:has(.home-reference-dashboard)) header:has(>.evolute-shared-page-header) .home-menu-button .evo-ui-icon {
+  color: #171717 !important;
+  stroke: #171717 !important;
+}
+</style>
+
+
+<style id="evolute-expanded-tabs-layout-fix-v1">
+/* As abas e seu conteúdo existem somente na área inferior quando o exercício está expandido. */
+#app .training-exercise-card .training-expanded-content{display:block;width:100%;min-width:0;}
+#app .training-exercise-card.training-card-collapsed .training-expanded-content{display:none!important;}
+#app .training-exercise-card.training-card-expanded .training-expanded-content{display:block!important;clear:both;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.13);}
+/* Mantém a área superior original intacta, incluindo posição, numeração e alça de arraste. */
+/* A parte superior expandida replica o card reduzido; somente as abas são acrescentadas abaixo. */
+#app .training-exercise-card.training-card-expanded{
+ min-height:104px!important;padding:12px 102px 12px 94px!important;box-sizing:border-box!important;display:block!important;overflow:visible!important;
+}
+#app .training-exercise-card.training-card-expanded .training-order-controls{
+ /* Igual ao card reduzido: numeração e alça ficam na área superior. */
+ left:13px!important;top:52px!important;transform:translateY(-50%)!important;gap:5px!important;
+}
+#app .training-exercise-card.training-card-expanded .training-position-number{width:34px!important;height:34px!important;min-width:34px!important;border-radius:10px!important;font-size:18px!important;}
+#app .training-exercise-card.training-card-expanded .training-drag-handle{width:24px!important;height:30px!important;opacity:.62!important;}
+#app .training-exercise-card.training-card-expanded .exercise-main-row{
+ /* Não remodelar o cabeçalho do exercício ao abrir as abas. */
+ padding:0 170px 0 0!important;margin:0!important;width:100%!important;min-width:0!important;display:flex!important;align-items:center!important;gap:9px!important;min-height:50px!important;
+}
+#app .training-exercise-card.training-card-expanded .exercise-main-row h3{margin:0!important;padding:0!important;font-size:17px!important;line-height:1.2!important;font-weight:800!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;flex:1 1 auto!important;min-width:0!important;max-width:calc(100% - 150px)!important;}
+#app .training-exercise-card.training-card-expanded .exercise-complete{position:absolute!important;right:18px!important;top:14px!important;z-index:8!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important;padding:0!important;}
+#app .training-exercise-card.training-card-expanded .exercise-animation-card{display:block!important;position:absolute!important;right:78px!important;top:12px!important;bottom:auto!important;z-index:7!important;width:64px!important;height:46px!important;margin:0!important;border-radius:8px!important;overflow:hidden!important;padding:0!important;}
+#app .training-exercise-card.training-card-expanded .exercise-animation{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;margin:0!important;border-radius:0!important;}
+#app .training-exercise-card.training-card-expanded .exercise-animation-placeholder{display:block!important;position:absolute!important;right:78px!important;top:12px!important;bottom:auto!important;z-index:7!important;width:64px!important;height:46px!important;}
+#app .training-exercise-card.training-card-expanded .training-card-category-wrap{display:flex!important;}
+#app .training-exercise-card.training-card-expanded .training-card-compact-target{display:block!important;}
+#app .training-exercise-card.training-card-expanded .training-card-expand{top:70px!important;bottom:auto!important;right:10px!important;}
+#app .training-exercise-card.training-card-expanded .training-expanded-content{display:block!important;clear:both;position:relative;width:100%;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.13);}
+
+</style>
+
+<style id="evolute-exercise-load-evolution-tabs-v1">
+/* Abas de séries e evolução de carga dentro de cada exercício. */
+#app .training-exercise-card .exercise-detail-tabs{display:flex;gap:5px;margin:14px 0 15px;padding:4px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(0,0,0,.18)}
+#app .training-exercise-card .exercise-detail-tab{flex:1;min-width:0;border:0;border-radius:9px;padding:10px 8px;background:transparent;color:#b5bbc2;font-size:12px;font-weight:850;line-height:1.25;cursor:pointer;transition:background .18s ease,color .18s ease,transform .18s ease}
+#app .training-exercise-card .exercise-detail-tab.active{background:rgba(255,105,8,.15);color:#ff6908;box-shadow:inset 0 0 0 1px rgba(255,105,8,.30)}
+#app .training-exercise-card .exercise-detail-tab:active{transform:scale(.985)}
+#app .training-exercise-card .exercise-tab-panel[hidden]{display:none!important}
+#app .training-exercise-card .exercise-progress-summary{display:flex;flex-direction:column;gap:4px;padding:12px 13px;margin-bottom:8px;border:1px solid rgba(255,105,8,.25);border-radius:12px;background:linear-gradient(120deg,rgba(255,105,8,.10),rgba(255,255,255,.025))}
+#app .training-exercise-card .exercise-progress-summary span{color:#b5bbc2;font-size:11px;font-weight:750}
+#app .training-exercise-card .exercise-progress-summary strong{color:#ff6908;font-size:25px;line-height:1.15}
+#app .training-exercise-card .exercise-progress-summary small{color:#c5cbd1;font-size:11px}
+#app .training-exercise-card .exercise-progress-svg{display:block;width:100%;height:auto;max-height:230px;overflow:visible;margin-top:8px}
+#app .training-exercise-card .exercise-progress-empty{padding:18px 14px;border:1px dashed rgba(255,255,255,.16);border-radius:12px;text-align:center;color:#c5cbd1;font-size:13px;line-height:1.5}
+#app .training-exercise-card .exercise-progress-empty strong{display:block;color:#ff6908;margin-bottom:5px}
+#app .training-exercise-card .exercise-progress-empty p{margin:0}
+#app .training-exercise-card .exercise-progress-note{margin:8px 0 2px;color:#8f989f;font-size:10px;line-height:1.4}
+@media(max-width:380px){#app .training-exercise-card .exercise-detail-tab{font-size:11px;padding:9px 5px}}
+</style>
+
+<style id="evolute-card-layout-fix-20261012-v3">
+/* Corrige o espaço útil da linha superior em celulares: título não fica comprimido em coluna. */
+@media (max-width:600px){
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row{
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+  gap:8px!important;padding:0!important;margin:0!important;box-sizing:border-box!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row h3,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row h3{
+  flex:1 1 0!important;width:auto!important;min-width:0!important;max-width:none!important;
+  display:block!important;white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;-webkit-line-clamp:unset!important;
+  font-size:clamp(15px,4.2vw,18px)!important;line-height:1.2!important;margin:0!important;padding:0!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-card,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-card,
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-placeholder,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-placeholder{
+  flex:0 0 64px!important;width:64px!important;min-width:64px!important;max-width:64px!important;height:46px!important;
+  position:relative!important;inset:auto!important;margin:0!important;align-self:center!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-complete,
+ #app .training-exercise-card.training-card-expanded .exercise-complete{
+  flex:0 0 24px!important;width:24px!important;min-width:24px!important;max-width:24px!important;
+  position:relative!important;inset:auto!important;margin:0!important;padding:0!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-card-category-wrap,
+ #app .training-exercise-card.training-card-expanded .training-card-category-wrap,
+ #app .training-exercise-card.training-card-collapsed .training-card-compact-target,
+ #app .training-exercise-card.training-card-expanded .training-card-compact-target{
+  position:static!important;clear:both!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+ }
+ #app .training-exercise-card.training-card-expanded .training-expanded-content{display:block!important;width:100%!important;clear:both!important;}
+}
+</style>
+
+<style id="evolute-fix-card-width-preserve-20261012">
+/* Corrige a largura: expansão não pode estreitar o card nem reservar colunas vazias. */
+@media(max-width:600px){
+ #app .training-exercise-card.training-card-collapsed,
+ #app .training-exercise-card.training-card-expanded{
+  display:block!important;position:relative!important;box-sizing:border-box!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  margin-left:0!important;margin-right:0!important;
+  padding:12px 12px 14px 64px!important;overflow:visible!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-order-controls,
+ #app .training-exercise-card.training-card-expanded .training-order-controls{
+  position:absolute!important;left:8px!important;top:32px!important;right:auto!important;
+  display:flex!important;align-items:center!important;gap:3px!important;transform:translateY(-50%)!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row{
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;gap:8px!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  min-height:58px!important;padding:0!important;margin:0!important;box-sizing:border-box!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-main-row h3,
+ #app .training-exercise-card.training-card-expanded .exercise-main-row h3{
+  display:block!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;max-width:none!important;
+  margin:0!important;padding:0!important;white-space:normal!important;word-break:normal!important;
+  overflow-wrap:break-word!important;overflow:visible!important;text-overflow:clip!important;
+  font-size:clamp(16px,4.4vw,19px)!important;line-height:1.2!important;font-weight:850!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-card,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-card,
+ #app .training-exercise-card.training-card-collapsed .exercise-animation-placeholder,
+ #app .training-exercise-card.training-card-expanded .exercise-animation-placeholder{
+  position:relative!important;inset:auto!important;display:block!important;flex:0 0 82px!important;
+  width:82px!important;min-width:82px!important;max-width:82px!important;height:58px!important;
+  margin:0!important;align-self:center!important;box-sizing:border-box!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-animation,
+ #app .training-exercise-card.training-card-expanded .exercise-animation{
+  display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .exercise-complete,
+ #app .training-exercise-card.training-card-expanded .exercise-complete{
+  position:relative!important;inset:auto!important;display:flex!important;flex:0 0 24px!important;
+  width:24px!important;min-width:24px!important;max-width:24px!important;margin:0!important;padding:0!important;
+  align-items:center!important;justify-content:center!important;
+ }
+ #app .training-exercise-card.training-card-collapsed .training-card-category-wrap,
+ #app .training-exercise-card.training-card-expanded .training-card-category-wrap,
+ #app .training-exercise-card.training-card-collapsed .training-card-compact-target,
+ #app .training-exercise-card.training-card-expanded .training-card-compact-target{
+  position:static!important;clear:both!important;display:block!important;width:100%!important;max-width:100%!important;
+  box-sizing:border-box!important;margin-top:5px!important;white-space:normal!important;
+ }
+ #app .training-exercise-card.training-card-expanded .training-card-expand{right:10px!important;top:auto!important;bottom:8px!important;}
+ #app .training-exercise-card.training-card-collapsed .training-expanded-content{display:none!important;}
+ #app .training-exercise-card.training-card-expanded .training-expanded-content{
+  display:block!important;position:relative!important;clear:both!important;width:100%!important;max-width:100%!important;
+  min-width:0!important;box-sizing:border-box!important;margin:16px 0 0!important;padding:14px 0 0!important;
+  border-top:1px solid #dedede!important;
+ }
+}
+</style>
+
+<style id="evolute-unselected-exercise-tab-white-20261013">
+/* A aba inativa deve ter texto branco; a aba selecionada mantém o destaque laranja. */
+#app .training-exercise-card .exercise-detail-tab:not(.active),
+#app .training-exercise-card .exercise-detail-tab[aria-selected="false"]{
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
 }
 </style>
