@@ -4566,21 +4566,21 @@ function updateEditedExerciseCategory(id,index,name){
    LEITURA DO BANCO
    ========================================================= */
 
-function readDB(){
+function readDB(sourceData){
 
  let data=null;
 
- try{
-
-  const raw=storageGet(DBKEY);
-
-  if(raw)
-   data=JSON.parse(raw);
-
- }catch(e){
-
-  data=null;
-
+ // Permite aplicar as mesmas migrações tanto ao armazenamento local quanto
+ // aos dados recebidos da nuvem, sem misturar o conteúdo de contas diferentes.
+ if(sourceData&&typeof sourceData==="object"){
+  try{data=clone(sourceData);}catch(e){data=null;}
+ }else{
+  try{
+   const raw=storageGet(DBKEY);
+   if(raw)data=JSON.parse(raw);
+  }catch(e){
+   data=null;
+  }
  }
 
  if(!data||typeof data!=="object")
@@ -4674,7 +4674,13 @@ function readDB(){
 
  Object.entries(STANDARD_LIBRARY_EXERCISES).forEach(([name,category])=>{
   const key=name.toLowerCase();
-  if(libraryNames.has(key))return;
+  const existing=data.exerciseLibrary.find(x=>String(x.name||"").trim().toLowerCase()===key);
+  if(existing){
+   // Corrige registros antigos que chegaram à nuvem sem categoria, mantendo
+   // nome, mídia e demais dados personalizados já cadastrados.
+   if(!String(existing.category||"").trim())existing.category=category;
+   return;
+  }
 
   data.exerciseLibrary.push({
    id:uid(),
@@ -8831,10 +8837,14 @@ function updateExerciseOptions(id){
 
  if(!c||!s)return;
 
+ const normalizeCategory=value=>String(value||"")
+  .trim()
+  .toLocaleLowerCase("pt-BR")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g,"");
+ const selectedCategory=normalizeCategory(c.value);
  const list=(db.exerciseLibrary||[])
-  .filter(
-   x=>x.category===c.value
-  );
+  .filter(x=>normalizeCategory(x.category)===selectedCategory);
 
  s.innerHTML=
 
@@ -12781,10 +12791,12 @@ body > .training-exercise-card.training-dragging-preview,
    try{
      // Não importa nem oferece dados locais: isso evita misturar contas no mesmo aparelho.
      if(record&&record.payload&&typeof record.payload==='object'){
-       db=record.payload;
+       // Aplica migrações ao banco da conta antes de renderizar a interface.
+       // Isso restaura a biblioteca padrão e as categorias em fichas antigas.
+       db=readDB(record.payload);
      }else{
        if(typeof createInitialDB!=='function')throw new Error('Não encontrei a função de inicialização do aplicativo.');
-       db=createInitialDB();
+       db=readDB(createInitialDB());
        const {error}=await client.from(TABLE).upsert({user_id:user.id,payload:db,updated_at:new Date().toISOString()},{onConflict:'user_id'});
        if(error)throw error;
      }
@@ -12794,6 +12806,9 @@ body > .training-exercise-card.training-dragging-preview,
      cloudReady=true;
      hideGate();status('Evolute • sincronizado');
      await rememberSyncInitialized();
+     // Persiste na nuvem as correções de compatibilidade aplicadas durante a carga.
+     // Se a conta já existia, isso evita repetir a migração a cada abertura.
+     await pushCloud();
      if(typeof showHome==='function')showHome();
    }catch(e){
      cloudUser=null;cloudReady=false;window.evoluteCloudSessionActive=false;
