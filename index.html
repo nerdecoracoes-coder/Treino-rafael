@@ -4035,7 +4035,9 @@ button .evo-ui-icon{vertical-align:-5px}
 <script>
 "use strict";
 
-/* ESTÁVEL 1.0 — AUDITORIA FINAL DE ESTRUTURA.\n   Não alterar dados, chaves de armazenamento ou mapa de GIFs sem atualizar a versão. */
+/* ESTÁVEL 1.1 — PROTEÇÃO DE DADOS.
+   Regra permanente: não apagar/substituir dados existentes sem backup JSON verificado.
+   Não alterar chaves de armazenamento nem estrutura dos dados sem migração compatível e validação. */
 
 /* EVOLUTE TRAINING — CÓDIGO ESTÁVEL 1.0
    Fonte única de verdade: este arquivo.
@@ -4054,7 +4056,7 @@ button .evo-ui-icon{vertical-align:-5px}
 const APP_CONFIG={
   app:{
     name:"Evolute Training",
-    version:"stable-1.0"
+    version:"stable-1.1"
   },
   storage:{
     dbKey:"treinoRafaelDB_v7",
@@ -4872,11 +4874,15 @@ function readDB(sourceData){
 
  if(data.routineSetVersion!==ROUTINE_SET_VERSION){
 
+  // Atualizações de versão nunca substituem fichas já configuradas.
+  // Só cria as fichas padrão quando o perfil ainda não possui fichas.
   const r=data.profiles.find(p=>p.id==="rafael");
   const n=data.profiles.find(p=>p.id==="natielle");
 
-  if(r) r.routines=getRafaelRoutines();
-  if(n) n.routines=getNatielleRoutines();
+  if(r&&(!Array.isArray(r.routines)||r.routines.length===0))
+   r.routines=getRafaelRoutines();
+  if(n&&(!Array.isArray(n.routines)||n.routines.length===0))
+   n.routines=getNatielleRoutines();
 
   data.routineSetVersion=ROUTINE_SET_VERSION;
 
@@ -4899,7 +4905,9 @@ function readDB(sourceData){
 
  if(erickProfile&&rafaelProfile){
 
-  erickProfile.routines=clone(rafaelProfile.routines);
+  // Não sobrescreve fichas do perfil familiar que já tenham sido personalizadas.
+  if(!Array.isArray(erickProfile.routines)||erickProfile.routines.length===0)
+   erickProfile.routines=clone(rafaelProfile.routines);
 
   if(erickProfile.gender!=="feminino"&&erickProfile.gender!=="masculino")
    erickProfile.gender="masculino";
@@ -4913,7 +4921,9 @@ function readDB(sourceData){
 
  if(rafaelle&&natielleProfile){
 
-  rafaelle.routines=clone(natielleProfile.routines);
+  // Não sobrescreve fichas do perfil familiar que já tenham sido personalizadas.
+  if(!Array.isArray(rafaelle.routines)||rafaelle.routines.length===0)
+   rafaelle.routines=clone(natielleProfile.routines);
 
  }
 
@@ -4947,7 +4957,9 @@ function readDB(sourceData){
 
  try{
 
-  const oldRaw=storageGet(OLDKEY);
+  // O histórico legado local só pode migrar para o banco local.
+  // Nunca misture dados de outra origem/aparelho dentro de uma conta da nuvem.
+  const oldRaw=!(sourceData&&typeof sourceData==="object")?storageGet(OLDKEY):null;
 
   const old=oldRaw
    ?JSON.parse(oldRaw)
@@ -4988,10 +5000,14 @@ function readDB(sourceData){
 
  }
 
- storageSet(
-  DBKEY,
-  JSON.stringify(data)
- );
+ // Dados recebidos da nuvem são migrados em memória e salvos de volta na nuvem
+ // pelo fluxo autenticado. Não os escreva no cache local de outra origem/conta.
+ if(!(sourceData&&typeof sourceData==="object")){
+  const serialized=JSON.stringify(data);
+  if(!storageSet(DBKEY,serialized)){
+   console.error("Evolute Training: não foi possível persistir a migração local.");
+  }
+ }
 
  return data;
 
@@ -8333,13 +8349,41 @@ function collectRoutineEditValues(id){
 }
 
 function saveRoutineEditAndExit(){
- if(!configSelectedRoutineId)return;
- collectRoutineEditValues(configSelectedRoutineId);
- saveDB();
- configRoutineEditDirty=false;
- configRoutineEditSnapshot=null;
- configRoutineEditMode=false;
- showRoutineDetails(configSelectedRoutineId);
+ // Salvar deve persistir os dados e manter a ficha aberta no modo de edição.
+ if(!configSelectedRoutineId){
+  alert('Não foi possível identificar a ficha que você está editando.');
+  return;
+ }
+ try{
+  collectRoutineEditValues(configSelectedRoutineId);
+  const saved=saveDB();
+  if(saved===false){
+   // Mantém o estado como pendente para que o usuário possa tentar novamente.
+   configRoutineEditDirty=true;
+   return;
+  }
+  configRoutineEditDirty=false;
+  const p=getProfile();
+  const r=p?.routines?.[configSelectedRoutineId];
+  configRoutineEditSnapshot=r?clone(r):null;
+  configRoutineEditMode=true;
+
+  // Confirma visualmente que o botão funcionou, sem navegar nem fechar a ficha.
+  let status=document.getElementById('routineSaveStatus');
+  if(!status){
+   status=document.createElement('div');
+   status.id='routineSaveStatus';
+   status.setAttribute('role','status');
+   status.style.cssText='margin:8px 0 12px;padding:10px 12px;border-radius:10px;background:rgba(254,100,5,.10);border:1px solid rgba(254,100,5,.35);color:#FE6405;font-weight:750;text-align:center';
+   const actions=document.querySelector('.routine-details-actions');
+   if(actions)actions.insertAdjacentElement('afterend',status);
+  }
+  status.textContent='✓ Ficha salva com sucesso';
+ }catch(error){
+  console.error('Erro ao salvar a ficha:',error);
+  configRoutineEditDirty=true;
+  alert('Não foi possível salvar a ficha. Suas alterações continuam abertas; tente novamente.');
+ }
 }
 
 function discardRoutineEditAndLeave(){
@@ -8435,7 +8479,7 @@ function showRoutineDetails(id){
  const editing=!!configRoutineEditMode;
  app.innerHTML=`
   <div class="routine-detail-page">
-   <button type="button" class="back-to-routines" onclick="requestLeaveRoutineEdit(()=>{configSelectedRoutineId=null;configRoutineEditMode=false;showConfig()})">‹&nbsp; voltar para fichas</button>
+   <button type="button" class="back-to-routines" onclick="requestLeaveRoutineEdit(()=>{configSelectedRoutineId=null;configRoutineEditMode=false;configRoutineEditSnapshot=null;showConfigSection('routines')})">‹&nbsp; voltar para fichas</button>
 
    <div class="card">
     <div class="routine-details-header">
@@ -12749,12 +12793,26 @@ body > .training-exercise-card.training-dragging-preview,
  function localRaw(){try{return localStorage.getItem(DB_KEY);}catch(e){return null;}}
  function saveLocalBackup(raw,userId){
    if(raw===null||raw===undefined||raw==='')return null;
-   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-   const key='evolute_backup_'+(userId||'local')+'_'+stamp;
-   try{localStorage.setItem(key,raw);return key;}catch(e){
-     // Never continue with a destructive replacement when a backup cannot be written.
-     throw new Error('Não consegui criar uma cópia de segurança local. Nenhum dado foi substituído. Libere espaço no armazenamento e tente novamente.');
+   // Uma cópia por origem/conta evita criar centenas de backups até esgotar o armazenamento.
+   const safeId=String(userId||'local').replace(/[^a-zA-Z0-9_-]/g,'_');
+   const key='evolute_backup_'+safeId;
+   try{
+     // Confirma que o conteúdo é JSON válido antes de guardar a cópia.
+     const parsed=JSON.parse(raw);
+     if(!parsed||typeof parsed!=='object')throw new Error('Banco inválido para backup.');
+     localStorage.setItem(key,raw);
+     if(localStorage.getItem(key)!==raw)throw new Error('A verificação da cópia falhou.');
+     return key;
+   }catch(e){
+     console.error('Evolute: não foi possível confirmar a cópia de segurança.',e);
+     throw new Error('Não consegui confirmar uma cópia de segurança. Nenhum dado foi substituído. Libere espaço no armazenamento e tente novamente.');
    }
+ }
+ function backupLocalBeforeClear(){
+   const raw=localRaw();
+   if(raw===null||raw==='')return true;
+   saveLocalBackup(raw,'local');
+   return true;
  }
  async function loadCloud(user){
    const {data,error}=await client.from(TABLE).select('user_id,payload,updated_at').eq('user_id',user.id).maybeSingle();
@@ -12791,17 +12849,29 @@ body > .training-exercise-card.training-dragging-preview,
    try{
      // Não importa nem oferece dados locais: isso evita misturar contas no mesmo aparelho.
      if(record&&record.payload&&typeof record.payload==='object'){
+       // Guarda o estado recebido da nuvem antes de normalizar/migrar ou sincronizar alterações.
+       // Se o backup não puder ser confirmado, não substituímos o banco em memória nem enviamos migrações.
+       saveLocalBackup(JSON.stringify(record.payload),'cloud_'+user.id);
        // Aplica migrações ao banco da conta antes de renderizar a interface.
        // Isso restaura a biblioteca padrão e as categorias em fichas antigas.
-       db=readDB(record.payload);
+       const migratedDB=readDB(record.payload);
+       if(!migratedDB||!Array.isArray(migratedDB.profiles))throw new Error('O banco da conta não passou na validação.');
+       db=migratedDB;
      }else{
        if(typeof createInitialDB!=='function')throw new Error('Não encontrei a função de inicialização do aplicativo.');
        db=readDB(createInitialDB());
        const {error}=await client.from(TABLE).upsert({user_id:user.id,payload:db,updated_at:new Date().toISOString()},{onConflict:'user_id'});
        if(error)throw error;
      }
-     // Remove apenas o cache principal legado. Não apaga cópias antigas automaticamente.
-     try{localStorage.removeItem(DB_KEY);}catch(e){}
+     // O cache local só é removido depois de uma cópia verificada.
+     // Se não houver espaço para o backup, a cópia original permanece intacta.
+     try{
+       backupLocalBeforeClear();
+       localStorage.removeItem(DB_KEY);
+     }catch(backupError){
+       console.error('Evolute: cache local preservado porque o backup não foi confirmado.',backupError);
+       // Não interrompe a conta da nuvem: o cache local não é usado como banco autenticado.
+     }
      window.evoluteCloudSessionActive=true;
      cloudReady=true;
      hideGate();status('Evolute • sincronizado');
@@ -12817,8 +12887,17 @@ body > .training-exercise-card.training-dragging-preview,
    }
  }
  async function init(){
-   // O cache local legado nunca é fonte de verdade; a sessão autenticada recupera os dados da nuvem.
-   try{localStorage.removeItem(DB_KEY);}catch(e){}
+   // Preserva o banco local antes de qualquer limpeza de cache ou entrada em uma conta da nuvem.
+   try{
+     backupLocalBeforeClear();
+     localStorage.removeItem(DB_KEY);
+   }catch(backupError){
+     // Falha no backup nunca autoriza apagar a fonte original.
+     console.error('Evolute: banco local mantido porque não foi possível confirmar o backup.',backupError);
+     showGate();
+     message('Há dados locais que não puderam ser copiados com segurança. Eles foram mantidos intactos. Libere espaço no armazenamento e recarregue para tentar novamente.');
+     return;
+   }
    if(!window.supabase||!window.supabase.createClient){showGate();message('Não foi possível carregar o módulo de conexão. Verifique a internet e recarregue a página.');return;}
    client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
    const form=document.getElementById('evoluteCloudForm');
@@ -12835,8 +12914,17 @@ body > .training-exercise-card.training-dragging-preview,
    if(!client)return;
    const emailInput=document.getElementById('evoluteCloudEmail');
    const passwordInput=document.getElementById('evoluteCloudPassword');
+   // Antes de trocar de conta, guarda o estado em memória da conta atual.
+   // Se a cópia não puder ser verificada, não desloga nem descarta o banco atual.
+   try{
+     if(db&&typeof db==='object')saveLocalBackup(JSON.stringify(db),'account_'+(cloudUser&&cloudUser.id||'current'));
+     backupLocalBeforeClear();
+   }catch(backupError){
+     message('Não foi possível confirmar uma cópia de segurança. A conta atual e seus dados foram mantidos; libere espaço e tente novamente.');
+     console.error('Evolute: troca de conta cancelada por segurança.',backupError);
+     return;
+   }
    cloudReady=false;window.evoluteCloudSessionActive=false;cloudUser=null;
-   // Não mantém os dados da conta anterior disponíveis enquanto outra conta entra.
    try{localStorage.removeItem(DB_KEY);}catch(e){}
    try{if(typeof createInitialDB==='function')db=createInitialDB();}catch(e){}
    message('Entre com a outra conta. Os dados serão carregados exclusivamente da nuvem dessa conta.');
