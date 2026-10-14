@@ -26075,22 +26075,36 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   // Busca locais próximos usando a localização do celular e apresenta opções selecionáveis.
   const locationInput=$('#nc-location',el);
   const locationRow=locationInput.closest('.nc-detail-row');
+  const gymInput=$('#nc-gym',el);
+  const gymRow=gymInput.closest('.nc-detail-row');
+  // O campo Academia só aparece quando o local selecionado não é identificado como academia.
+  gymRow.hidden=true;
+  const setGymRowVisible=visible=>{gymRow.hidden=!visible;gymRow.setAttribute('aria-hidden',visible?'false':'true');};
   const locationPicker=document.createElement('div');
   locationPicker.className='nc-location-picker';locationPicker.hidden=true;locationPicker.setAttribute('role','listbox');
   locationRow.insertAdjacentElement('afterend',locationPicker);
   let locationSearchToken=0;
   const showLocationMessage=(message,allowRetry=false)=>{locationPicker.replaceChildren();const box=document.createElement('div');box.className='nc-location-message';box.textContent=message;locationPicker.appendChild(box);if(allowRetry){const retry=document.createElement('button');retry.type='button';retry.className='nc-location-retry';retry.textContent='Tentar novamente';retry.addEventListener('click',searchNearbyLocations);locationPicker.appendChild(retry);}locationPicker.hidden=false;};
-  const chooseLocation=(name)=>{locationInput.value=name;locationPicker.hidden=true;locationInput.dispatchEvent(new Event('change',{bubbles:true}));};
+  const isGymPlace=place=>{const t=place&&place.tags||{};return t.amenity==='gym'||t.amenity==='fitness_centre'||t.leisure==='fitness_centre'||t.club==='fitness';};
+  const placeAddress=place=>{const t=place&&place.tags||{};const street=[t['addr:street'],t['addr:housenumber']].filter(Boolean).join(', ');const area=[t['addr:suburb'],t['addr:neighbourhood'],t['addr:city']||t['addr:town']].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · ');return [street,area].filter(Boolean).join(' — ');};
+  const chooseLocation=(place)=>{
+   const tags=place&&place.tags||{};const name=tags.name||tags['name:pt']||'';const address=placeAddress(place);
+   locationInput.value=[name,address].filter(Boolean).join(' — ');
+   if(isGymPlace(place)){gymInput.value=name;setGymRowVisible(false);}else{gymInput.value='';setGymRowVisible(true);}
+   locationPicker.hidden=true;locationInput.dispatchEvent(new Event('change',{bubbles:true}));
+  };
   const renderNearbyLocations=(places)=>{
    locationPicker.replaceChildren();
-   if(!places.length){showLocationMessage('Nenhum local próximo encontrado. Você pode digitar o nome manualmente.');return;}
+   if(!places.length){showLocationMessage('Nenhum local próximo encontrado. Você pode digitar o local manualmente.');return;}
    places.forEach(place=>{
-    const name=place.tags&&(place.tags.name||place.tags['name:pt']);if(!name)return;
-    const type=(place.tags.amenity==='fitness_centre'||place.tags.leisure==='fitness_centre'||place.tags.amenity==='gym')?'Academia':place.tags.leisure==='sports_centre'||place.tags.amenity==='sports_centre'?'Centro esportivo':place.tags.leisure==='park'?'Parque':place.tags.leisure==='track'?'Pista':place.tags.amenity==='cafe'?'Café':place.tags.amenity==='restaurant'?'Restaurante':'Local próximo';
+    const tags=place.tags||{};const name=tags.name||tags['name:pt'];if(!name)return;
+    const gym=isGymPlace(place);
+    const type=gym?'Academia':tags.leisure==='sports_centre'||tags.amenity==='sports_centre'?'Centro esportivo':tags.leisure==='park'?'Parque':tags.leisure==='track'?'Pista':tags.amenity==='cafe'?'Café':tags.amenity==='restaurant'?'Restaurante':'Local próximo';
+    const address=placeAddress(place);
     const button=document.createElement('button');button.type='button';button.className='nc-location-option';button.setAttribute('role','option');
     const title=document.createElement('strong');title.textContent=name;
-    const subtitle=document.createElement('small');subtitle.textContent=type+' · '+(place.distance<1000?Math.round(place.distance)+' m':(place.distance/1000).toFixed(1).replace('.',',')+' km');
-    const copy=document.createElement('span');copy.className='nc-location-copy';copy.append(title,subtitle);button.appendChild(copy);button.addEventListener('click',()=>chooseLocation(name));locationPicker.appendChild(button);
+    const subtitle=document.createElement('small');subtitle.textContent=[type,address,place.distance<1000?Math.round(place.distance)+' m':(place.distance/1000).toFixed(1).replace('.',',')+' km'].filter(Boolean).join(' · ');
+    const copy=document.createElement('span');copy.className='nc-location-copy';copy.append(title,subtitle);button.appendChild(copy);button.addEventListener('click',()=>chooseLocation(place));locationPicker.appendChild(button);
    });
    if(!locationPicker.children.length){showLocationMessage('Nenhum local próximo encontrado. Você pode digitar o nome manualmente.');return;}locationPicker.hidden=false;
   };
@@ -26114,7 +26128,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   };
   locationInput.addEventListener('focus',()=>{if(locationPicker.hidden&&!locationInput.value.trim())searchNearbyLocations();});
   locationInput.addEventListener('click',()=>{if(locationPicker.hidden&&!locationInput.value.trim())searchNearbyLocations();});
-  locationInput.addEventListener('input',()=>{if(!locationInput.value.trim())searchNearbyLocations();else locationPicker.hidden=true;});
+  locationInput.addEventListener('input',()=>{if(!locationInput.value.trim()){setGymRowVisible(false);gymInput.value='';searchNearbyLocations();}else{locationPicker.hidden=true;setGymRowVisible(true);gymInput.value='';}});
   document.addEventListener('click',event=>{if(!locationRow.contains(event.target)&&!locationPicker.contains(event.target))locationPicker.hidden=true;});
 
   $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
@@ -26272,6 +26286,9 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 <style id="evolute-nearby-location-retry-20261014">
 #evoluteNewCheckinScreen .nc-location-retry{display:block;margin:0 12px 10px;padding:8px 13px;border:1px solid #ff6908;border-radius:9px;background:#fff;color:#f26713;font-size:13px;font-weight:700;cursor:pointer}
 #evoluteNewCheckinScreen .nc-location-retry:active{background:#fff1e7}
+</style>
+<style id="evolute-checkin-gym-conditional-20261014">
+#evoluteNewCheckinScreen .nc-detail-row[hidden]{display:none!important}
 </style>
 <style id="evolute-nearby-location-picker-polish-20261014">
 /* Lista de locais próximos: menu discreto, alinhado ao campo e com identidade visual Evolute. */
