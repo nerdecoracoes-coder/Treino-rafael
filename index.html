@@ -8810,12 +8810,12 @@ function showCommunityDetail(id,justCreated=false){
   </header>
   <nav class="community-social-tabs" aria-label="Seções da comunidade">
    <button type="button" data-panel="ranking" onclick="communitySwitchPanel('ranking','${esc(c.id)}',this)"><span>${evoIcon('trophy')}</span><strong>Campeões</strong></button>
-   <button type="button" data-panel="checkin" class="active" onclick="communitySwitchPanel('checkin','${esc(c.id)}',this)"><span>${evoIcon('check')}</span><strong>Check-in</strong></button>
-   <button type="button" data-panel="feed" onclick="communitySwitchPanel('feed','${esc(c.id)}',this)"><span>${evoIcon('users')}</span><strong>Feed</strong></button>
+   <button type="button" data-panel="checkin" onclick="communitySwitchPanel('checkin','${esc(c.id)}',this)"><span>${evoIcon('check')}</span><strong>Check-in</strong></button>
+   <button type="button" data-panel="feed" class="active" onclick="communitySwitchPanel('feed','${esc(c.id)}',this)"><span>${evoIcon('users')}</span><strong>Feed</strong></button>
    <button type="button" data-panel="challenges" onclick="communitySwitchPanel('challenges','${esc(c.id)}',this)"><span>${evoIcon('target')}</span><strong>Desafios</strong></button>
   </nav>
   <div id="communityTabPanel" class="community-detail-content" data-community-id="${esc(c.id)}">
-   <section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section>
+   <div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>
   </div>
  </div>`;
  window.scrollTo(0,0);
@@ -8823,7 +8823,7 @@ function showCommunityDetail(id,justCreated=false){
 
 function communityRenderPosts(c,posts){
  const list=Array.isArray(posts)?posts:[];
- if(!list.length)return '<p class="community-social-empty">Ainda não há publicações. Compartilhe a primeira foto com a comunidade!</p>';
+ if(!list.length)return '<p class="community-social-empty">Ainda não há publicações nesta comunidade.</p>';
  return list.map(post=>{const p=db.profiles.find(x=>x.id===post.authorId)||{};return `<article class="community-social-post" data-post-id="${esc(post.id)}"><header><span class="community-social-post-avatar">${p.photo?`<img src="${p.photo}" alt="">`:evoIcon('user')}</span><div><strong>${esc(p.name||'Participante')}</strong><small>${communityPostDate(post.createdAt)} · ${esc(c.name)}</small></div></header><p>${esc(post.caption||'')}</p>${post.photo?`<img class="community-social-post-photo" src="${post.photo}" alt="Foto publicada na comunidade">`:''}</article>`;}).join('');
 }
 
@@ -8849,22 +8849,46 @@ function communityToggleComposer(){
  if(form.classList.contains('community-composer-open')){document.getElementById('communityPostCaption')?.focus();form.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 
-function communityRenderCalendar(c){
- const now=new Date(),year=now.getFullYear(),month=now.getMonth();
- const first=new Date(year,month,1),days=new Date(year,month+1,0).getDate(),offset=first.getDay();
+function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
+ const year=viewDate.getFullYear(),month=viewDate.getMonth();
+ const days=new Date(year,month+1,0).getDate(),offset=new Date(year,month,1).getDay();
+ const today=new Date();
+ const chosen=Math.max(1,Math.min(days,Number(selectedDay)||(year===today.getFullYear()&&month===today.getMonth()?today.getDate():1)));
  const posts=Array.isArray(c.posts)?c.posts:[];const byDay={};
- posts.forEach(p=>{if(!p.createdAt||!p.photo)return;const d=new Date(p.createdAt);if(d.getFullYear()===year&&d.getMonth()===month){const n=d.getDate();if(!byDay[n])byDay[n]=p;}});
+ // Combine community feed posts with check-ins created through the dedicated publication form.
+ // Date-only values are parsed in local time to avoid timezone shifts to the previous/next day.
+ const localCheckins=(()=>{try{const value=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');return Array.isArray(value)?value.map(p=>{const parts=String(p.date||'').split('-').map(Number);const localDate=parts.length===3&&parts.every(Number.isFinite)?new Date(parts[0],parts[1]-1,parts[2],Number(String(p.time||'00:00').split(':')[0])||0,Number(String(p.time||'00:00').split(':')[1])||0):new Date(p.createdAt||p.id||0);return {...p,createdAt:localDate.getTime(),__localCheckin:true};}).filter(p=>p.date&&Number.isFinite(p.createdAt)):[];}catch(e){return [];}})();
+ [...posts,...localCheckins].forEach(p=>{if(!p.createdAt)return;const d=new Date(p.createdAt);if(d.getFullYear()===year&&d.getMonth()===month){const n=d.getDate();if(!byDay[n]||new Date(p.createdAt)>new Date(byDay[n].createdAt))byDay[n]=p;}});
  const weekdays=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
  let cells=weekdays.map(x=>`<span class="community-calendar-weekday">${x}</span>`).join('');
- for(let i=0;i<offset;i++)cells+='<span class="community-calendar-day empty"></span>';
+ for(let i=0;i<offset;i++)cells+='<span class="community-calendar-day empty" aria-hidden="true"></span>';
  for(let day=1;day<=days;day++){
-  const post=byDay[day];
-  if(post){const author=db.profiles.find(p=>p.id===post.authorId)||{};cells+=`<button type="button" class="community-calendar-day has-record" aria-label="Publicação do dia ${day}" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(post.id)}')">${author.photo?`<img src="${author.photo}" alt="">`:`<span>${day}</span>`}</button>`;}
-  else cells+=`<span class="community-calendar-day"><span>${day}</span></span>`;
+  const post=byDay[day],isToday=year===today.getFullYear()&&month===today.getMonth()&&day===today.getDate();
+  const author=post?(db.profiles.find(p=>p.id===post.authorId)||{}):{};
+  const photo=post&&post.photo;
+  cells+=`<button type="button" class="community-calendar-day${post?' has-record':''}${day===chosen?' selected':''}${isToday?' today':''}" aria-label="Selecionar ${day} de ${month+1} de ${year}${post?', com publicação':''}" aria-pressed="${day===chosen?'true':'false'}" onclick="communitySelectCalendarDate('${esc(c.id)}',${year},${month},${day})">${photo?`<img src="${photo}" alt="">`:''}<span class="community-calendar-day-number">${day}</span>${post?'<i class="community-calendar-dot" aria-hidden="true"></i>':''}</button>`;
  }
- return `<div class="community-calendar-heading"><h2>${now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2></div><div class="community-calendar-grid">${cells}</div><p>Os dias com foto mostram publicações registradas nesta comunidade.</p>`;
+ const date=new Date(year,month,chosen);
+ const dateLabel=date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const selectedPost=byDay[chosen];
+ const selectedPostAction=selectedPost?(selectedPost.__localCheckin?`<p class="community-calendar-no-post">Check-in publicado neste dia.</p>`:`<button type="button" class="community-calendar-view-post" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(selectedPost.id)}')">Ver publicação <span aria-hidden="true">›</span></button>`):`<p class="community-calendar-no-post">Nenhuma publicação neste dia.</p>`;
+ return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div><div class="community-calendar-selected-day"><button type="button" class="community-calendar-day-arrow" onclick="communityChangeCalendarDay('${esc(c.id)}',${year},${month},${chosen},-1)" aria-label="Dia anterior">‹</button><div class="community-calendar-selected-copy"><small>DIA SELECIONADO</small><strong>${dateLabel}</strong></div><button type="button" class="community-calendar-day-arrow" onclick="communityChangeCalendarDay('${esc(c.id)}',${year},${month},${chosen},1)" aria-label="Próximo dia">›</button></div><div class="community-calendar-day-result">${selectedPostAction}</div><p class="community-calendar-legend"><span></span> Dias com publicações da comunidade</p>`;
 }
-
+function communityRefreshCalendar(cid,year,month,day){
+ const c=db.communities.find(x=>x.id===cid);if(!c)return;
+ const host=document.getElementById('communityTabPanel');if(!host)return;
+ const date=new Date(year,month,1);
+ host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,date,day)}</section>`;
+}
+function communityChangeCalendarMonth(cid,year,month,delta,day){
+ const next=new Date(year,month+delta,1);const maxDay=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
+ communityRefreshCalendar(cid,next.getFullYear(),next.getMonth(),Math.min(Number(day)||1,maxDay));
+}
+function communitySelectCalendarDate(cid,year,month,day){communityRefreshCalendar(cid,year,month,day);}
+function communityChangeCalendarDay(cid,year,month,day,delta){
+ const next=new Date(year,month,day+delta);
+ communityRefreshCalendar(cid,next.getFullYear(),next.getMonth(),next.getDate());
+}
 function communityOpenCalendarPost(cid,pid){const c=db.communities.find(x=>x.id===cid),p=c?.posts?.find(x=>x.id===pid);if(!p)return;const node=document.querySelector(`[data-post-id="${CSS.escape(pid)}"]`);if(node){node.scrollIntoView({behavior:'smooth',block:'center'});node.classList.add('community-post-highlight');setTimeout(()=>node.classList.remove('community-post-highlight'),1600);}else alert(p.caption||'Registro da comunidade');}
 function communitySwitchPanel(panel,cid,button){
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
@@ -8875,12 +8899,8 @@ function communitySwitchPanel(panel,cid,button){
   return;
  }
  if(panel==='feed'){
-  const members=(c.members||[]).map(mid=>db.profiles.find(p=>p.id===mid)).filter(Boolean);
-  const currentProfile=db.profiles.find(p=>p.id===communityCurrentUser()?.id)||{};
-  const avatar=currentProfile.photo?`<img src="${currentProfile.photo}" alt="">`:`<span>${evoIcon('user')}</span>`;
-  const avatars=members.map(p=>`<button type="button" class="community-social-person" onclick="communityOpenMemberProfile('${esc(p.id)}')" aria-label="Perfil de ${esc(p.name||'participante')}">${p.photo?`<img src="${p.photo}" alt="">`:`<span>${evoIcon('user')}</span>`}<small>${esc(p.name||'Participante').split(' ')[0]}</small></button>`).join('');
   const posts=[...(c.posts||[])].sort((a,b)=>(new Date(b.createdAt||0))-(new Date(a.createdAt||0)));
-  host.innerHTML=`<section class="community-social-people" aria-label="Publicar e participantes"><button type="button" class="community-social-person community-social-newpost" onclick="communityToggleComposer()"><span class="community-social-plus">+</span><small>Novo post</small></button>${avatars}</section><form class="community-social-composer" id="communitySketchComposer" onsubmit="event.preventDefault();publishCommunityPost('${esc(c.id)}')"><span class="community-social-composer-avatar">${avatar}</span><div class="community-social-composer-main"><textarea id="communityPostCaption" rows="1" placeholder="Compartilhe com a comunidade..."></textarea><div class="community-social-composer-actions"><label for="communityPostPhotoInput" title="Adicionar foto">${evoIcon('image')}<span>Foto</span></label><input id="communityPostPhotoInput" type="file" accept="image/*"><button type="submit" aria-label="Publicar">+</button></div></div></form><div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>`;
+  host.innerHTML=`<div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>`;
   return;
  }
  if(panel==='ranking'){
@@ -26157,7 +26177,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
   file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{photo=String(reader.result||'');el.__evolutePhotoData=photo;img.src=photo;img.hidden=false;empty.hidden=true};reader.readAsDataURL(f)});
   const close=()=>el.classList.remove('open');$('.nc-back',el).addEventListener('click',close);
-  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(photo){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();const feed=$('.community-social-tabs button[data-panel="feed"]');if(feed)feed.click();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
+  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();const feed=$('.community-social-tabs button[data-panel="feed"]');if(feed)feed.click();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
  }
  function open(){const el=build();el.classList.add('open');}
  function showChosenPhoto(file){
@@ -26365,5 +26385,99 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
  #evoluteNewCheckinScreen .nc-location-picker{width:calc(100% - 39px);margin-left:39px}
  #evoluteNewCheckinScreen .nc-location-option{padding:10px 8px}
  #evoluteNewCheckinScreen .nc-location-option strong{font-size:13px}
+}
+</style>
+
+<style id="community-calendar-navigation-modern-v1">
+#app .community-social-calendar{padding:20px 16px 16px!important;border:1px solid #e7e7eb!important;border-radius:24px!important;background:linear-gradient(160deg,#fff 0%,#f6f6f7 100%)!important;box-shadow:0 8px 26px rgba(25,25,30,.055)!important;color:#24252a!important}
+#app .community-social-calendar .community-calendar-heading{display:grid!important;grid-template-columns:42px minmax(0,1fr) 42px!important;align-items:center!important;gap:8px!important;margin:0 0 18px!important}
+#app .community-social-calendar .community-calendar-heading h2{margin:0!important;text-align:center!important;font-size:21px!important;line-height:1.25!important;font-weight:800!important;text-transform:capitalize!important;color:#222329!important}
+#app .community-calendar-month-arrow,#app .community-calendar-day-arrow{display:flex;align-items:center;justify-content:center;border:1px solid #e7e7eb;background:#fff;color:#f26713;border-radius:13px;font-size:27px;line-height:1;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.035);-webkit-tap-highlight-color:transparent}
+#app .community-calendar-month-arrow{width:40px;height:40px}
+#app .community-calendar-month-arrow:active,#app .community-calendar-day-arrow:active{background:#fff0e6;border-color:#ffb27d}
+#app .community-calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:5px 2px!important}
+#app .community-calendar-weekday{padding:4px 0 9px!important;font-size:11px!important;font-weight:700!important;color:#85858d!important;text-transform:uppercase!important}
+#app .community-calendar-day{position:relative!important;width:100%!important;max-width:43px!important;min-height:40px!important;height:auto!important;aspect-ratio:1!important;margin:0 auto!important;border:1px solid transparent!important;border-radius:14px!important;background:transparent!important;color:#33343a!important;font-size:14px!important;overflow:hidden!important;isolation:isolate}
+#app .community-calendar-day-number{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-weight:500}
+#app .community-calendar-day img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;border-radius:13px!important;opacity:.28!important;z-index:0}
+#app .community-calendar-day.has-record{background:#fff2e8!important;border-color:#ffd1b2!important;color:#c94e00!important;font-weight:800!important}
+#app .community-calendar-day.has-record img{opacity:.22!important}
+#app .community-calendar-day.selected{background:#ff6908!important;border-color:#ff6908!important;color:#fff!important;box-shadow:0 4px 10px rgba(255,105,8,.25)!important}
+#app .community-calendar-day.selected img{opacity:.18!important}
+#app .community-calendar-day.today:not(.selected){border-color:#ff6908!important;font-weight:800!important}
+#app .community-calendar-day .community-calendar-dot{position:absolute;bottom:3px;left:50%;z-index:3;width:4px;height:4px;transform:translateX(-50%);border-radius:50%;background:#f26713}
+#app .community-calendar-day.selected .community-calendar-dot{background:#fff}
+#app .community-calendar-day.empty{visibility:hidden!important}
+#app .community-calendar-selected-day{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;gap:10px;margin:18px 0 0;padding:12px 10px;border:1px solid #ececf0;border-radius:16px;background:#fff}
+#app .community-calendar-day-arrow{width:36px;height:36px;border-radius:11px;font-size:24px}
+#app .community-calendar-selected-copy{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:center}
+#app .community-calendar-selected-copy small{font-size:9px;font-weight:800;letter-spacing:1px;color:#f26713}
+#app .community-calendar-selected-copy strong{font-size:12px;line-height:1.4;font-weight:700;text-transform:capitalize;color:#33343a}
+#app .community-calendar-day-result{min-height:34px;display:flex;align-items:center;justify-content:center;padding-top:8px}
+#app .community-calendar-view-post{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:10px 12px;border:0;border-radius:11px;background:#fff0e6;color:#d95300;font-size:13px;font-weight:750;text-align:left;cursor:pointer}
+#app .community-calendar-view-post span{font-size:22px;line-height:1}
+#app .community-calendar-no-post{margin:0!important;color:#888891!important;font-size:12px!important;text-align:center}
+#app .community-calendar-legend{display:flex;align-items:center;justify-content:center;gap:7px;margin:12px 0 0!important;color:#85858d!important;font-size:11px!important}
+#app .community-calendar-legend span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#f26713}
+@media(max-width:420px){#app .community-social-calendar{padding:18px 11px 14px!important}#app .community-social-calendar .community-calendar-heading h2{font-size:19px!important}#app .community-calendar-day{min-height:36px!important;max-width:39px!important;font-size:13px!important;border-radius:12px!important}#app .community-calendar-selected-day{gap:6px;padding:10px 7px}#app .community-calendar-selected-copy strong{font-size:11px}}
+</style>
+
+<style id="community-calendar-post-photo-badges-v1">
+/* As publicações ficam marcadas com miniaturas circulares sobre o número do dia, sem mudar o calendário existente. */
+#app .community-calendar-day{position:relative!important;isolation:isolate!important;overflow:visible!important}
+#app .community-calendar-day-number{position:relative!important;z-index:1!important}
+#app .community-calendar-day img{position:absolute!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;inset:auto!important;transform:translate(-50%,-50%)!important;width:29px!important;height:29px!important;max-width:none!important;max-height:none!important;object-fit:cover!important;border-radius:50%!important;opacity:1!important;z-index:3!important;border:2px solid #fff!important;box-shadow:0 1px 5px rgba(0,0,0,.2)!important;pointer-events:none!important}
+#app .community-calendar-day.has-record img{opacity:1!important}
+#app .community-calendar-day.selected img{opacity:1!important;border-color:#fff!important}
+#app .community-calendar-day:has(img) .community-calendar-dot{display:none!important}
+@media(max-width:420px){#app .community-calendar-day img{width:27px!important;height:27px!important}}
+</style>
+<style id="community-calendar-post-photo-fill-cell-v2">
+/* A foto da publicação ocupa toda a célula do dia, como na referência, cobrindo o número sem alterar o layout do calendário. */
+#app .community-calendar-day{position:relative!important;overflow:hidden!important;isolation:isolate!important}
+#app .community-calendar-day-number{position:relative!important;z-index:1!important}
+#app .community-calendar-day img{position:absolute!important;inset:0!important;top:0!important;left:0!important;right:0!important;bottom:0!important;transform:none!important;width:100%!important;height:100%!important;min-width:100%!important;min-height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover!important;object-position:center!important;border-radius:inherit!important;border:0!important;box-shadow:none!important;opacity:1!important;z-index:4!important;pointer-events:none!important}
+#app .community-calendar-day.has-record img,#app .community-calendar-day.selected img{opacity:1!important}
+#app .community-calendar-day:has(img) .community-calendar-dot{display:none!important}
+</style>
+
+<style id="evolute-real-feed-scroll-fix-20261014">
+/* Feed da comunidade: área própria de rolagem vertical, sem alterar outras telas. */
+html, body {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+#app .community-page.community-social-page.community-detail-v2 {
+  position: relative !important;
+  inset: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  transform: none !important;
+  touch-action: pan-y pinch-zoom !important;
+}
+#app .community-page.community-social-page.community-detail-v2 .community-detail-content {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+#app .community-page.community-social-page.community-detail-v2 .community-social-feed-list {
+  display: block !important;
+  position: relative !important;
+  height: calc(100dvh - 260px) !important;
+  min-height: 260px !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  touch-action: pan-y pinch-zoom !important;
+  padding-bottom: 32px !important;
+  box-sizing: border-box !important;
+}
+#app .community-page.community-social-page.community-detail-v2 .community-social-post {
+  flex-shrink: 0 !important;
 }
 </style>
