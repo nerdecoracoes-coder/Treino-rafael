@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<title>Evolute Training</title>
+<title>Evolute v46 — câmera web integrada | Evolute Training</title>
 
 
 
@@ -4645,6 +4645,24 @@ body:has(.home-reference-dashboard) .home-hero-actions .home-menu-button .evo-ui
 .evolute-checkin-success-button:active{background:#dc580b;transform:scale(.99)}
 </style>
 
+
+<style id="evolute-web-camera-v46-style">
+#evoluteCameraScreen{position:fixed;inset:0;z-index:100500;background:#000;color:#fff;display:none;flex-direction:column;font-family:inherit}
+#evoluteCameraScreen.open{display:flex}
+#evoluteCameraScreen .ec-top{height:64px;flex:0 0 64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#050505}
+#evoluteCameraScreen .ec-close,#evoluteCameraScreen .ec-switch{border:0;background:transparent;color:#fff;font-size:28px;width:48px;height:48px;display:grid;place-items:center}
+#evoluteCameraScreen .ec-preview{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#111;overflow:hidden}
+#evoluteCameraScreen video{width:100%;height:100%;object-fit:cover}
+#evoluteCameraScreen .ec-message{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:28px;color:#ddd;font-size:15px;background:#111}
+#evoluteCameraScreen .ec-message[hidden]{display:none}
+#evoluteCameraScreen .ec-bottom{position:relative;z-index:2;height:128px;flex:0 0 128px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;padding:0 18px;background:#000}
+#evoluteCameraScreen .ec-library{border:0;background:transparent;color:#fff;font:600 14px inherit;display:flex;flex-direction:column;align-items:center;gap:7px;padding:10px 6px}
+#evoluteCameraScreen .ec-library span{font-size:26px;color:#ff6908}
+#evoluteCameraScreen .ec-shutter{justify-self:center;width:72px;height:72px;border:5px solid #fff;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 2px #bbb}
+#evoluteCameraScreen .ec-switch{justify-self:end;border-radius:50%;background:#202024;font-size:25px}
+@media(max-height:650px){#evoluteCameraScreen .ec-top{height:54px;flex-basis:54px}#evoluteCameraScreen .ec-bottom{height:100px;flex-basis:100px}#evoluteCameraScreen .ec-shutter{width:62px;height:62px}}
+</style>
+
 </head>
 
 <body>
@@ -8818,7 +8836,63 @@ function showCommunityDetail(id,justCreated=false){
    <div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>
   </div>
  </div>`;
+ document.getElementById('communityFeedAddButton')?.remove();
+ const communityAddButton=document.createElement('button');
+ communityAddButton.type='button';
+ communityAddButton.id='communityFeedAddButton';
+ communityAddButton.className='community-feed-add-button';
+ communityAddButton.setAttribute('aria-label','Criar nova postagem');
+ communityAddButton.title='Nova postagem';
+ communityAddButton.innerHTML='<span aria-hidden="true">+</span>';
+ communityAddButton.addEventListener('click',()=>communityOpenPostComposer(c.id));
+ document.body.appendChild(communityAddButton);
  window.scrollTo(0,0);
+}
+
+function communityOpenPostComposer(id){
+ const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+ if(!c||!u||!(c.members||[]).includes(u.id))return;
+ document.getElementById('communityPostComposerModal')?.remove();
+ const modal=document.createElement('div');
+ modal.id='communityPostComposerModal';
+ modal.className='community-post-composer-overlay';
+ modal.innerHTML=`<section class="community-post-composer" role="dialog" aria-modal="true" aria-labelledby="communityPostComposerTitle">
+  <header><h2 id="communityPostComposerTitle">Nova postagem</h2><button type="button" aria-label="Fechar" onclick="communityClosePostComposer()">×</button></header>
+  <label for="communityComposerCaption">Escreva sua publicação</label>
+  <textarea id="communityComposerCaption" rows="4" maxlength="2000" placeholder="O que você gostaria de compartilhar?"></textarea>
+  <label class="community-composer-photo-label" for="communityComposerPhoto">Adicionar foto (opcional)</label>
+  <input id="communityComposerPhoto" type="file" accept="image/*">
+  <div class="community-composer-actions"><button type="button" class="community-composer-cancel" onclick="communityClosePostComposer()">Cancelar</button><button type="button" class="community-composer-publish" onclick="communityCreatePost('${esc(c.id)}')">Publicar</button></div>
+ </section>`;
+ modal.addEventListener('click',e=>{if(e.target===modal)communityClosePostComposer();});
+ document.body.appendChild(modal);
+ document.getElementById('communityComposerCaption')?.focus();
+}
+function communityClosePostComposer(){document.getElementById('communityPostComposerModal')?.remove();}
+async function communityCreatePost(id){
+ const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+ const caption=(document.getElementById('communityComposerCaption')?.value||'').trim();
+ const input=document.getElementById('communityComposerPhoto');
+ if(!c||!u||!(c.members||[]).includes(u.id))return;
+ if(!caption){alert('Escreva o texto da postagem.');return;}
+ let photo='';
+ if(input?.files?.[0]){
+  const file=input.files[0];
+  if(!file.type.startsWith('image/')){alert('Escolha um arquivo de imagem.');return;}
+  try{photo=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});}
+  catch(e){alert('Não foi possível carregar a imagem. Tente novamente.');return;}
+ }
+ if(!Array.isArray(c.posts))c.posts=[];
+ const post={id:'post_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),userId:u.id,authorId:u.id,caption,createdAt:new Date().toISOString(),likesCount:0,comments:[]};
+ if(photo)post.photo=photo;
+ c.posts.push(post);
+ saveDB();
+ if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
+  const synced=await window.evoluteForceCloudSync();
+  if(!synced)alert('A postagem foi adicionada nesta sessão, mas não conseguimos confirmar a sincronização na nuvem. Confira a conexão antes de sair.');
+ }
+ communityClosePostComposer();
+ showCommunityDetail(id,true);
 }
 
 function communityRenderPosts(c,posts){
@@ -8872,13 +8946,44 @@ function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
  const dateLabel=date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const selectedPost=byDay[chosen];
  const selectedPostAction=selectedPost?(selectedPost.__localCheckin?`<p class="community-calendar-no-post">Check-in publicado neste dia.</p>`:`<button type="button" class="community-calendar-view-post" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(selectedPost.id)}')">Ver publicação <span aria-hidden="true">›</span></button>`):`<p class="community-calendar-no-post">Nenhuma publicação neste dia.</p>`;
- return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div><div class="community-calendar-selected-day"><button type="button" class="community-calendar-day-arrow" onclick="communityChangeCalendarDay('${esc(c.id)}',${year},${month},${chosen},-1)" aria-label="Dia anterior">‹</button><div class="community-calendar-selected-copy"><small>DIA SELECIONADO</small><strong>${dateLabel}</strong></div><button type="button" class="community-calendar-day-arrow" onclick="communityChangeCalendarDay('${esc(c.id)}',${year},${month},${chosen},1)" aria-label="Próximo dia">›</button></div><div class="community-calendar-day-result">${selectedPostAction}</div><p class="community-calendar-legend"><span></span> Dias com publicações da comunidade</p>`;
+ const selectedPostSummary=selectedPost?(()=>{
+  const ignored=new Set(['id','communityId','authorId','userId','createdAt','date','photo','image','images','video','media','attachments','__localCheckin']);
+  const labels={time:'Horário do check-in',checkinTime:'Horário do check-in',checkInTime:'Horário do check-in',weight:'Peso',duration:'Duração',calories:'Calorias',feeling:'Como me senti',note:'Observações',notes:'Observações',observation:'Observações',caption:'Comentário',description:'Descrição',text:'Comentário',title:'Título'};
+  const fields=Object.entries(selectedPost).filter(([key,value])=>!ignored.has(key)&&value!==null&&value!==undefined&&String(value).trim()!==''&&typeof value!=='object'&&typeof value!=='boolean'&& !/photo|image|video|media|avatar|url|base64/i.test(key));
+  const rows=fields.map(([key,value])=>`<div class="community-calendar-summary-row"><span>${esc(labels[key]||key.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase()))}</span><strong>${esc(String(value))}</strong></div>`).join('');
+  return rows?`<article class="community-calendar-post-summary">${rows}</article>`:'';
+ })():'';
+ return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div>${selectedPostSummary}`;
+}
+function communityEnsurePostButton(cid){
+ const c=db.communities.find(x=>x.id===cid);
+ if(!c)return;
+ let button=document.getElementById('communityFeedAddButton');
+ if(!button){
+  button=document.createElement('button');
+  button.type='button';
+  button.id='communityFeedAddButton';
+  button.className='community-feed-add-button';
+  button.setAttribute('aria-label','Criar nova postagem');
+  button.title='Nova postagem';
+  button.innerHTML='<span aria-hidden="true">+</span>';
+  document.body.appendChild(button);
+ }
+ button.style.display='flex';
+ button.style.visibility='visible';
+ button.style.opacity='1';
+ button.onclick=()=>communityOpenPostComposer(c.id);
+}
+function communityRenderCheckinPanel(c,viewDate=new Date(),selectedDay=null){
+ return `<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,viewDate,selectedDay)}</section>
+ <div class="community-new-checkin-action"><button type="button" onclick="if(typeof window.evoluteStartCommunityPostPhoto==='function'){window.evoluteStartCommunityPostPhoto()}else{alert('A opção de adicionar foto não está disponível.')}"><span aria-hidden="true">＋</span> Novo check-in</button></div>`;
 }
 function communityRefreshCalendar(cid,year,month,day){
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
  const host=document.getElementById('communityTabPanel');if(!host)return;
  const date=new Date(year,month,1);
- host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,date,day)}</section>`;
+ host.innerHTML=communityRenderCheckinPanel(c,date,day);
+ communityEnsurePostButton(cid);
 }
 function communityChangeCalendarMonth(cid,year,month,delta,day){
  const next=new Date(year,month+delta,1);const maxDay=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
@@ -8891,11 +8996,12 @@ function communityChangeCalendarDay(cid,year,month,day,delta){
 }
 function communityOpenCalendarPost(cid,pid){const c=db.communities.find(x=>x.id===cid),p=c?.posts?.find(x=>x.id===pid);if(!p)return;const node=document.querySelector(`[data-post-id="${CSS.escape(pid)}"]`);if(node){node.scrollIntoView({behavior:'smooth',block:'center'});node.classList.add('community-post-highlight');setTimeout(()=>node.classList.remove('community-post-highlight'),1600);}else alert(p.caption||'Registro da comunidade');}
 function communitySwitchPanel(panel,cid,button){
+ communityEnsurePostButton(cid);
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
  document.querySelectorAll('.community-social-tabs button').forEach(b=>b.classList.toggle('active',b===button));
  const host=document.getElementById('communityTabPanel');if(!host)return;
  if(panel==='checkin'){
-  host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section>`;
+  host.innerHTML=communityRenderCheckinPanel(c);
   return;
  }
  if(panel==='feed'){
@@ -15485,6 +15591,19 @@ body > .training-exercise-card.training-dragging-preview,
  }
  function schedulePush(){if(!cloudUser||!cloudReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushCloud,1200);}
  window.evoluteForceCloudSync=async function(){if(!client||!cloudUser||!cloudReady)return false;clearTimeout(syncTimer);return await pushCloud();};
+ // Upload de fotos separado do banco JSON: a imagem não deve ir para o localStorage nem para o payload de sincronização.
+ window.evoluteUploadCheckinPhoto=async function(file){
+   if(!file)throw new Error('Nenhuma foto foi recebida.');
+   if(!client||!cloudUser||!cloudReady)throw new Error('Entre na sua conta Evolute e aguarde a sincronização antes de publicar uma foto.');
+   const bucket='evolute-checkin-photos';
+   const ext=(String(file.name||'').match(/\.([a-zA-Z0-9]{2,5})$/)||[])[1]||((file.type||'').split('/')[1]||'jpg').replace('jpeg','jpg');
+   const path=cloudUser.id+'/checkins/'+Date.now()+'_'+Math.random().toString(36).slice(2,10)+'.'+ext.toLowerCase();
+   const {data,error}=await client.storage.from(bucket).upload(path,file,{contentType:file.type||'image/jpeg',upsert:false,cacheControl:'3600'});
+   if(error)throw new Error('Falha no armazenamento de fotos ('+bucket+'): '+error.message);
+   const result=client.storage.from(bucket).getPublicUrl(data.path);
+   if(!result||!result.data||!result.data.publicUrl)throw new Error('A foto foi enviada, mas não foi possível obter seu endereço público.');
+   return {url:result.data.publicUrl,path:data.path,bucket};
+ };
  const originalSaveDB=window.saveDB;
  if(typeof originalSaveDB==='function'){
    window.saveDB=function(){const result=originalSaveDB.apply(this,arguments);if(result)schedulePush();return result;};
@@ -16025,6 +16144,195 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 }
 </style>
 
+
+<!-- EVOLUTE COMMUNITY REBUILD V1: camada nova e isolada; preserva banco e funções compartilhadas -->
+<style id="evolute-community-v1-styles">
+.community-v1-home,.community-v1-detail{--cv1-bg:var(--card-bg,#fff);--cv1-border:var(--border-color,#e5e7eb);--cv1-text:var(--text-color,#20242a);--cv1-muted:var(--muted-color,#697386);color:var(--cv1-text);width:100%;max-width:100%;box-sizing:border-box;padding:16px 14px 32px;margin:0 auto}
+.community-v1-home *,.community-v1-detail *{box-sizing:border-box}
+.community-v1-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:2px 0 20px}
+.community-v1-heading h1{font-size:clamp(24px,5vw,32px);line-height:1.15;margin:0 0 7px;font-weight:800}
+.community-v1-heading p{margin:0;color:var(--cv1-muted);font-size:14px;line-height:1.45}
+.community-v1-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 24px}
+.community-v1-btn{appearance:none;border:1px solid var(--cv1-border);border-radius:12px;min-height:44px;padding:10px 13px;background:var(--cv1-bg);color:var(--cv1-text);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.community-v1-btn.primary{background:var(--primary,#e85d4a);border-color:transparent;color:#fff}
+.community-v1-section-title{font-size:17px;font-weight:800;margin:22px 0 12px}
+.community-v1-card{display:flex;align-items:center;gap:12px;padding:13px;margin:9px 0;border:1px solid var(--cv1-border);border-radius:15px;background:var(--cv1-bg);color:inherit;text-align:left;width:100%;cursor:pointer;min-width:0}
+.community-v1-avatar{width:48px;height:48px;flex:0 0 48px;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(128,128,128,.12);font-weight:800}
+.community-v1-avatar img{width:100%;height:100%;object-fit:cover}
+.community-v1-card-copy{min-width:0;flex:1}.community-v1-card-copy strong{display:block;font-size:15px;overflow-wrap:anywhere}.community-v1-card-copy small{display:block;color:var(--cv1-muted);font-size:12px;margin-top:4px;line-height:1.4}
+.community-v1-empty{padding:26px 18px;border:1px dashed var(--cv1-border);border-radius:16px;text-align:center;color:var(--cv1-muted);line-height:1.5}
+.community-v1-detail{padding-top:8px}
+.community-v1-detail-head{display:grid;grid-template-columns:40px 48px minmax(0,1fr) 40px;align-items:center;gap:9px;padding:8px 0 16px;border-bottom:1px solid var(--cv1-border)}
+.community-v1-iconbtn{border:1px solid var(--cv1-border);border-radius:12px;background:var(--cv1-bg);color:var(--cv1-text);width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:23px;cursor:pointer}
+.community-v1-title{min-width:0}.community-v1-title h1{font-size:18px;line-height:1.2;margin:0;overflow-wrap:anywhere}.community-v1-title p{font-size:12px;color:var(--cv1-muted);margin:5px 0 0;line-height:1.4}
+/* Barra única de navegação: os quatro itens ficam dentro da mesma faixa, sem contornos individuais. */
+.community-v1-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:0;padding:4px;width:100%;min-height:58px;box-sizing:border-box;position:relative;z-index:1;background:var(--cv1-bg,#fff);border:1px solid var(--cv1-border,#e5e5e5);border-radius:16px;overflow:hidden}
+.community-v1-tab{appearance:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:48px;padding:7px 2px;border:0!important;outline:0;box-shadow:none!important;border-radius:0!important;background:transparent!important;color:var(--cv1-muted);font:inherit;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.community-v1-home-tabs{margin:-6px 0 18px;gap:0}
+.community-v1-home-tabs .community-v1-tab{min-height:48px}
+.community-v1-tab span{font-size:19px;line-height:1}
+.community-v1-tab strong{font-size:11px;line-height:1.2;text-align:center;font-weight:700}
+.community-v1-tab.active{color:var(--primary,#e85d4a)!important;box-shadow:inset 0 -3px 0 var(--primary,#e85d4a)!important;background:transparent!important}
+@media(max-width:360px){.community-v1-tabs{padding:3px}.community-v1-tab{gap:4px}.community-v1-tab strong{font-size:10px}}
+.community-v1-panel{padding-top:16px;min-height:180px;width:100%;min-width:0}
+.community-v1-panel .community-social-calendar{width:100%;max-width:100%;margin:0 auto}
+.community-v1-panel .community-social-feed-list{display:flex;flex-direction:column;gap:12px}
+.community-v1-panel .community-social-post{border:1px solid var(--cv1-border);border-radius:14px;padding:13px;margin:0;background:var(--cv1-bg);overflow:hidden}
+.community-v1-panel .community-social-post-photo{width:100%;height:auto;max-height:520px;object-fit:contain;border-radius:10px}
+.community-v1-panel .community-tab-panel{padding:16px;border:1px solid var(--cv1-border);border-radius:14px;background:var(--cv1-bg)}
+.community-v1-panel .community-tab-panel h2{font-size:19px;margin:0 0 6px}
+.community-v1-panel .community-tab-subtitle{color:var(--cv1-muted);font-size:13px;margin:0 0 14px}
+@media(min-width:700px){.community-v1-home,.community-v1-detail{max-width:900px;padding-left:22px;padding-right:22px}.community-v1-home .community-v1-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}.community-v1-home .community-v1-card{margin:5px 0}.community-v1-detail-head{grid-template-columns:44px 54px minmax(0,1fr) 44px}.community-v1-avatar{width:54px;height:54px;flex-basis:54px}}
+</style>
+<script id="evolute-community-v1">
+(function(){
+ 'use strict';
+ const icon=(name)=>{try{return typeof evoIcon==='function'?evoIcon(name):'•'}catch(_){return '•'}};
+ const profile=(id)=>Array.isArray(db?.profiles)?db.profiles.find(p=>p.id===id)||{}:{};
+ const escapeText=(v)=>typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ window.showCommunities=function(){
+  try{setTab('btnComm')}catch(_){}
+  const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;
+  if(!u){app.innerHTML='<div class="community-v1-home"><div class="community-v1-empty">Crie ou acesse seu perfil para usar as Comunidades.</div></div>';return;}
+  if(!Array.isArray(db.communities))db.communities=[];
+  const mine=db.communities.filter(c=>Array.isArray(c.members)&&c.members.includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0));
+  const discoverable=db.communities.filter(c=>c.discoverable&&!(c.members||[]).includes(u.id));
+  const card=(c)=>`<button type="button" class="community-v1-card" onclick="showCommunityDetail('${escapeText(c.id)}')"><span class="community-v1-avatar">${c.photo?`<img src="${c.photo}" alt="">`:icon('users')}</span><span class="community-v1-card-copy"><strong>${escapeText(c.name||'Comunidade')}</strong><small>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'}${c.description?' · '+escapeText(c.description):''}</small></span><span aria-hidden="true">›</span></button>`;
+  app.innerHTML=`<div class="community-v1-home"><header class="community-v1-heading"><div><h1>Comunidades</h1><p>Treine junto, compartilhe sua evolução e mantenha a motivação.</p></div></header><nav class="community-v1-tabs community-v1-home-tabs" aria-label="Navegação das comunidades"><button type="button" class="community-v1-tab" data-panel="ranking" onclick="communityOpenSectionFromHome('ranking')"><span>${icon('trophy')}</span><strong>Campeões</strong></button><button type="button" class="community-v1-tab" data-panel="checkin" onclick="communityOpenSectionFromHome('checkin')"><span>${icon('check')}</span><strong>Check-in</strong></button><button type="button" class="community-v1-tab" data-panel="feed" onclick="communityOpenSectionFromHome('feed')"><span>${icon('users')}</span><strong>Feed</strong></button><button type="button" class="community-v1-tab" data-panel="challenges" onclick="communityOpenSectionFromHome('challenges')"><span>${icon('target')}</span><strong>Desafios</strong></button></nav><div class="community-v1-actions"><button type="button" class="community-v1-btn primary" onclick="showCreateCommunity()">＋ Criar comunidade</button><button type="button" class="community-v1-btn" onclick="showCommunityCodeJoin()">⌁ Entrar com código</button><button type="button" class="community-v1-btn" onclick="showCommunitySearch()">⌕ Encontrar comunidades</button><button type="button" class="community-v1-btn" onclick="communityFocusSearch('')">⌕ Buscar publicações</button></div><h2 class="community-v1-section-title">Minhas comunidades</h2>${mine.length?`<div class="community-v1-list">${mine.map(card).join('')}</div>`:'<div class="community-v1-empty">Você ainda não participa de uma comunidade.<br>Crie uma ou entre com um código de convite.</div>'}${discoverable.length?`<h2 class="community-v1-section-title">Descubra</h2><div class="community-v1-list">${discoverable.slice(0,8).map(card).join('')}</div>`:''}</div>`;
+  window.scrollTo(0,0);
+ };
+ window.showCommunityDetail=function(id,justCreated=false){
+  try{setTab('btnComm')}catch(_){}
+  const c=Array.isArray(db.communities)?db.communities.find(x=>x.id===id):null;
+  const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;
+  if(!c||!u||!(c.members||[]).includes(u.id)){window.showCommunities();return;}
+  if(!justCreated){c.accessCount=(Number(c.accessCount)||0)+1;c.lastAccessAt=new Date().toISOString();if(typeof saveDB==='function')saveDB();}
+  if(!Array.isArray(c.posts))c.posts=[];
+  const isAdmin=(c.admins||[]).includes(u.id),me=profile(u.id);
+  const avatar=c.photo?`<img src="${c.photo}" alt="">`:icon('users');
+  app.innerHTML=`<div class="community-v1-detail" aria-label="Detalhes da comunidade"><header class="community-v1-detail-head"><button type="button" class="community-v1-iconbtn" onclick="showCommunities()" aria-label="Voltar">‹</button><span class="community-v1-avatar">${avatar}</span><div class="community-v1-title"><h1>${escapeText(c.name)}</h1><p>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'} · ${escapeText(c.description||'Comunidade Evolute')}</p></div><button type="button" class="community-v1-iconbtn" onclick="${isAdmin?`showCommunitySettings('${escapeText(c.id)}')`:`communityShowMenu('${escapeText(c.id)}')`}" aria-label="Opções">⋯</button></header><nav class="community-v1-tabs" aria-label="Seções da comunidade"><button type="button" class="community-v1-tab" data-panel="ranking" onclick="communitySwitchPanel('ranking','${escapeText(c.id)}',this)"><span>${icon('trophy')}</span><strong>Campeões</strong></button><button type="button" class="community-v1-tab active" data-panel="checkin" onclick="communitySwitchPanel('checkin','${escapeText(c.id)}',this)"><span>${icon('check')}</span><strong>Check-in</strong></button><button type="button" class="community-v1-tab" data-panel="feed" onclick="communitySwitchPanel('feed','${escapeText(c.id)}',this)"><span>${icon('users')}</span><strong>Feed</strong></button><button type="button" class="community-v1-tab" data-panel="challenges" onclick="communitySwitchPanel('challenges','${escapeText(c.id)}',this)"><span>${icon('target')}</span><strong>Desafios</strong></button></nav><main id="communityTabPanel" class="community-v1-panel" data-community-id="${escapeText(c.id)}"><section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section></main></div>`;
+  window.scrollTo(0,0);
+ };
+ window.communityOpenSectionFromHome=function(panel){
+  const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;
+  const mine=u&&Array.isArray(db.communities)?db.communities.filter(c=>Array.isArray(c.members)&&c.members.includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0)):[];
+  if(!mine.length){alert('Entre ou crie uma comunidade para acessar '+({ranking:'Campeões',checkin:'Check-in',feed:'Feed',challenges:'Desafios'}[panel]||'esta seção')+'.');return;}
+  window.showCommunityDetail(mine[0].id);
+  const tab=document.querySelector('.community-v1-detail .community-v1-tab[data-panel="'+panel+'"]');
+  if(tab)window.communitySwitchPanel(panel,mine[0].id,tab);
+ };
+ window.communitySwitchPanel=function(panel,cid,button){
+  const c=Array.isArray(db.communities)?db.communities.find(x=>x.id===cid):null,host=document.getElementById('communityTabPanel');if(!c||!host)return;
+  document.querySelectorAll('.community-v1-tabs .community-v1-tab').forEach(b=>{const active=b===button||b.dataset.panel===panel;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});
+  if(panel==='checkin'){host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section>`;return;}
+  if(panel==='feed'){
+   const posts=[...(c.posts||[])].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+   host.innerHTML=`<div class="community-v1-feed-actions"><button type="button" class="community-v1-btn primary" onclick="communityToggleComposer()">＋ Nova publicação</button></div><div id="communitySocialFeedList" class="community-social-feed-list">${communityRenderPosts(c,posts)}</div>`;return;
+  }
+  if(panel==='ranking'){
+   const rows=[...(c.members||[])].map(mid=>{const p=profile(mid);return {p,completed:(p.workoutHistory||p.history||[]).length}}).sort((a,b)=>b.completed-a.completed);
+   host.innerHTML=`<section class="community-tab-panel"><h2>Campeões</h2><p class="community-tab-subtitle">Participantes com mais registros de treino.</p>${rows.length?rows.map((r,i)=>`<div class="community-ranking-row"><span class="community-ranking-position">${i+1}</span><span class="community-ranking-avatar">${r.p.photo?`<img src="${r.p.photo}" alt="">`:icon('user')}</span><strong>${escapeText(r.p.name||'Participante')}</strong><span class="community-ranking-score">${r.completed} registro${r.completed===1?'':'s'}</span></div>`).join(''):'<p class="community-social-empty">Ainda não há participantes.</p>'}</section>`;return;
+  }
+  const challenges=Array.isArray(c.challenges)?c.challenges:[];
+  host.innerHTML=`<section class="community-tab-panel"><h2>Desafios</h2><p class="community-tab-subtitle">Metas para evoluir em conjunto.</p>${challenges.length?challenges.map(ch=>`<article class="community-challenge-row"><strong>${escapeText(ch.name||ch.title||'Desafio da comunidade')}</strong>${ch.description?`<p>${escapeText(ch.description)}</p>`:''}</article>`).join(''):'<p class="community-social-empty">Nenhum desafio cadastrado nesta comunidade ainda.</p>'}</section>`;
+ };
+})();
+</script>
+
+
+<style id="community-navigation-gap-fix-v6">
+/* Aproxima a faixa do cabeçalho da comunidade sem alterar os demais módulos. */
+#app nav.community-runtime-tabs { margin-top: -8px !important; margin-bottom: 14px !important; border-radius: 0 !important; box-shadow: none !important; }
+</style>
+
+ 
+
+<style id="community-checkin-button-force-v24">
+#communityCheckinFloatingAdd{
+ position:fixed!important;z-index:2147483000!important;left:50%!important;bottom:calc(24px + env(safe-area-inset-bottom,0px))!important;
+ transform:translateX(-50%)!important;display:none;align-items:center!important;justify-content:center!important;gap:9px!important;
+ width:68px!important;min-width:68px!important;max-width:68px!important;height:68px!important;padding:0!important;
+ border:0!important;border-radius:50%!important;background:#ff6908!important;color:#fff!important;
+ font-family:inherit!important;font-size:38px!important;font-weight:400!important;line-height:1!important;
+ box-shadow:0 6px 22px rgba(255,105,8,.42)!important;cursor:pointer!important;visibility:visible!important;opacity:1!important;
+}
+#communityCheckinFloatingAdd .community-checkin-add-plus{display:block!important;font-size:38px!important;font-weight:400!important;line-height:1!important}
+body.community-checkin-active #communityCheckinFloatingAdd{display:flex!important;visibility:visible!important;opacity:1!important}
+</style>
+<script id="community-checkin-button-force-script-v25">
+(function(){
+ function active(){
+  const tab=document.querySelector('.community-v1-detail .community-v1-tabs button[data-panel="checkin"].active, .community-social-tabs button[data-panel="checkin"].active');
+  return !!tab;
+ }
+ let scheduled=false;
+ function ensure(){
+  scheduled=false;
+  let b=document.getElementById('communityCheckinFloatingAdd');
+  if(!b){
+   b=document.createElement('button');b.id='communityCheckinFloatingAdd';b.type='button';
+   b.setAttribute('aria-label','Novo check-in');b.title='Novo check-in';
+   b.innerHTML='<span class="community-checkin-add-plus" aria-hidden="true">+</span>';
+   b.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    if(document.getElementById('communityPostPhotoChoice'))return;
+    const chooser=document.createElement('div');
+    chooser.id='communityPostPhotoChoice';
+    chooser.innerHTML='<div class="community-photo-choice-backdrop"><section class="community-photo-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="communityPhotoChoiceTitle"><button type="button" class="community-photo-choice-close" aria-label="Fechar">×</button><div class="community-photo-choice-icon" aria-hidden="true">＋</div><h3 id="communityPhotoChoiceTitle">Novo check-in</h3><p>Como você deseja adicionar sua foto?</p><button type="button" class="community-photo-choice-option" data-photo-source="camera"><span class="community-photo-choice-option-icon" aria-hidden="true">◎</span><span><strong>Tirar foto</strong><small>Usar a câmera do celular</small></span><span class="community-photo-choice-chevron" aria-hidden="true">›</span></button><button type="button" class="community-photo-choice-option" data-photo-source="gallery"><span class="community-photo-choice-option-icon" aria-hidden="true">▧</span><span><strong>Escolher da biblioteca</strong><small>Selecionar uma foto existente</small></span><span class="community-photo-choice-chevron" aria-hidden="true">›</span></button></section></div>';
+    document.body.appendChild(chooser);
+    function closeChooser(){chooser.remove();}
+    chooser.addEventListener('click',function(ev){
+     if(ev.target===chooser.querySelector('.community-photo-choice-backdrop')||ev.target.closest('.community-photo-choice-close')){closeChooser();return;}
+     const option=ev.target.closest('[data-photo-source]');
+     if(!option)return;
+     const source=option.dataset.photoSource;
+     closeChooser();
+     if(source==='camera'){
+      if(typeof window.evoluteOpenNativeCheckinCamera==='function')window.evoluteOpenNativeCheckinCamera();
+      else alert('A câmera do celular não está disponível nesta versão.');
+      return;
+     }
+     if(typeof window.evoluteOpenCommunityPhotoLibrary==='function')window.evoluteOpenCommunityPhotoLibrary();
+     else alert('A biblioteca de fotos não está disponível nesta versão.');
+    });
+   });
+   document.body.appendChild(b);
+  }
+  const show=active();
+  document.body.classList.toggle('community-checkin-active',show);
+  b.style.setProperty('display',show?'flex':'none','important');
+  b.style.setProperty('visibility','visible','important');
+  b.style.setProperty('opacity','1','important');
+ }
+ function scheduleEnsure(){if(scheduled)return;scheduled=true;setTimeout(ensure,80);}
+ document.addEventListener('click',function(e){if(e.target.closest('.community-v1-tabs button, .community-social-tabs button'))scheduleEnsure();});
+ // Observe only app structure and active classes. Do not observe style changes:
+ // this script updates button styles itself, which would otherwise create a loop.
+ const observer=new MutationObserver(scheduleEnsure);
+ function init(){
+  ensure();
+  observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+ window.communityEnsureVisibleCheckinButton=ensure;
+})();
+</script><style id="community-photo-choice-modal-v28">
+#communityPostPhotoChoice{position:fixed!important;inset:0!important;z-index:2147483600!important}
+#communityPostPhotoChoice .community-photo-choice-backdrop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,18,22,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#communityPostPhotoChoice .community-photo-choice-dialog{position:relative;width:100%;max-width:390px;box-sizing:border-box;padding:28px 20px 20px;background:var(--surface,#fff);color:var(--text,#222);border:1px solid rgba(120,120,120,.16);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.25);font-family:inherit;animation:communityPhotoChoiceIn .18s ease-out}
+#communityPostPhotoChoice .community-photo-choice-close{position:absolute;right:13px;top:12px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(128,128,128,.12);color:inherit;font-size:25px;line-height:1;cursor:pointer}
+#communityPostPhotoChoice .community-photo-choice-icon{display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:0 auto 14px;border-radius:17px;background:rgba(255,105,8,.12);color:#ff6908;font-size:32px;font-weight:400}
+#communityPostPhotoChoice h3{margin:0;text-align:center;font-size:22px;font-weight:800;letter-spacing:-.4px}
+#communityPostPhotoChoice p{margin:8px 0 22px;text-align:center;color:var(--muted,#777);font-size:14px;line-height:1.45}
+#communityPostPhotoChoice .community-photo-choice-option{display:flex;align-items:center;gap:13px;width:100%;min-height:72px;padding:13px 14px;margin-top:10px;border:1px solid rgba(130,130,130,.2);border-radius:17px;background:var(--card,#fff);color:inherit;text-align:left;font:inherit;cursor:pointer;box-sizing:border-box;transition:background .15s,border-color .15s}
+#communityPostPhotoChoice .community-photo-choice-option:active{background:rgba(255,105,8,.08);border-color:#ff6908}
+#communityPostPhotoChoice .community-photo-choice-option-icon{flex:0 0 44px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(255,105,8,.11);color:#ff6908;font-size:25px}
+#communityPostPhotoChoice .community-photo-choice-option strong{display:block;font-size:15px;font-weight:750;line-height:1.35}
+#communityPostPhotoChoice .community-photo-choice-option small{display:block;margin-top:3px;color:var(--muted,#777);font-size:12px;line-height:1.35}
+#communityPostPhotoChoice .community-photo-choice-chevron{margin-left:auto;color:#ff6908;font-size:27px;font-weight:400}
+@keyframes communityPhotoChoiceIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-color-scheme:dark){#communityPostPhotoChoice .community-photo-choice-dialog{background:#202124;color:#f5f5f5;--muted:#b4b4b4;--card:#292a2d}}
+</style>
 </body>
 
 <style id="evolute-strong-orange-final">
@@ -25964,29 +26272,7 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 @media(max-width:600px){#communityCheckinFloatingAdd{bottom:calc(30px + env(safe-area-inset-bottom,0px));width:68px;height:68px}}
 </style>
-<script id="community-checkin-floating-add-button-script-20261013">
-(function(){
- function ensureCommunityAdd(){
-  let b=document.getElementById('communityCheckinFloatingAdd');
-  if(!b){
-   b=document.createElement('button');b.id='communityCheckinFloatingAdd';b.type='button';
-   b.setAttribute('aria-label','Adicionar check-in');b.title='Adicionar check-in';b.textContent='+';
-   b.addEventListener('click',function(e){
-    e.preventDefault();e.stopPropagation();
-    if(typeof window.evoluteStartCommunityPostPhoto==='function') window.evoluteStartCommunityPostPhoto();
-    else console.error('Evolute: seleção de foto ainda não foi inicializada.');
-   });
-   document.body.appendChild(b);
-  }
-  const checkin=document.querySelector('.community-social-tabs button[data-panel="checkin"].active');
-  document.body.classList.toggle('community-checkin-active',!!checkin);
- }
- document.addEventListener('click',function(e){if(e.target.closest('.community-social-tabs button'))setTimeout(ensureCommunityAdd,0);});
- const observer=new MutationObserver(ensureCommunityAdd);
- document.addEventListener('DOMContentLoaded',function(){ensureCommunityAdd();const app=document.getElementById('app')||document.body;observer.observe(app,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});});
- if(document.readyState!=='loading')ensureCommunityAdd();
-})();
-</script>
+
 
 
 <!-- Tela de publicação/check-in baseada na referência enviada em 14/10/2026 -->
@@ -26094,7 +26380,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 }
 #evoluteNewCheckinScreen .nc-preview-row .nc-side{display:none!important}
 </style>
-<script id="community-new-checkin-screen-script-20261014">
+<script id="community-new-checkin-screen-script-20261015-v40">
 (function(){
  if(window.__evoluteNewCheckinScreenInstalled)return;window.__evoluteNewCheckinScreenInstalled=true;
  function $(sel,root){return (root||document).querySelector(sel)}
@@ -26111,7 +26397,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
  }
  function build(){if($('#evoluteNewCheckinScreen'))return $('#evoluteNewCheckinScreen');
   const el=document.createElement('section');el.id='evoluteNewCheckinScreen';el.setAttribute('aria-label','Novo check-in');
-  el.innerHTML=`<header class="nc-header"><button type="button" class="nc-back" aria-label="Voltar">‹</button><h2>Novo check-in</h2><button type="button" class="nc-publish">Publicar</button></header><div class="nc-scroll"><div class="nc-preview-row"><div class="nc-photo-wrap"><div class="nc-photo-empty">Adicione uma foto do treino</div><img class="nc-photo" alt="Prévia da foto" hidden><button type="button" class="nc-edit-photo" aria-label="Adicionar ou editar foto">✎</button></div></div><input class="nc-file" type="file" accept="image/*" capture="environment" hidden><div class="nc-card"><textarea class="nc-description" name="description" placeholder="Escreva algo sobre seu treino" aria-label="Escreva algo sobre seu treino"></textarea></div><div class="nc-datetime"><div class="nc-datebox"><label for="nc-date">Dia</label><input id="nc-date" name="date" type="date"></div><div class="nc-datebox"><label for="nc-time">Hora de início</label><input id="nc-time" name="time" type="time"></div></div><div class="nc-card"><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><label for="nc-location">Localização</label><input id="nc-location" name="location" placeholder="Nenhum"></div><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12M9 12h6M9 15h6"/></svg></span><label for="nc-gym">Academia</label><input id="nc-gym" name="gym" placeholder="Nenhum"></div></div><div class="nc-card"><div class="nc-field"><label for="nc-activity">Atividade</label><select id="nc-activity" name="activity"><option value="">Selecionar atividade</option><option>Musculação</option><option>Cardio</option><option>Corrida</option><option>Caminhada</option><option>Ciclismo</option><option>Alongamento</option><option>Funcional</option><option>Outro</option></select></div><div class="nc-field"><label for="nc-duration">Duração</label><input id="nc-duration" name="duration" placeholder="Ex.: 1h 15min"></div><div class="nc-field"><label for="nc-distance">Distância (quilômetros)</label><input id="nc-distance" name="distance" type="number" min="0" step="0.1" placeholder="0,0 km"></div><div class="nc-field"><label for="nc-calories">Calorias</label><input id="nc-calories" name="calories" type="number" min="0" placeholder="0 kcal"></div></div></div>`;
+  el.innerHTML=`<header class="nc-header"><button type="button" class="nc-back" aria-label="Voltar">‹</button><h2>Novo check-in</h2><button type="button" class="nc-publish">Publicar</button></header><div class="nc-scroll"><div class="nc-preview-row"><div class="nc-photo-wrap"><div class="nc-photo-empty">Adicione uma foto do treino</div><img class="nc-photo" alt="Prévia da foto" hidden><button type="button" class="nc-edit-photo" aria-label="Adicionar ou editar foto">✎</button></div></div><input class="nc-file" type="file" accept="image/*" hidden><div class="nc-card"><textarea class="nc-description" name="description" placeholder="Escreva algo sobre seu treino" aria-label="Escreva algo sobre seu treino"></textarea></div><div class="nc-datetime"><div class="nc-datebox"><label for="nc-date">Dia</label><input id="nc-date" name="date" type="date"></div><div class="nc-datebox"><label for="nc-time">Hora de início</label><input id="nc-time" name="time" type="time"></div></div><div class="nc-card"><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><label for="nc-location">Localização</label><input id="nc-location" name="location" placeholder="Nenhum"></div><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12M9 12h6M9 15h6"/></svg></span><label for="nc-gym">Academia</label><input id="nc-gym" name="gym" placeholder="Nenhum"></div></div><div class="nc-card"><div class="nc-field"><label for="nc-activity">Atividade</label><select id="nc-activity" name="activity"><option value="">Selecionar atividade</option><option>Musculação</option><option>Cardio</option><option>Corrida</option><option>Caminhada</option><option>Ciclismo</option><option>Alongamento</option><option>Funcional</option><option>Outro</option></select></div><div class="nc-field"><label for="nc-duration">Duração</label><input id="nc-duration" name="duration" placeholder="Ex.: 1h 15min"></div><div class="nc-field"><label for="nc-distance">Distância (quilômetros)</label><input id="nc-distance" name="distance" type="number" min="0" step="0.1" placeholder="0,0 km"></div><div class="nc-field"><label for="nc-calories">Calorias</label><input id="nc-calories" name="calories" type="number" min="0" placeholder="0 kcal"></div></div></div>`;
   document.body.appendChild(el);
   const now=new Date(),pad=n=>String(n).padStart(2,'0');$('input[name="date"]',el).value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());$('input[name="time"]',el).value=pad(now.getHours())+':'+pad(now.getMinutes());
   const file=$('.nc-file',el),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);let photo='';
@@ -26177,93 +26463,162 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
   file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(f)showChosenPhoto(f);file.value='';});
   const close=()=>el.classList.remove('open');$('.nc-back',el).addEventListener('click',close);
-  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();const feed=$('.community-social-tabs button[data-panel="feed"]');if(feed)feed.click();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
+  const publish=async()=>{
+   let diagnosticStage='validação do formulário';
+   let diagnosticFile=null;
+   const description=$('textarea[name="description"]',el).value.trim();
+   if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}
+   const buttons=[$('.nc-publish',el),$('.nc-publish-wide',el)].filter(Boolean);
+   buttons.forEach(b=>{b.disabled=true;b.dataset.originalText=b.textContent;b.textContent='Preparando publicação…';});
+   try{
+    diagnosticFile=el.__evolutePhotoFile||null;
+    let finalPhoto=el.__evolutePhotoData||photo||'';
+    let photoStoragePath='';
+    if(diagnosticFile){
+      diagnosticStage='envio da foto para o armazenamento remoto';
+      console.info('[Evolute check-in] Enviando arquivo sem converter para Base64.',{type:diagnosticFile.type||'(tipo não informado)',sizeBytes:diagnosticFile.size});
+      if(typeof window.evoluteUploadCheckinPhoto!=='function')throw new Error('O serviço de armazenamento de fotos não está disponível. Recarregue o aplicativo e tente novamente.');
+      const uploaded=await window.evoluteUploadCheckinPhoto(diagnosticFile);
+      finalPhoto=uploaded.url;photoStoragePath=uploaded.path;
+    }
+    diagnosticStage='montagem dos dados do check-in';
+    const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:finalPhoto,photoStoragePath};
+    diagnosticStage='leitura do armazenamento local';
+    const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);
+    diagnosticStage='gravação do check-in no armazenamento local';
+    localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));
+    // A foto fica armazenada uma única vez no registro do check-in.
+    // Não duplicar o Base64 em outra chave do localStorage: isso aumenta uso de memória/armazenamento.
+    close();const feed=$('.community-social-tabs button[data-panel="feed"]');if(feed)feed.click();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();
+   }catch(error){
+    const technicalName=error&&error.name?String(error.name):'Erro sem nome';
+    const technicalMessage=error&&error.message?String(error.message):String(error||'Erro desconhecido');
+    const fileInfo=diagnosticFile?'\nFoto: '+(diagnosticFile.type||'tipo desconhecido')+'; '+Math.round(diagnosticFile.size/1024)+' KB':'';
+    console.error('[Evolute diagnóstico] Falha no check-in.',{stage:diagnosticStage,errorName:technicalName,errorMessage:technicalMessage,fileType:diagnosticFile&&diagnosticFile.type,fileSizeBytes:diagnosticFile&&diagnosticFile.size,error});
+    alert('Diagnóstico do check-in\nEtapa: '+diagnosticStage+'\nErro: '+technicalName+' — '+technicalMessage+fileInfo+'\n\nO formulário continua aberto. Envie-me o texto desta mensagem para identificarmos a causa.');
+   }finally{buttons.forEach(b=>{b.disabled=false;if(b.dataset.originalText)b.textContent=b.dataset.originalText;delete b.dataset.originalText;});}
+  };$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
  }
  function open(){const el=build();el.classList.add('open');}
  let photoProcessing=false;
+ // Ao retornar da câmera/galeria, manter apenas o objeto File recebido pelo seletor.
+ // Não decodificar, comprimir, converter para Base64 nem criar prévia nesta etapa.
  function showChosenPhoto(file){
   if(!file || photoProcessing)return;
-  photoProcessing=true;
-  const el=build(),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);
-  // Nunca converter o arquivo original para Base64. Primeiro tenta decodificar
-  // já redimensionando; só o Blob comprimido é convertido para o formato legado.
-  const fail=(message)=>{
-   photoProcessing=false;
-   let note=$('.nc-photo-error',el);
-   if(!note){note=document.createElement('p');note.className='nc-photo-error';note.style.cssText='margin:10px 0;color:#c2410c;font-size:14px;line-height:1.4';img.parentNode.appendChild(note);}
-   note.textContent=message;
-   el.classList.add('open');
-  };
-  (async()=>{
-   let bitmap=null,canvas=null,blob=null;
-   try{
-    if(typeof createImageBitmap==='function'){
-     const opts={resizeWidth:640,resizeHeight:640,resizeQuality:'low',imageOrientation:'from-image'};
-     try{bitmap=await createImageBitmap(file,opts);}catch(_){bitmap=await createImageBitmap(file);}
-    }
-    if(bitmap){
-     const scale=Math.min(1,640/Math.max(bitmap.width,bitmap.height));
-     const w=Math.max(1,Math.round(bitmap.width*scale)),h=Math.max(1,Math.round(bitmap.height*scale));
-     canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-     const ctx=canvas.getContext('2d',{alpha:false});
-     if(!ctx)throw new Error('Canvas indisponível');
-     ctx.drawImage(bitmap,0,0,w,h);
-     blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.68));
-    } else {
-     // Fallback sem decodificação: não ler arquivo original inteiro em memória.
-     throw new Error('Redimensionamento indisponível neste navegador');
-    }
-    if(!blob)throw new Error('Não foi possível comprimir a foto');
-    if(bitmap&&bitmap.close){bitmap.close();bitmap=null;}
-    if(canvas){canvas.width=1;canvas.height=1;canvas=null;}
-    // Converte apenas a imagem final, já pequena, para compatibilidade com o Feed.
-    const reader=new FileReader();
-    const dataUrl=await new Promise((resolve,reject)=>{
-     reader.onload=()=>resolve(String(reader.result||''));
-     reader.onerror=()=>reject(new Error('Falha ao ler a imagem comprimida'));
-     reader.onabort=()=>reject(new Error('Leitura da imagem interrompida'));
-     reader.readAsDataURL(blob);
-    });
-    if(!dataUrl.startsWith('data:image/'))throw new Error('Imagem comprimida inválida');
-    el.__evolutePhotoData=dataUrl;
-    img.src=dataUrl;img.hidden=false;empty.hidden=true;
-    const note=$('.nc-photo-error',el);if(note)note.remove();
-    el.classList.add('open');
-   }catch(err){
-    console.error('Evolute: falha no processamento seguro da foto.',err);
-    fail('Não foi possível preparar esta foto sem exceder a memória do aparelho. Tente uma imagem menor ou escolha uma foto da galeria.');
-   }finally{
-    if(bitmap&&bitmap.close)try{bitmap.close();}catch(_){}
-    if(canvas){canvas.width=1;canvas.height=1;}
-    photoProcessing=false;
-   }
-  })();
+  console.info('[Evolute diagnóstico] Retorno do seletor nativo recebido.',{name:file.name||'(sem nome)',type:file.type||'(tipo não informado)',sizeBytes:file.size,lastModified:file.lastModified||null});
+  const el=build();
+  el.classList.add('open');
+  el.__evolutePhotoFile=file;
+  el.__evolutePhotoData='';
+  const img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);
+  if(img){img.removeAttribute('src');img.hidden=true;}
+  if(empty){empty.hidden=false;empty.textContent='Foto selecionada. Ela será preparada ao publicar o check-in.';}
+  const note=$('.nc-photo-error',el);if(note)note.remove();
+ }
+ // Função de compatibilidade antiga; o novo fluxo não a chama para evitar decodificação e Base64.
+ async function compressCheckinPhotoForPublish(file){
+  if(!file)return '';
+  if(typeof createImageBitmap!=='function')throw new Error('Este navegador não permite preparar a foto com segurança.');
+  let bitmap=null,canvas=null;
+  try{
+   // Solicitar redução já durante a decodificação. Não tentar uma segunda
+   // decodificação sem opções, pois isso pode carregar a foto original inteira
+   // na memória do WebView em aparelhos Android com pouca memória.
+   bitmap=await createImageBitmap(file,{resizeWidth:640,resizeHeight:640,resizeQuality:'low'});
+   const scale=Math.min(1,640/Math.max(bitmap.width,bitmap.height));
+   const w=Math.max(1,Math.round(bitmap.width*scale)),h=Math.max(1,Math.round(bitmap.height*scale));
+   canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Canvas indisponível');
+   ctx.drawImage(bitmap,0,0,w,h);
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.62));
+   if(!blob)throw new Error('Não foi possível comprimir a foto.');
+   const reader=new FileReader();
+   const dataUrl=await new Promise((resolve,reject)=>{reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Falha ao ler a foto comprimida.'));reader.onabort=()=>reject(new Error('Leitura da foto interrompida.'));reader.readAsDataURL(blob);});
+   if(!dataUrl.startsWith('data:image/'))throw new Error('Foto preparada inválida.');
+   return dataUrl;
+  }finally{
+   if(bitmap&&bitmap.close)try{bitmap.close();}catch(_){}
+   if(canvas){canvas.width=1;canvas.height=1;}
+  }
+ }
+ // A confirmação final é feita na própria câmera do Android ("Usar foto").
+ // Não criar outra prévia da imagem original dentro do WebView: em aparelhos com
+ // pouca memória, decodificar essa prévia pode derrubar a página antes do formulário.
+ function confirmCapturedCheckinPhoto(file){
+  if(!file)return;
+  const screen=build();
+  screen.classList.add('open');
+  showChosenPhoto(file);
  }
  // Em arquivos abertos via content:// no Android, getUserMedia normalmente não é permitido.
  // Use o seletor nativo com capture para entregar a câmera real do aparelho sem tela de erro.
  let nativeCameraOpen=false;
  function openNativeCamera(){
-  if(nativeCameraOpen)return;
-  nativeCameraOpen=true;
-  const input=document.createElement('input');input.type='file';input.accept='image/*';input.setAttribute('capture','environment');
-  input.setAttribute('aria-label','Tirar foto para o check-in');
-  input.style.cssText='position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;z-index:-1';document.body.appendChild(input);
-  let cleaned=false;
-  const cleanup=()=>{if(cleaned)return;cleaned=true;nativeCameraOpen=false;setTimeout(()=>{if(input.parentNode)input.parentNode.removeChild(input);},1500);};
-  input.addEventListener('change',function(){
-   const file=input.files&&input.files[0];
-   if(file){showChosenPhoto(file);}
-   cleanup();
-  },{once:true});
-  input.addEventListener('cancel',cleanup,{once:true});
-  document.addEventListener('visibilitychange',function onVisibility(){
-   if(document.visibilityState==='visible'&&!input.files?.length){
-    // Não limpar imediatamente: Android/WebView pode entregar o arquivo após voltar.
-    setTimeout(()=>{if(!input.files?.length)cleanup();},1800);
-   }
-   document.removeEventListener('visibilitychange',onVisibility);
+  // v46: testar a câmera integrada do navegador, sem sair do Chrome.
+  const cam=ensureWebCamera();
+  cam.classList.add('open');
+  startWebCameraStream(cam);
+ }
+ let webCameraStream=null,webCameraFacing='environment';
+ function stopWebCamera(){
+  if(webCameraStream){webCameraStream.getTracks().forEach(t=>{try{t.stop();}catch(_){}});webCameraStream=null;}
+  const cam=$('#evoluteCameraScreen');
+  if(cam){const video=$('video',cam);if(video)video.srcObject=null;cam.classList.remove('open');}
+ }
+ function ensureWebCamera(){
+  let cam=$('#evoluteCameraScreen');if(cam)return cam;
+  cam=document.createElement('section');cam.id='evoluteCameraScreen';
+  cam.setAttribute('aria-label','Câmera para novo check-in');
+  cam.innerHTML='<header class="ec-top"><button type="button" class="ec-close" aria-label="Voltar">‹</button><span>Nova postagem</span><button type="button" class="ec-switch" aria-label="Alternar câmera">↻</button></header><div class="ec-preview"><video autoplay playsinline muted></video><div class="ec-message">Preparando a câmera…</div></div><footer class="ec-bottom"><button type="button" class="ec-library"><span>▧</span>Biblioteca</button><button type="button" class="ec-shutter" aria-label="Tirar foto"></button><span></span></footer><input class="ec-library-input" type="file" accept="image/*" hidden>';
+  document.body.appendChild(cam);
+  $('.ec-close',cam).addEventListener('click',stopWebCamera);
+  $('.ec-library',cam).addEventListener('click',()=>$('.ec-library-input',cam).click());
+  $('.ec-library-input',cam).addEventListener('change',()=>{
+   const input=$('.ec-library-input',cam),file=input.files&&input.files[0];
+   if(file){stopWebCamera();showChosenPhoto(file);}
+   input.value='';
   });
-  try{input.click();}catch(err){cleanup();console.warn('Evolute: não foi possível iniciar a câmera nativa.',err);}
+  $('.ec-shutter',cam).addEventListener('click',()=>{
+   const video=$('video',cam);
+   if(!video.videoWidth||!video.videoHeight)return;
+   // Reduzir a resolução antes de gerar o arquivo para limitar o pico de memória.
+   const maxSide=1280,scale=Math.min(1,maxSide/Math.max(video.videoWidth,video.videoHeight));
+   const canvas=document.createElement('canvas');
+   canvas.width=Math.max(1,Math.round(video.videoWidth*scale));
+   canvas.height=Math.max(1,Math.round(video.videoHeight*scale));
+   const ctx=canvas.getContext('2d',{alpha:false});
+   if(!ctx){canvas.width=1;canvas.height=1;return;}
+   ctx.drawImage(video,0,0,canvas.width,canvas.height);
+   canvas.toBlob(blob=>{
+    if(!blob){canvas.width=1;canvas.height=1;return;}
+    const file=new File([blob],'evolute-checkin.jpg',{type:'image/jpeg',lastModified:Date.now()});
+    canvas.width=1;canvas.height=1;
+    stopWebCamera();
+    showChosenPhoto(file);
+   },'image/jpeg',0.78);
+  });
+  $('.ec-switch',cam).addEventListener('click',async()=>{
+   webCameraFacing=webCameraFacing==='environment'?'user':'environment';
+   await startWebCameraStream(cam);
+  });
+  return cam;
+ }
+ async function startWebCameraStream(cam){
+  const video=$('video',cam),message=$('.ec-message',cam);
+  if(webCameraStream){webCameraStream.getTracks().forEach(t=>{try{t.stop();}catch(_){}});webCameraStream=null;}
+  message.hidden=false;message.textContent='Solicitando permissão para usar a câmera…';
+  try{
+   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
+    throw new Error('Este arquivo aberto localmente não disponibiliza a câmera integrada neste navegador.');
+   webCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:webCameraFacing},width:{ideal:1280},height:{ideal:1280}},audio:false});
+   video.srcObject=webCameraStream;
+   await video.play();
+   message.hidden=true;
+  }catch(err){
+   message.hidden=false;
+   message.textContent='Não foi possível abrir a câmera dentro desta página. Isso pode ocorrer porque o arquivo está aberto localmente. Use Biblioteca para escolher uma foto. Detalhe: '+(err&&err.message?err.message:'permissão indisponível');
+   console.warn('Evolute v46: câmera integrada indisponível',err);
+  }
  }
  function ensurePhotoChoiceModal(){
   let modal=$('#evolutePhotoChoiceModal');if(modal)return modal;
@@ -26295,17 +26650,9 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
  function startPhotoFlow(){
   const modal=ensurePhotoChoiceModal();modal.classList.add('open');
  }
- // Callback chamado pelo Android depois que a câmera nativa captura/seleciona uma imagem.
- window.evoluteNativePhotoReady=function(dataUrl){
-  try {
-   if(!dataUrl || typeof dataUrl!=='string') return;
-   const parts=dataUrl.split(',');
-   const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||'image/jpeg';
-   const raw=atob(parts[1]||''); const bytes=new Uint8Array(raw.length);
-   for(let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
-   showChosenPhoto(new File([bytes],'evolute-checkin.jpg',{type:mime}));
-  } catch(err){ console.error('Evolute: não foi possível receber a foto da câmera Android.',err); }
- };
+ // Não receber fotos por callback Base64 do Android. A câmera/galeria são abertas
+ // pelo seletor nativo do sistema (input type=file), que entrega um File diretamente.
+ window.evoluteOpenNativeCheckinCamera=openNativeCamera;
  window.evoluteOpenNewCheckin=open;
  window.evoluteStartCommunityPostPhoto=startPhotoFlow;
  window.evoluteOpenCommunityPhotoLibrary=function(){const input=document.createElement('input');input.type='file';input.accept='image/*';input.addEventListener('change',function(){const file=input.files&&input.files[0];if(file)showChosenPhoto(file);});input.click();};
@@ -26487,3 +26834,259 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 #app .community-calendar-day.has-record img,#app .community-calendar-day.selected img{opacity:1!important}
 #app .community-calendar-day:has(img) .community-calendar-dot{display:none!important}
 </style>
+
+
+<style id="community-navigation-runtime-fix-v4">
+/* Correção aplicada à tela real: uma faixa única com quatro áreas sem botões individuais. */
+#app nav.community-runtime-tabs {
+  display:flex !important; visibility:visible !important; opacity:1 !important;
+  position:relative !important; left:50% !important; transform:translateX(-50%) !important;
+  width:100vw !important; max-width:100vw !important; min-height:58px !important;
+  height:auto !important; box-sizing:border-box !important; align-items:stretch !important;
+  justify-content:space-around !important; gap:0 !important; margin:0 0 14px !important;
+  padding:4px 8px !important; background:#fff !important; color:#24262a !important;
+  border:0 !important; border-top:1px solid #e5e5e5 !important; border-bottom:1px solid #e5e5e5 !important;
+  border-radius:0 !important; box-shadow:none !important;
+  overflow:visible !important; z-index:5 !important;
+}
+#app nav.community-runtime-tabs > button {
+  appearance:none !important; -webkit-appearance:none !important; display:flex !important;
+  visibility:visible !important; opacity:1 !important; position:relative !important;
+  flex:1 1 25% !important; min-width:0 !important; width:25% !important; height:auto !important;
+  min-height:48px !important; max-height:none !important; margin:0 !important; padding:7px 2px 5px !important;
+  border:0 !important; outline:0 !important; box-shadow:none !important; border-radius:0 !important;
+  background:transparent !important; color:#74777d !important; display:flex !important;
+  flex-direction:column !important; align-items:center !important; justify-content:center !important;
+  gap:4px !important; font-size:11px !important; line-height:1.15 !important; font-weight:500 !important;
+}
+#app nav.community-runtime-tabs > button strong {font-size:11px !important; font-weight:600 !important; white-space:normal !important; text-align:center !important;}
+#app nav.community-runtime-tabs > button svg {width:19px !important;height:19px !important;min-width:19px !important;}
+#app nav.community-runtime-tabs > button.active {color:#fe6405 !important;}
+#app nav.community-runtime-tabs > button.active::after {content:"";position:absolute;bottom:0;left:24%;right:24%;height:3px;border-radius:3px;background:#fe6405;}
+</style>
+<script id="community-navigation-runtime-fix-v4-js">
+(function(){
+ 'use strict';
+ const labels=[['ranking','Campeões','trophy'],['checkin','Check-in','check'],['feed','Feed','users'],['challenges','Desafios','target']];
+ function makeIcon(name){try{if(typeof evoIcon==='function')return evoIcon(name);}catch(e){}return name==='ranking'?'🏆':name==='checkin'?'✓':name==='feed'?'☰':'◎';}
+ function activeCommunityId(scope){
+   const host=(scope&&scope.querySelector&&scope.querySelector('[data-community-id]'))||document.querySelector('#communityTabPanel[data-community-id], .community-detail-content[data-community-id]');
+   if(host&&host.dataset.communityId)return host.dataset.communityId;
+   const detail=document.querySelector('.community-v1-detail');
+   if(detail){const fn=detail.querySelector('[onclick*="communitySwitchPanel"]');if(fn){const m=fn.getAttribute('onclick').match(/communitySwitchPanel\('[^']+','([^']+)'/);if(m)return m[1];}}
+   try{const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;const list=Array.isArray(db&&db.communities)?db.communities:[];const c=list.filter(x=>u&&(x.members||[]).includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0))[0];return c&&c.id||'';}catch(e){return '';}
+ }
+ function switchTo(panel,id,btn){
+   const nav=btn&&btn.closest('nav'); if(nav)nav.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.panel===panel);b.setAttribute('aria-pressed',b.dataset.panel===panel?'true':'false');});
+   try{if(typeof communitySwitchPanel==='function'&&id){communitySwitchPanel(panel,id,btn);return;}}catch(e){}
+   try{if(typeof window.communitySwitchPanel==='function'&&id){window.communitySwitchPanel(panel,id,btn);return;}}catch(e){}
+ }
+ function addNav(){
+   const app=document.getElementById('app');if(!app)return;
+   const calendar=app.querySelector('.community-social-calendar');
+   const target=app.querySelector('#communityTabPanel, .community-detail-content, .community-v1-panel')||calendar&&calendar.parentElement;
+   if(!target)return;
+   let nav=target.querySelector(':scope > nav.community-runtime-tabs');
+   if(!nav){
+     nav=document.createElement('nav');nav.className='community-runtime-tabs';nav.setAttribute('aria-label','Navegação da comunidade');
+     const cid=activeCommunityId(target);
+     labels.forEach(([key,label,ico])=>{const b=document.createElement('button');b.type='button';b.dataset.panel=key;b.setAttribute('aria-pressed',key==='checkin'?'true':'false');b.className=key==='checkin'?'active':'';b.innerHTML='<span aria-hidden="true">'+makeIcon(ico)+'</span><strong>'+label+'</strong>';b.addEventListener('click',()=>switchTo(key,activeCommunityId(target)||cid,b));nav.appendChild(b);});
+     if(target.firstElementChild)target.insertBefore(nav,target.firstElementChild);else target.appendChild(nav);
+   }
+ }
+ function start(){addNav();const app=document.getElementById('app');if(app&&window.MutationObserver){const observer=new MutationObserver(()=>addNav());observer.observe(app,{childList:true,subtree:true});}}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>\n
+<style id="community-runtime-tabs-header-gap-fix-v8">
+/* O cabeçalho e a navegação nem sempre compartilham .community-page.
+   Aplicar diretamente à barra realmente inserida pelo script de navegação. */
+html body #app nav.community-runtime-tabs {
+  margin-top: -16px !important;
+}
+</style>
+\n\n
+<style id="community-header-divider-v9">
+/* Linha fina separando visualmente o cabeçalho da barra da Comunidade. */
+html body #app .community-runtime-tabs {
+  border-top: 1px solid #e5e5e5 !important;
+}
+</style>
+\n\n
+<style id="community-header-divider-v10">
+/* Linha divisória na borda SUPERIOR da barra, entre cabeçalho e navegação. */
+html body #app .community-runtime-tabs {
+  border-top: 1px solid #d8d8d8 !important;
+  position: relative !important;
+}
+html body #app .community-runtime-tabs::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: #d8d8d8 !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+</style>
+\n\n
+<style id="community-header-bottom-divider-v11">
+/* Alternativa: linha na parte inferior do cabeçalho principal da aplicação. */
+html body #app header,
+html body #app .app-header,
+html body #app .main-header,
+html body #app .top-header,
+html body #app .header-container {
+  border-bottom: 1px solid #d8d8d8 !important;
+}
+</style>
+\n
+
+<style id="community-runtime-tabs-size-v12">
+/* Aumenta discretamente os ícones e os nomes da navegação da Comunidade. */
+html body #app .community-runtime-tabs {
+  min-height: 88px !important;
+}
+html body #app .community-runtime-tabs button,
+html body #app .community-runtime-tabs a,
+html body #app .community-runtime-tabs [role="button"] {
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+}
+html body #app .community-runtime-tabs button svg,
+html body #app .community-runtime-tabs a svg,
+html body #app .community-runtime-tabs [role="button"] svg {
+  width: 25px !important;
+  height: 25px !important;
+}
+</style>\n
+<style id="community-runtime-tabs-double-divider-v13">
+/* Linhas finas na borda superior e inferior da barra de navegação. */
+html body #app .community-runtime-tabs {
+  border-top: 1px solid #dedede !important;
+  border-bottom: 1px solid #dedede !important;
+  box-sizing: border-box !important;
+}
+</style>
+\n
+
+<style id="community-calendar-post-summary-v17">
+/* Resumo compacto: texto pequeno e discreto abaixo do calendário. */
+.community-calendar-post-summary {
+  margin: 8px 0 0 !important;
+  padding: 7px 10px !important;
+  border: 1px solid #ededed !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #666 !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+.community-calendar-summary-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding: 2px 0 !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+.community-calendar-summary-row + .community-calendar-summary-row {
+  border-top: 1px solid #f2f2f2 !important;
+}
+.community-calendar-summary-row span {
+  color: #888 !important;
+  font-size: 10px !important;
+}
+.community-calendar-summary-row strong {
+  color: #555 !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  text-align: right !important;
+  overflow-wrap: anywhere !important;
+}
+</style>
+
+<style id="community-feed-plus-button-v18">
+.community-feed-add-button {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483647 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 58px !important;
+  height: 58px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #FE6405 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 38px !important;
+  font-weight: 300 !important;
+  line-height: 1 !important;
+  padding: 0 0 4px !important;
+}
+.community-post-composer-overlay {
+  position: fixed; inset: 0; z-index: 10000; display: flex;
+  align-items: flex-end; justify-content: center;
+  padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0,0,0,.45);
+}
+.community-post-composer {
+  width: 100%; max-width: 560px; box-sizing: border-box;
+  padding: 18px; border-radius: 18px 18px 14px 14px;
+  background: #fff; color: #222; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.community-post-composer > header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.community-post-composer > header h2 { margin:0; font-size:20px; }
+.community-post-composer > header button { border:0; background:transparent; font-size:28px; color:#666; }
+.community-post-composer label { display:block; margin:10px 0 6px; font-size:13px; font-weight:600; }
+.community-post-composer textarea { width:100%; box-sizing:border-box; padding:12px; border:1px solid #ddd; border-radius:10px; font:inherit; resize:vertical; }
+.community-post-composer input[type=file] { width:100%; font-size:13px; }
+.community-composer-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.community-composer-actions button { border:0; border-radius:10px; padding:11px 16px; font-weight:600; }
+.community-composer-cancel { background:#f1f1f1; color:#333; }
+.community-composer-publish { background:#FE6405; color:#fff; }
+</style>
+
+<style id="community-new-checkin-action-v22">
+.community-new-checkin-action {
+  display:flex;
+  justify-content:center;
+  width:100%;
+  box-sizing:border-box;
+  padding:14px 16px 28px;
+}
+.community-new-checkin-action button {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:min(100%, 320px);
+  min-height:48px;
+  padding:12px 20px;
+  border:0;
+  border-radius:13px;
+  background:#FE6405;
+  color:#fff;
+  font-size:15px;
+  font-weight:700;
+  box-shadow:0 4px 12px rgba(254,100,5,.2);
+  cursor:pointer;
+}
+.community-new-checkin-action button span {
+  font-size:22px;
+  line-height:1;
+  font-weight:400;
+}
+.community-new-checkin-action button:active { transform:scale(.98); }
+</style>
+
