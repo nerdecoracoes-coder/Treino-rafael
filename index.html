@@ -26408,7 +26408,16 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   const existing=document.getElementById('evoluteCheckinSuccessModal');if(existing)existing.remove();
   const overlay=document.createElement('div');overlay.id='evoluteCheckinSuccessModal';overlay.className='evolute-checkin-success-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','evoluteCheckinSuccessTitle');
   overlay.innerHTML='<div class="evolute-checkin-success-card"><div class="evolute-checkin-success-icon" aria-hidden="true"><svg viewBox="0 0 48 48" width="34" height="34" fill="none"><circle cx="24" cy="24" r="19" stroke="currentColor" stroke-width="3.5"/><path d="m14 24 7 7 14-15" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3 id="evoluteCheckinSuccessTitle">Publicado com sucesso!</h3><p>Seu check-in foi publicado e já está disponível no feed.</p><button type="button" class="evolute-checkin-success-button">Continuar</button></div>';
-  const dismiss=()=>{overlay.classList.add('closing');setTimeout(()=>overlay.remove(),160);};
+  const dismiss=()=>{
+   // Ao concluir a publicação, voltar ao calendário e forçar sua renderização
+   // com os dados recém-gravados no armazenamento local.
+   const checkinTab=document.querySelector('.community-social-tabs button[data-panel="checkin"]');
+   if(checkinTab){checkinTab.click();}
+   else if(typeof window.evoluteRefreshCommunityCheckinCalendar==='function'){
+    try{window.evoluteRefreshCommunityCheckinCalendar();}catch(err){console.warn('Não foi possível atualizar o calendário do check-in.',err);}
+   }
+   overlay.classList.add('closing');setTimeout(()=>overlay.remove(),160);
+  };
   overlay.querySelector('button').addEventListener('click',dismiss);
   overlay.addEventListener('click',event=>{if(event.target===overlay)dismiss();});
   const onKey=event=>{if(event.key==='Escape'&&document.getElementById('evoluteCheckinSuccessModal')===overlay){dismiss();document.removeEventListener('keydown',onKey);}};
@@ -26515,7 +26524,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
   file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(f)showChosenPhoto(f);file.value='';});
   const close=()=>el.classList.remove('open');$('.nc-back',el).addEventListener('click',close);
-  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();const feed=$('.community-social-tabs button[data-panel="feed"]');if(feed)feed.click();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
+  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
  }
  function open(){const el=build();el.classList.add('open');}
  let photoProcessing=false;
