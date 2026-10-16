@@ -26498,8 +26498,42 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
      let result=null;
      try{result=await Promise.any(attempts);}catch(allFailed){result=null;}
      if(token!==locationSearchToken)return;
-     if(!result){const detail=endpointErrors.join(' | ')||'Serviços de mapas indisponíveis';throw new Error('GPS obtido; consulta de locais falhou. '+detail);}
-     const seen=new Set();const places=(result.elements||[]).map(place=>{const point=place.type==='node'?{lat:place.lat,lon:place.lon}:place.center;if(!point)return null;const dlat=(point.lat-lat)*Math.PI/180,dlon=(point.lon-lon)*Math.PI/180,a=Math.sin(dlat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(point.lat*Math.PI/180)*Math.sin(dlon/2)**2;place.distance=6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));return place;}).filter(place=>{const name=place&&place.tags&&(place.tags.name||place.tags['name:pt']);if(!name||seen.has(name.toLocaleLowerCase()))return false;seen.add(name.toLocaleLowerCase());return true;}).sort((a,b)=>a.distance-b.distance).slice(0,8);
+     // Se todos os servidores Overpass falharem, tenta um provedor alternativo
+     // de busca geográfica antes de exibir erro ao usuário.
+     if(!result){
+      const photonErrors=[];
+      const terms=['academia','centro esportivo','parque','pista de corrida'];
+      const photonAttempts=terms.map(async term=>{
+       const url='https://photon.komoot.io/api/?q='+encodeURIComponent(term)+'&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&limit=8&lang=pt';
+       const response=await timedFetch(url,{headers:{'Accept':'application/json'}},6500);
+       if(!response.ok)throw new Error('Photon HTTP '+response.status);
+       const data=await response.json();
+       if(!data||!Array.isArray(data.features))throw new Error('Resposta Photon inesperada');
+       return data.features.map(feature=>{
+        const props=feature.properties||{},coords=feature.geometry&&feature.geometry.coordinates;
+        if(!coords||coords.length<2)return null;
+        const tags={name:props.name||props.street||props.locality||props.city||'',amenity:'',leisure:''};
+        const category=String(props.osm_value||props.type||props.category||'').toLowerCase();
+        if(/gym|fitness/.test(category))tags.amenity='gym';
+        else if(/park/.test(category))tags.leisure='park';
+        else if(/sport|pitch|stadium|track/.test(category))tags.leisure='sports_centre';
+        if(props.street)tags['addr:street']=props.street;
+        if(props.housenumber)tags['addr:housenumber']=props.housenumber;
+        if(props.suburb)tags['addr:suburb']=props.suburb;
+        if(props.city||props.locality)tags['addr:city']=props.city||props.locality;
+        const place={type:'node',lat:coords[1],lon:coords[0],tags};
+        const dlat=(coords[1]-lat)*Math.PI/180,dlon=(coords[0]-lon)*Math.PI/180,a=Math.sin(dlat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(coords[1]*Math.PI/180)*Math.sin(dlon/2)**2;
+        place.distance=6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+        return place;
+       }).filter(Boolean);
+      });
+      const settled=await Promise.allSettled(photonAttempts);
+      const photonPlaces=settled.filter(x=>x.status==='fulfilled').flatMap(x=>x.value);
+      settled.filter(x=>x.status==='rejected').forEach(x=>photonErrors.push(x.reason&&x.reason.message||String(x.reason)));
+      if(photonPlaces.length){result={elements:photonPlaces};}
+      else {const detail=(endpointErrors.join(' | ')||'Serviços Overpass indisponíveis')+' | Photon: '+(photonErrors.join(' | ')||'sem resultados');throw new Error('GPS obtido; provedores de locais não responderam. '+detail);}
+     }
+     const seen=new Set();const places=(result.elements||[]).map(place=>{if(typeof place.distance!=='number'){const point=place.type==='node'?{lat:place.lat,lon:place.lon}:place.center;if(!point)return null;const dlat=(point.lat-lat)*Math.PI/180,dlon=(point.lon-lon)*Math.PI/180,a=Math.sin(dlat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(point.lat*Math.PI/180)*Math.sin(dlon/2)**2;place.distance=6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}return place;}).filter(place=>{const name=place&&place.tags&&(place.tags.name||place.tags['name:pt']);if(!name||seen.has(name.toLocaleLowerCase()))return false;seen.add(name.toLocaleLowerCase());return true;}).sort((a,b)=>a.distance-b.distance).slice(0,8);
      renderNearbyLocations(places);
     }catch(error){if(token===locationSearchToken){const detail=error&&error.message?error.message:String(error);console.error('[Evolute check-in] Falha na busca de locais:',error);showLocationMessage('A localização do celular foi obtida, mas não foi possível consultar os locais próximos. Verifique a conexão e tente novamente.',true,detail);}}
    },error=>{if(token!==locationSearchToken)return;const code=error&&typeof error.code==='number'?error.code:0;const detail='GeolocationPositionError code='+code+(error&&error.message?'; '+error.message:'');console.warn('[Evolute check-in] Falha no GPS:',detail);if(code===1)showLocationMessage('O acesso à localização foi negado. Ative a permissão de localização para este site no navegador e tente novamente.',true,detail);else if(code===2)showLocationMessage('O celular não conseguiu determinar a localização. Confira se a localização/GPS está ativada e tente novamente.',true,detail);else if(code===3)showLocationMessage('A localização demorou demais para responder. Confira o GPS e tente novamente.',true,detail);else showLocationMessage('Não foi possível obter a localização do celular. Tente novamente.',true,detail);},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
