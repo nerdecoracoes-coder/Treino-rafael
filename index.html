@@ -8549,98 +8549,192 @@ function communityPhotoMarkup(c, extraClass=""){
  return c?.photo?`<span class="${cls}"><img src="${c.photo}" alt="Foto da comunidade"></span>`:`<span class="${cls} community-photo-placeholder">${evoIcon('users')}</span>`;
 }
 
-// MÓDULO DE FOTO DA COMUNIDADE — reconstrução isolada v34.
-// A seleção usa uma URL temporária para a prévia; os bytes só são convertidos
-// para armazenamento quando o usuário confirma Criar/Salvar.
-window.__communityPhotoDrafts = window.__communityPhotoDrafts || Object.create(null);
-window.__communityPhotoJobs = window.__communityPhotoJobs || Object.create(null);
-window.__communityPhotoObjectUrls = window.__communityPhotoObjectUrls || Object.create(null);
-
 function communityFileLooksLikeImage(file){
  if(!file)return false;
- const type=String(file.type||'').toLowerCase(), name=String(file.name||'').toLowerCase();
+ const type=String(file.type||'').toLowerCase();
+ const name=String(file.name||'').toLowerCase();
+ // Android pode entregar MIME vazio/genérico; também reconhecemos extensões comuns.
  return type.startsWith('image/') || !type || type==='application/octet-stream' || /\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i.test(name);
 }
 
-function communityReleasePhotoObjectUrl(inputId){
- const old=window.__communityPhotoObjectUrls[inputId];
- if(old){try{URL.revokeObjectURL(old);}catch(_){} }
- delete window.__communityPhotoObjectUrls[inputId];
+function communityReadFileAsDataURL(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result||''));
+  reader.onerror=()=>reject(new Error('Falha ao ler arquivo'));
+  reader.readAsDataURL(file);
+ });
 }
 
-async function previewCommunityPhoto(inputId,previewId){
- const input=document.getElementById(inputId), preview=document.getElementById(previewId), file=input?.files?.[0];
- if(!input||!preview||!file)return;
- const job=(Number(window.__communityPhotoJobs[inputId])||0)+1;
- window.__communityPhotoJobs[inputId]=job;
- if(!communityFileLooksLikeImage(file)){alert('Escolha um arquivo de imagem.');input.value='';return;}
- if(file.size>8*1024*1024){alert('A imagem ultrapassa o limite de 8 MB.');input.value='';return;}
- let objectUrl='';
+let communityHeicConverterPromise=null;
+async function communityConvertHeic(file){
+ // HEIC/HEIF não é decodificado nativamente por todos os navegadores Android.
+ // Carrega o conversor apenas quando necessário; fotos JPG/PNG não dependem dele.
+ if(!communityHeicConverterPromise){
+  communityHeicConverterPromise=new Promise((resolve,reject)=>{
+   if(typeof window.heic2any==='function'){resolve(window.heic2any);return;}
+   const script=document.createElement('script');
+   script.src='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+   script.async=true;
+   script.onload=()=>typeof window.heic2any==='function'?resolve(window.heic2any):reject(new Error('Conversor HEIC indisponível'));
+   script.onerror=()=>reject(new Error('Não foi possível carregar o conversor HEIC. Verifique a conexão.'));
+   document.head.appendChild(script);
+  });
+ }
+ const convert=await communityHeicConverterPromise;
+ const converted=await convert({blob:file,toType:'image/jpeg',quality:0.82});
+ return converted instanceof Blob?converted:(Array.isArray(converted)?converted[0]:converted);
+}
+async function communityIsHeic(file){
+ const name=String(file?.name||'').toLowerCase(),type=String(file?.type||'').toLowerCase();
+ if(/\.(heic|heif)$/i.test(name)||type.includes('heic')||type.includes('heif'))return true;
+ // Alguns seletores Android entregam nomes/MIME genéricos; identificar pelo cabeçalho ISO-BMFF.
  try{
-  // Não ler nem converter o arquivo neste momento: apenas criar prévia temporária.
+  const b=new Uint8Array(await file.slice(0,32).arrayBuffer());
+  if(b.length>=12){
+   const box=String.fromCharCode(...b.slice(4,8));
+   const brand=String.fromCharCode(...b.slice(8,12));
+   if(box==='ftyp'&&/^(heic|heix|hevc|hevx|heim|heis|mif1|msf1)$/i.test(brand))return true;
+  }
+ }catch(e){}
+ return false;
+}
+async function communityLoadImageFromUrl(url){
+ return await new Promise((resolve,reject)=>{
+  const img=new Image();
+  img.onload=()=>((img.naturalWidth||img.width)>0&&(img.naturalHeight||img.height)>0)?resolve(img):reject(new Error('imagem carregou sem dimensões'));
+  img.onerror=()=>reject(new Error('Image.onerror ao abrir URL da imagem'));
+  img.src=url;
+ });
+}
+async function communityDecodeImage(file, dataUrl){
+ let nativeError=null;
+ if(typeof createImageBitmap==='function'){
+  try{return await createImageBitmap(file);}catch(e){nativeError=e;}
+ }
+ // O Android WebView pode falhar com createImageBitmap mas aceitar um Object URL.
+ try{return await communityLoadImageFromUrl(URL.createObjectURL(file));}catch(e){nativeError=e;}
+ try{return await communityLoadImageFromUrl(dataUrl);}catch(e){nativeError=e;}
+ if(await communityIsHeic(file)){
+  const blob=await communityConvertHeic(file);
+  if(typeof createImageBitmap==='function'){
+   try{return await createImageBitmap(blob);}catch(e){}
+  }
+  try{return await communityLoadImageFromUrl(URL.createObjectURL(blob));}catch(e){}
+  const convertedUrl=await communityReadFileAsDataURL(blob);
+  return await communityLoadImageFromUrl(convertedUrl);
+ }
+ const bytes=new Uint8Array(await file.slice(0,16).arrayBuffer());
+ const hex=Array.from(bytes).map(x=>x.toString(16).padStart(2,'0')).join(' ');
+ const detail=`nome=${file.name||'(sem nome)'}; tipo=${file.type||'(vazio)'}; tamanho=${file.size}; início=${hex}; erro=${nativeError?.message||'desconhecido'}`;
+ console.error('Diagnóstico foto comunidade:',detail);
+ throw new Error(detail);
+}
+
+function communityCanvasToJpeg(source){
+ const width=source.width||source.naturalWidth||source.videoWidth||0;
+ const height=source.height||source.naturalHeight||source.videoHeight||0;
+ if(!width||!height)throw new Error('Imagem sem dimensões');
+ const max=720,scale=Math.min(1,max/Math.max(width,height));
+ const canvas=document.createElement('canvas');
+ canvas.width=Math.max(1,Math.round(width*scale));
+ canvas.height=Math.max(1,Math.round(height*scale));
+ const ctx=canvas.getContext('2d');
+ if(!ctx)throw new Error('Canvas indisponível');
+ ctx.drawImage(source,0,0,canvas.width,canvas.height);
+ return canvas.toDataURL('image/jpeg',.78);
+}
+
+async function compressCommunityPhoto(file){
+ if(!file)throw new Error('Nenhuma imagem selecionada.');
+ if(file.size>8*1024*1024)throw new Error('A imagem deve ter no máximo 8 MB.');
+ // Primeiro tenta abrir diretamente o arquivo com Object URL, sem FileReader.
+ // Isso contorna falhas do FileReader em alguns seletores de arquivos Android.
+ let objectUrl=null;
+ try{
   objectUrl=URL.createObjectURL(file);
   const img=await new Promise((resolve,reject)=>{
-   const image=new Image();
-   image.onload=()=>image.naturalWidth&&image.naturalHeight?resolve(image):reject(new Error('A imagem não possui dimensões válidas.'));
-   image.onerror=()=>reject(new Error('O navegador não conseguiu mostrar a prévia desta imagem.'));
-   image.src=objectUrl;
+   const el=new Image();
+   el.onload=()=>((el.naturalWidth||el.width)>0&&(el.naturalHeight||el.height)>0)?resolve(el):reject(new Error('Imagem carregada sem dimensões.'));
+   el.onerror=()=>reject(new Error('O navegador não decodificou o arquivo selecionado.'));
+   el.src=objectUrl;
   });
-  if(window.__communityPhotoJobs[inputId]!==job){URL.revokeObjectURL(objectUrl);return;}
-  communityReleasePhotoObjectUrl(inputId);
-  window.__communityPhotoObjectUrls[inputId]=objectUrl;
-  // Guardamos o arquivo apenas como rascunho; não é salvo na comunidade.
-  window.__communityPhotoDrafts[inputId]={file,objectUrl,width:img.naturalWidth,height:img.naturalHeight};
-  preview.innerHTML=`<img src="${objectUrl}" alt="Prévia da foto da comunidade">`;
-  preview.dataset.loading='false'; preview.dataset.hasDraft='true';
- }catch(error){
-  if(objectUrl && window.__communityPhotoObjectUrls[inputId]!==objectUrl){try{URL.revokeObjectURL(objectUrl);}catch(_){}}
-  if(window.__communityPhotoJobs[inputId]!==job)return;
-  preview.dataset.loading='false';
-  console.error('Falha ao mostrar prévia da foto da comunidade:',error);
-  alert('O Android ou o navegador não conseguiu abrir a imagem selecionada. A foto já salva foi preservada. Tente escolher a imagem novamente ou uma cópia salva no dispositivo.\n\nDetalhe: '+String(error?.message||error).slice(0,500));
+  const maxSide=720,scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');
+  if(!ctx)throw new Error('Canvas de imagem indisponível.');
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',.8);
+ }catch(firstError){
+  // Fallback para o método já utilizado no perfil, quando o navegador permitir.
+  try{return await compressProfilePhoto(file);}
+  catch(secondError){
+   const bytes=new Uint8Array(await file.slice(0,16).arrayBuffer().catch(()=>new ArrayBuffer(0)));
+   const hex=Array.from(bytes).map(x=>x.toString(16).padStart(2,'0')).join(' ');
+   throw new Error(`Leitura direta: ${firstError.message||firstError}; FileReader: ${secondError.message||secondError}; tipo=${file.type||'(vazio)'}; tamanho=${file.size}; cabeçalho=${hex}`);
+  }
+ }finally{
+  if(objectUrl)URL.revokeObjectURL(objectUrl);
+ }
+}
+// Fluxo novo da foto de comunidade: cada seleção é processada imediatamente,
+// armazenada como rascunho independente e o input é liberado para nova seleção.
+window.__evoluteCommunityPhotoDrafts = window.__evoluteCommunityPhotoDrafts || Object.create(null);
+window.__evoluteCommunityPhotoBusy = window.__evoluteCommunityPhotoBusy || Object.create(null);
+
+async function previewCommunityPhoto(inputId, previewId){
+ const input=document.getElementById(inputId);
+ const preview=document.getElementById(previewId);
+ const file=input?.files?.[0];
+ if(!input||!preview||!file)return;
+ if(window.__evoluteCommunityPhotoBusy[inputId]){
+  input.value='';
+  return;
+ }
+ window.__evoluteCommunityPhotoBusy[inputId]=true;
+ const previousDraft=window.__evoluteCommunityPhotoDrafts[inputId]||null;
+ const previousMarkup=preview.innerHTML;
+ try{
+  // Não guarda File/URI temporária: converte imediatamente em dados próprios (JPEG).
+  const data=await compressCommunityPhoto(file);
+  if(typeof data!=='string'||!data.startsWith('data:image/'))throw new Error('A imagem processada não gerou dados válidos.');
+  const probe=new Image();
+  await new Promise((resolve,reject)=>{
+   probe.onload=()=>probe.naturalWidth>0&&probe.naturalHeight>0?resolve():reject(new Error('A prévia gerada não pôde ser decodificada.'));
+   probe.onerror=()=>reject(new Error('O navegador não conseguiu validar a prévia gerada.'));
+   probe.src=data;
+  });
+  // Só troca a prévia anterior depois que a nova imagem foi lida e validada.
+  window.__evoluteCommunityPhotoDrafts[inputId]=data;
+  preview.innerHTML='';
+  const img=document.createElement('img');
+  img.alt='Prévia da foto da comunidade';
+  img.src=data;
+  preview.appendChild(img);
+  preview.dataset.photoReady='true';
+  preview.dataset.photoSource=inputId;
+ }catch(err){
+  // Seleção com falha não apaga a prévia nem o rascunho que já funcionava.
+  window.__evoluteCommunityPhotoDrafts[inputId]=previousDraft;
+  preview.innerHTML=previousMarkup;
+  console.error('Falha ao processar nova seleção de foto da comunidade:',{
+   inputId,name:file.name||'',type:file.type||'',size:file.size,
+   errorName:err?.name||'',error:err?.message||String(err)
+  });
+  alert('Não foi possível usar esta seleção. A prévia anterior foi preservada. Tente novamente ou escolha uma cópia salva no dispositivo.\n\nDetalhe: '+String(err?.message||err).slice(0,220));
+ }finally{
+  // Limpar o input permite selecionar a mesma foto novamente no Android.
+  try{input.value='';}catch(_){}
+  delete window.__evoluteCommunityPhotoBusy[inputId];
  }
 }
 
-async function communityDraftToDataUrl(draft){
- if(!draft)return null;
- if(typeof draft==='string')return draft;
- const url=draft.objectUrl;
- if(!url)throw new Error('A seleção temporária da imagem expirou. Escolha a foto novamente.');
- // Recupera o Blob pela URL criada na seleção, sem reler a referência content:// original.
- const response=await fetch(url);
- if(!response.ok)throw new Error('Não foi possível recuperar os dados da prévia.');
- const blob=await response.blob();
- const bitmap=await createImageBitmap(blob);
- const maxSide=720, scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
- const canvas=document.createElement('canvas');
- canvas.width=Math.max(1,Math.round(bitmap.width*scale)); canvas.height=Math.max(1,Math.round(bitmap.height*scale));
- const ctx=canvas.getContext('2d');
- if(!ctx){bitmap.close?.();throw new Error('Não foi possível preparar a imagem.');}
- ctx.drawImage(bitmap,0,0,canvas.width,canvas.height); bitmap.close?.();
- const result=canvas.toDataURL('image/jpeg',0.82);
- if(!result||result==='data:,')throw new Error('O navegador gerou uma imagem vazia.');
- return result;
-}
-
 async function readCommunityPhoto(inputId){
- const preview=document.getElementById(inputId==='communityPhotoInput'?'communityPhotoPreview':inputId==='editCommunityPhotoInput'?'editCommunityPhotoPreview':null);
- if(preview?.dataset.loading==='true'){alert('Aguarde a prévia da foto terminar.');return false;}
- const draft=window.__communityPhotoDrafts[inputId];
- if(!draft)return null;
- try{return await communityDraftToDataUrl(draft);}
- catch(error){console.error('Falha ao preparar a foto para salvar:',error);alert('A prévia foi selecionada, mas não foi possível preparar a imagem para salvar. A foto já salva foi preservada.\n\nDetalhe: '+String(error?.message||error).slice(0,500));return false;}
-}
-
-function prepareCommunityPhotoInput(inputId){
- // Não alterar o valor no evento click nem durante a seleção. O mesmo input pode ser usado novamente.
- const input=document.getElementById(inputId);
- if(input)input.removeAttribute('capture');
-}
-
-function clearCommunityPhotoDraft(inputId){
- communityReleasePhotoObjectUrl(inputId);
- delete window.__communityPhotoDrafts[inputId];
- delete window.__communityPhotoJobs[inputId];
+ // Retorna somente a imagem já processada e validada; nunca relê a referência temporária.
+ const data=window.__evoluteCommunityPhotoDrafts?.[inputId];
+ return typeof data==='string'&&data.startsWith('data:image/')?data:null;
 }
 
 function myCommunities(){
@@ -8692,7 +8786,7 @@ function communityListItem(c){
 }
 
 function showCreateCommunity(){
- clearCommunityPhotoDraft('communityPhotoInput');
+ delete window.__evoluteCommunityPhotoDrafts?.communityPhotoInput;
  setTab("btnComm");
  app.innerHTML=`
  <div class="community-page">
@@ -8702,14 +8796,13 @@ function showCreateCommunity(){
   <div class="community-form-lines">
    <label>Nome da comunidade<input id="communityName" maxlength="60" placeholder="Ex.: Família Córdoba"></label>
    <label>Descrição<input id="communityDescription" maxlength="140" placeholder="Ex.: Treinando juntos para evoluir."></label>
-   <label>Foto da comunidade<input id="communityPhotoInput" type="file" accept="image/*" onchange="previewCommunityPhoto('communityPhotoInput','communityPhotoPreview')"><small class="community-photo-help">Escolha uma foto para ser o perfil da comunidade.</small><span id="communityPhotoPreview" class="community-photo-preview">${evoIcon('users')}</span></label>
+   <label>Foto da comunidade<button type="button" class="primary community-photo-choose" onclick="document.getElementById('communityPhotoInput').click()">Escolher foto</button><input id="communityPhotoInput" type="file" accept="image/*" hidden onchange="previewCommunityPhoto('communityPhotoInput','communityPhotoPreview')"><small class="community-photo-help">Você pode trocar a foto antes de criar a comunidade.</small><span id="communityPhotoPreview" class="community-photo-preview">${evoIcon('users')}</span></label>
    <label>Tipo<select id="communityType"><option>Família</option><option>Amigos</option><option>Academia</option><option>Equipe</option><option>Desafio</option><option>Outro</option></select></label>
    <label>Entrada por pesquisa<select id="communitySearchMode"><option value="approval">Pedir permissão</option><option value="automatic">Entrada automática</option></select></label>
    <label class="community-checkline"><input id="communityDiscoverable" type="checkbox" checked> <span>Permitir que a comunidade seja encontrada na pesquisa</span></label>
   </div>
   <button type="button" class="primary community-primary" onclick="createCommunityFromForm()">${evoIcon('users')} Criar comunidade</button>
  </div>`;
- prepareCommunityPhotoInput('communityPhotoInput');
  window.scrollTo(0,0);
 }
 
@@ -8719,11 +8812,10 @@ async function createCommunityFromForm(){
  if(!u||!name){alert('Informe o nome da comunidade.');return;}
  if(!Array.isArray(db.communities))db.communities=[];
  const photo=await readCommunityPhoto('communityPhotoInput');
- if(photo===false)return;
+ if(photo===false){return;}
  const c={id:uid(),name,description:document.getElementById('communityDescription')?.value.trim()||"",photo:photo||"",type:document.getElementById('communityType')?.value||"Outro",code:communityUniqueCode(),discoverable:!!document.getElementById('communityDiscoverable')?.checked,searchJoinMode:document.getElementById('communitySearchMode')?.value||"approval",createdBy:u.id,createdAt:new Date().toISOString(),admins:[u.id],members:[u.id],joinRequests:[],accessCount:1,lastAccessAt:new Date().toISOString()};
  db.communities.unshift(c);
  saveDB();
- clearCommunityPhotoDraft('communityPhotoInput');
  if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
   const synced=await window.evoluteForceCloudSync();
   if(!synced){alert('A comunidade foi criada nesta sessão, mas não conseguimos confirmar o salvamento na nuvem. Mantenha esta página aberta e confira sua conexão antes de sair.');showCommunityDetail(c.id,true);return;}
@@ -8740,7 +8832,7 @@ function showCommunityDetail(id,justCreated=false){
  const isAdmin=(c.admins||[]).includes(u.id);
  const members=(c.members||[]).map(mid=>db.profiles.find(p=>p.id===mid)).filter(Boolean);
  const avatars=members.map(p=>`<button type="button" class="community-social-person" onclick="communityOpenMemberProfile('${esc(p.id)}')" aria-label="Perfil de ${esc(p.name||'participante')}">${p.photo?`<img src="${p.photo}" alt="">`:`<span>${evoIcon('user')}</span>`}<small>${esc(p.name||'Participante').split(' ')[0]}</small></button>`).join('');
- const posts=communityGetFeedPosts(c,u).sort((a,b)=>(new Date(b.createdAt||0))-(new Date(a.createdAt||0)));
+ const posts=[...c.posts].sort((a,b)=>(new Date(b.createdAt||0))-(new Date(a.createdAt||0)));
  const currentProfile=db.profiles.find(p=>p.id===u.id)||{};
  const avatar=currentProfile.photo?`<img src="${currentProfile.photo}" alt="">`:`<span>${evoIcon('user')}</span>`;
  app.innerHTML=`<div class="community-page community-social-page community-clean-page community-detail-v2" aria-label="Página da comunidade">
@@ -8762,25 +8854,63 @@ function showCommunityDetail(id,justCreated=false){
    <div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>
   </div>
  </div>`;
+ document.getElementById('communityFeedAddButton')?.remove();
+ const communityAddButton=document.createElement('button');
+ communityAddButton.type='button';
+ communityAddButton.id='communityFeedAddButton';
+ communityAddButton.className='community-feed-add-button';
+ communityAddButton.setAttribute('aria-label','Criar nova postagem');
+ communityAddButton.title='Nova postagem';
+ communityAddButton.innerHTML='<span aria-hidden="true">+</span>';
+ communityAddButton.addEventListener('click',()=>communityOpenPostComposer(c.id));
+ document.body.appendChild(communityAddButton);
  window.scrollTo(0,0);
 }
 
-function communityGetFeedPosts(c,user=communityCurrentUser()){
- const posts=Array.isArray(c?.posts)?[...c.posts]:[];
- // Check-ins publicados pelo formulário próprio ficam no armazenamento local; inclua-os no feed também.
- try{
-  const saved=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');
-  if(Array.isArray(saved)) saved.forEach(item=>{
-   if(!item||!item.date)return;
-   const parts=String(item.date).split('-').map(Number);
-   const time=String(item.time||'00:00').split(':').map(Number);
-   const date=parts.length===3&&parts.every(Number.isFinite)?new Date(parts[0],parts[1]-1,parts[2],time[0]||0,time[1]||0):new Date(item.createdAt||item.id||0);
-   if(!Number.isFinite(date.getTime()))return;
-   posts.push({id:'checkin_'+String(item.id||date.getTime()),authorId:user?.id,caption:String(item.title||item.description||'Check-in realizado.'),photo:item.photo||'',createdAt:date.toISOString(),__localCheckin:true});
-  });
- }catch(e){}
- const seen=new Set();
- return posts.filter(p=>{const key=String(p.id);if(seen.has(key))return false;seen.add(key);return true;});
+function communityOpenPostComposer(id){
+ const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+ if(!c||!u||!(c.members||[]).includes(u.id))return;
+ document.getElementById('communityPostComposerModal')?.remove();
+ const modal=document.createElement('div');
+ modal.id='communityPostComposerModal';
+ modal.className='community-post-composer-overlay';
+ modal.innerHTML=`<section class="community-post-composer" role="dialog" aria-modal="true" aria-labelledby="communityPostComposerTitle">
+  <header><h2 id="communityPostComposerTitle">Nova postagem</h2><button type="button" aria-label="Fechar" onclick="communityClosePostComposer()">×</button></header>
+  <label for="communityComposerCaption">Escreva sua publicação</label>
+  <textarea id="communityComposerCaption" rows="4" maxlength="2000" placeholder="O que você gostaria de compartilhar?"></textarea>
+  <label class="community-composer-photo-label" for="communityComposerPhoto">Adicionar foto (opcional)</label>
+  <input id="communityComposerPhoto" type="file" accept="image/*">
+  <div class="community-composer-actions"><button type="button" class="community-composer-cancel" onclick="communityClosePostComposer()">Cancelar</button><button type="button" class="community-composer-publish" onclick="communityCreatePost('${esc(c.id)}')">Publicar</button></div>
+ </section>`;
+ modal.addEventListener('click',e=>{if(e.target===modal)communityClosePostComposer();});
+ document.body.appendChild(modal);
+ document.getElementById('communityComposerCaption')?.focus();
+}
+function communityClosePostComposer(){document.getElementById('communityPostComposerModal')?.remove();}
+async function communityCreatePost(id){
+ const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+ const caption=(document.getElementById('communityComposerCaption')?.value||'').trim();
+ const input=document.getElementById('communityComposerPhoto');
+ if(!c||!u||!(c.members||[]).includes(u.id))return;
+ if(!caption){alert('Escreva o texto da postagem.');return;}
+ let photo='';
+ if(input?.files?.[0]){
+  const file=input.files[0];
+  if(!file.type.startsWith('image/')){alert('Escolha um arquivo de imagem.');return;}
+  try{photo=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});}
+  catch(e){alert('Não foi possível carregar a imagem. Tente novamente.');return;}
+ }
+ if(!Array.isArray(c.posts))c.posts=[];
+ const post={id:'post_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),userId:u.id,authorId:u.id,caption,createdAt:new Date().toISOString(),likesCount:0,comments:[]};
+ if(photo)post.photo=photo;
+ c.posts.push(post);
+ saveDB();
+ if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
+  const synced=await window.evoluteForceCloudSync();
+  if(!synced)alert('A postagem foi adicionada nesta sessão, mas não conseguimos confirmar a sincronização na nuvem. Confira a conexão antes de sair.');
+ }
+ communityClosePostComposer();
+ showCommunityDetail(id,true);
 }
 
 function communityRenderPosts(c,posts){
@@ -8834,13 +8964,44 @@ function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
  const dateLabel=date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const selectedPost=byDay[chosen];
  const selectedPostAction=selectedPost?(selectedPost.__localCheckin?`<p class="community-calendar-no-post">Check-in publicado neste dia.</p>`:`<button type="button" class="community-calendar-view-post" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(selectedPost.id)}')">Ver publicação <span aria-hidden="true">›</span></button>`):`<p class="community-calendar-no-post">Nenhuma publicação neste dia.</p>`;
- return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div><div class="community-calendar-selected-day"><button type="button" class="community-calendar-day-arrow" onclick="communityChangeCalendarDay('${esc(c.id)}',${year},${month},${chosen},-1)" aria-label="Dia anterior">‹</button><div class="community-calendar-selected-copy"><small>DIA SELECIONADO</small><strong>${dateLabel}</strong></div><button type="button" class="community-calendar-day-arrow" onclick="communityChangeCalendarDay('${esc(c.id)}',${year},${month},${chosen},1)" aria-label="Próximo dia">›</button></div><div class="community-calendar-day-result">${selectedPostAction}</div><p class="community-calendar-legend"><span></span> Dias com publicações da comunidade</p>`;
+ const selectedPostSummary=selectedPost?(()=>{
+  const ignored=new Set(['id','communityId','authorId','userId','createdAt','date','photo','image','images','video','media','attachments','__localCheckin']);
+  const labels={time:'Horário do check-in',checkinTime:'Horário do check-in',checkInTime:'Horário do check-in',weight:'Peso',duration:'Duração',calories:'Calorias',feeling:'Como me senti',note:'Observações',notes:'Observações',observation:'Observações',caption:'Comentário',description:'Descrição',text:'Comentário',title:'Título'};
+  const fields=Object.entries(selectedPost).filter(([key,value])=>!ignored.has(key)&&value!==null&&value!==undefined&&String(value).trim()!==''&&typeof value!=='object'&&typeof value!=='boolean'&& !/photo|image|video|media|avatar|url|base64/i.test(key));
+  const rows=fields.map(([key,value])=>`<div class="community-calendar-summary-row"><span>${esc(labels[key]||key.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase()))}</span><strong>${esc(String(value))}</strong></div>`).join('');
+  return rows?`<article class="community-calendar-post-summary">${rows}</article>`:'';
+ })():'';
+ return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div>${selectedPostSummary}`;
+}
+function communityEnsurePostButton(cid){
+ const c=db.communities.find(x=>x.id===cid);
+ if(!c)return;
+ let button=document.getElementById('communityFeedAddButton');
+ if(!button){
+  button=document.createElement('button');
+  button.type='button';
+  button.id='communityFeedAddButton';
+  button.className='community-feed-add-button';
+  button.setAttribute('aria-label','Criar nova postagem');
+  button.title='Nova postagem';
+  button.innerHTML='<span aria-hidden="true">+</span>';
+  document.body.appendChild(button);
+ }
+ button.style.display='flex';
+ button.style.visibility='visible';
+ button.style.opacity='1';
+ button.onclick=()=>communityOpenPostComposer(c.id);
+}
+function communityRenderCheckinPanel(c,viewDate=new Date(),selectedDay=null){
+ return `<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,viewDate,selectedDay)}</section>
+ <div class="community-new-checkin-action"><button type="button" onclick="if(typeof window.evoluteStartCommunityPostPhoto==='function'){window.evoluteStartCommunityPostPhoto()}else{alert('A opção de adicionar foto não está disponível.')}"><span aria-hidden="true">＋</span> Novo check-in</button></div>`;
 }
 function communityRefreshCalendar(cid,year,month,day){
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
  const host=document.getElementById('communityTabPanel');if(!host)return;
  const date=new Date(year,month,1);
- host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,date,day)}</section>`;
+ host.innerHTML=communityRenderCheckinPanel(c,date,day);
+ communityEnsurePostButton(cid);
 }
 function communityChangeCalendarMonth(cid,year,month,delta,day){
  const next=new Date(year,month+delta,1);const maxDay=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
@@ -8853,15 +9014,16 @@ function communityChangeCalendarDay(cid,year,month,day,delta){
 }
 function communityOpenCalendarPost(cid,pid){const c=db.communities.find(x=>x.id===cid),p=c?.posts?.find(x=>x.id===pid);if(!p)return;const node=document.querySelector(`[data-post-id="${CSS.escape(pid)}"]`);if(node){node.scrollIntoView({behavior:'smooth',block:'center'});node.classList.add('community-post-highlight');setTimeout(()=>node.classList.remove('community-post-highlight'),1600);}else alert(p.caption||'Registro da comunidade');}
 function communitySwitchPanel(panel,cid,button){
+ communityEnsurePostButton(cid);
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
  document.querySelectorAll('.community-social-tabs button').forEach(b=>b.classList.toggle('active',b===button));
  const host=document.getElementById('communityTabPanel');if(!host)return;
  if(panel==='checkin'){
-  host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section>`;
+  host.innerHTML=communityRenderCheckinPanel(c);
   return;
  }
  if(panel==='feed'){
-  const posts=communityGetFeedPosts(c).sort((a,b)=>(new Date(b.createdAt||0))-(new Date(a.createdAt||0)));
+  const posts=[...(c.posts||[])].sort((a,b)=>(new Date(b.createdAt||0))-(new Date(a.createdAt||0)));
   host.innerHTML=`<div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>`;
   return;
  }
@@ -8926,11 +9088,10 @@ function showCommunitySettings(id){
 }
 
 function showEditCommunity(id){
- clearCommunityPhotoDraft('editCommunityPhotoInput');
+ delete window.__evoluteCommunityPhotoDrafts?.editCommunityPhotoInput;
  const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
  if(!c||!u||!c.admins?.includes(u.id)){showCommunities();return;}
- app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunityDetail('${esc(c.id)}')">‹&nbsp; voltar para comunidade</button><h1>Editar comunidade</h1><p class="muted">Atualize o perfil que aparece para os participantes.</p><div class="community-form-lines"><label>Foto da comunidade<input id="editCommunityPhotoInput" type="file" accept="image/*" onchange="previewCommunityPhoto('editCommunityPhotoInput','editCommunityPhotoPreview')"><small class="community-photo-help">Escolha uma imagem de até 8 MB. Se não selecionar outra foto, a atual será mantida.</small><span id="editCommunityPhotoPreview" class="community-photo-preview">${c.photo?`<img src="${c.photo}" alt="Foto atual da comunidade">`:evoIcon('users')}</span></label><label>Nome da comunidade<input id="editCommunityName" maxlength="60" value="${esc(c.name)}"></label><label>Descrição<input id="editCommunityDescription" maxlength="140" value="${esc(c.description||'')}"></label></div><button type="button" class="primary community-primary" onclick="saveCommunityProfile('${esc(c.id)}')">Salvar alterações</button></div>`;
- prepareCommunityPhotoInput('editCommunityPhotoInput');
+ app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunityDetail('${esc(c.id)}')">‹&nbsp; voltar para comunidade</button><h1>Editar comunidade</h1><p class="muted">Atualize o perfil que aparece para os participantes.</p><div class="community-form-lines"><label>Foto da comunidade<button type="button" class="primary community-photo-choose" onclick="document.getElementById('editCommunityPhotoInput').click()">Escolher foto</button><input id="editCommunityPhotoInput" type="file" accept="image/*" hidden onchange="previewCommunityPhoto('editCommunityPhotoInput','editCommunityPhotoPreview')"><small class="community-photo-help">Você pode trocar a foto quantas vezes precisar. A foto salva só muda ao confirmar em Salvar alterações.</small><span id="editCommunityPhotoPreview" class="community-photo-preview">${c.photo?`<img src="${c.photo}" alt="Foto atual da comunidade">`:evoIcon('users')}</span></label><label>Nome da comunidade<input id="editCommunityName" maxlength="60" value="${esc(c.name)}"></label><label>Descrição<input id="editCommunityDescription" maxlength="140" value="${esc(c.description||'')}"></label></div><button type="button" class="primary community-primary" onclick="saveCommunityProfile('${esc(c.id)}')">Salvar alterações</button></div>`;
  window.scrollTo(0,0);
 }
 
@@ -8940,11 +9101,10 @@ async function saveCommunityProfile(id){
  const name=document.getElementById('editCommunityName')?.value.trim();
  if(!name){alert('Informe o nome da comunidade.');return;}
  const photo=await readCommunityPhoto('editCommunityPhotoInput');
- if(photo===false)return;
+ if(photo===false){return;}
  c.name=name;c.description=document.getElementById('editCommunityDescription')?.value.trim()||'';
  if(photo)c.photo=photo;
  saveDB();
- clearCommunityPhotoDraft('editCommunityPhotoInput');
  if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
   const synced=await window.evoluteForceCloudSync();
   if(!synced){alert('As alterações foram aplicadas nesta sessão, mas não conseguimos confirmar o salvamento na nuvem. Confira sua conexão antes de sair.');showCommunityDetail(id);return;}
@@ -15988,6 +16148,209 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
   object-fit:contain!important;
   background:#f4f4f5!important;
 }
+</style>
+
+
+<!-- EVOLUTE COMMUNITY REBUILD V1: camada nova e isolada; preserva banco e funções compartilhadas -->
+<style id="evolute-community-v1-styles">
+.community-v1-home,.community-v1-detail{--cv1-bg:var(--card-bg,#fff);--cv1-border:var(--border-color,#e5e7eb);--cv1-text:var(--text-color,#20242a);--cv1-muted:var(--muted-color,#697386);color:var(--cv1-text);width:100%;max-width:100%;box-sizing:border-box;padding:16px 14px 32px;margin:0 auto}
+.community-v1-home *,.community-v1-detail *{box-sizing:border-box}
+.community-v1-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:2px 0 20px}
+.community-v1-heading h1{font-size:clamp(24px,5vw,32px);line-height:1.15;margin:0 0 7px;font-weight:800}
+.community-v1-heading p{margin:0;color:var(--cv1-muted);font-size:14px;line-height:1.45}
+.community-v1-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 24px}
+.community-v1-btn{appearance:none;border:1px solid var(--cv1-border);border-radius:12px;min-height:44px;padding:10px 13px;background:var(--cv1-bg);color:var(--cv1-text);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.community-v1-btn.primary{background:var(--primary,#e85d4a);border-color:transparent;color:#fff}
+.community-v1-section-title{font-size:17px;font-weight:800;margin:22px 0 12px}
+.community-v1-card{display:flex;align-items:center;gap:12px;padding:13px;margin:9px 0;border:1px solid var(--cv1-border);border-radius:15px;background:var(--cv1-bg);color:inherit;text-align:left;width:100%;cursor:pointer;min-width:0}
+.community-v1-avatar{width:48px;height:48px;flex:0 0 48px;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(128,128,128,.12);font-weight:800}
+.community-v1-avatar img{width:100%;height:100%;object-fit:cover}
+.community-v1-card-copy{min-width:0;flex:1}.community-v1-card-copy strong{display:block;font-size:15px;overflow-wrap:anywhere}.community-v1-card-copy small{display:block;color:var(--cv1-muted);font-size:12px;margin-top:4px;line-height:1.4}
+.community-v1-empty{padding:26px 18px;border:1px dashed var(--cv1-border);border-radius:16px;text-align:center;color:var(--cv1-muted);line-height:1.5}
+.community-v1-detail{padding-top:8px}
+.community-v1-detail-head{display:grid;grid-template-columns:40px 48px minmax(0,1fr) 40px;align-items:center;gap:9px;padding:8px 0 16px;border-bottom:1px solid var(--cv1-border)}
+.community-v1-iconbtn{border:1px solid var(--cv1-border);border-radius:12px;background:var(--cv1-bg);color:var(--cv1-text);width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:23px;cursor:pointer}
+.community-v1-title{min-width:0}.community-v1-title h1{font-size:18px;line-height:1.2;margin:0;overflow-wrap:anywhere}.community-v1-title p{font-size:12px;color:var(--cv1-muted);margin:5px 0 0;line-height:1.4}
+/* Barra única de navegação: os quatro itens ficam dentro da mesma faixa, sem contornos individuais. */
+.community-v1-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:0;padding:4px;width:100%;min-height:58px;box-sizing:border-box;position:relative;z-index:1;background:var(--cv1-bg,#fff);border:1px solid var(--cv1-border,#e5e5e5);border-radius:16px;overflow:hidden}
+.community-v1-tab{appearance:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:48px;padding:7px 2px;border:0!important;outline:0;box-shadow:none!important;border-radius:0!important;background:transparent!important;color:var(--cv1-muted);font:inherit;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.community-v1-home-tabs{margin:-6px 0 18px;gap:0}
+.community-v1-home-tabs .community-v1-tab{min-height:48px}
+.community-v1-tab span{font-size:19px;line-height:1}
+.community-v1-tab strong{font-size:11px;line-height:1.2;text-align:center;font-weight:700}
+.community-v1-tab.active{color:var(--primary,#e85d4a)!important;box-shadow:inset 0 -3px 0 var(--primary,#e85d4a)!important;background:transparent!important}
+@media(max-width:360px){.community-v1-tabs{padding:3px}.community-v1-tab{gap:4px}.community-v1-tab strong{font-size:10px}}
+.community-v1-panel{padding-top:16px;min-height:180px;width:100%;min-width:0}
+.community-v1-panel .community-social-calendar{width:100%;max-width:100%;margin:0 auto}
+.community-v1-panel .community-social-feed-list{display:flex;flex-direction:column;gap:12px}
+.community-v1-panel .community-social-post{border:1px solid var(--cv1-border);border-radius:14px;padding:13px;margin:0;background:var(--cv1-bg);overflow:hidden}
+.community-v1-panel .community-social-post-photo{width:100%;height:auto;max-height:520px;object-fit:contain;border-radius:10px}
+.community-v1-panel .community-tab-panel{padding:16px;border:1px solid var(--cv1-border);border-radius:14px;background:var(--cv1-bg)}
+.community-v1-panel .community-tab-panel h2{font-size:19px;margin:0 0 6px}
+.community-v1-panel .community-tab-subtitle{color:var(--cv1-muted);font-size:13px;margin:0 0 14px}
+@media(min-width:700px){.community-v1-home,.community-v1-detail{max-width:900px;padding-left:22px;padding-right:22px}.community-v1-home .community-v1-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}.community-v1-home .community-v1-card{margin:5px 0}.community-v1-detail-head{grid-template-columns:44px 54px minmax(0,1fr) 44px}.community-v1-avatar{width:54px;height:54px;flex-basis:54px}}
+</style>
+<script id="evolute-community-v1">
+(function(){
+ 'use strict';
+ const icon=(name)=>{try{return typeof evoIcon==='function'?evoIcon(name):'•'}catch(_){return '•'}};
+ const profile=(id)=>Array.isArray(db?.profiles)?db.profiles.find(p=>p.id===id)||{}:{};
+ const escapeText=(v)=>typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ window.showCommunities=function(){
+  try{setTab('btnComm')}catch(_){}
+  const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;
+  if(!u){app.innerHTML='<div class="community-v1-home"><div class="community-v1-empty">Crie ou acesse seu perfil para usar as Comunidades.</div></div>';return;}
+  if(!Array.isArray(db.communities))db.communities=[];
+  const mine=db.communities.filter(c=>Array.isArray(c.members)&&c.members.includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0));
+  const discoverable=db.communities.filter(c=>c.discoverable&&!(c.members||[]).includes(u.id));
+  const card=(c)=>`<button type="button" class="community-v1-card" onclick="showCommunityDetail('${escapeText(c.id)}')"><span class="community-v1-avatar">${c.photo?`<img src="${c.photo}" alt="">`:icon('users')}</span><span class="community-v1-card-copy"><strong>${escapeText(c.name||'Comunidade')}</strong><small>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'}${c.description?' · '+escapeText(c.description):''}</small></span><span aria-hidden="true">›</span></button>`;
+  app.innerHTML=`<div class="community-v1-home"><header class="community-v1-heading"><div><h1>Comunidades</h1><p>Treine junto, compartilhe sua evolução e mantenha a motivação.</p></div></header><nav class="community-v1-tabs community-v1-home-tabs" aria-label="Navegação das comunidades"><button type="button" class="community-v1-tab" data-panel="ranking" onclick="communityOpenSectionFromHome('ranking')"><span>${icon('trophy')}</span><strong>Campeões</strong></button><button type="button" class="community-v1-tab" data-panel="checkin" onclick="communityOpenSectionFromHome('checkin')"><span>${icon('check')}</span><strong>Check-in</strong></button><button type="button" class="community-v1-tab" data-panel="feed" onclick="communityOpenSectionFromHome('feed')"><span>${icon('users')}</span><strong>Feed</strong></button><button type="button" class="community-v1-tab" data-panel="challenges" onclick="communityOpenSectionFromHome('challenges')"><span>${icon('target')}</span><strong>Desafios</strong></button></nav><div class="community-v1-actions"><button type="button" class="community-v1-btn primary" onclick="showCreateCommunity()">＋ Criar comunidade</button><button type="button" class="community-v1-btn" onclick="showCommunityCodeJoin()">⌁ Entrar com código</button><button type="button" class="community-v1-btn" onclick="showCommunitySearch()">⌕ Encontrar comunidades</button><button type="button" class="community-v1-btn" onclick="communityFocusSearch('')">⌕ Buscar publicações</button></div><h2 class="community-v1-section-title">Minhas comunidades</h2>${mine.length?`<div class="community-v1-list">${mine.map(card).join('')}</div>`:'<div class="community-v1-empty">Você ainda não participa de uma comunidade.<br>Crie uma ou entre com um código de convite.</div>'}${discoverable.length?`<h2 class="community-v1-section-title">Descubra</h2><div class="community-v1-list">${discoverable.slice(0,8).map(card).join('')}</div>`:''}</div>`;
+  window.scrollTo(0,0);
+ };
+ window.showCommunityDetail=function(id,justCreated=false){
+  try{setTab('btnComm')}catch(_){}
+  const c=Array.isArray(db.communities)?db.communities.find(x=>x.id===id):null;
+  const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;
+  if(!c||!u||!(c.members||[]).includes(u.id)){window.showCommunities();return;}
+  if(!justCreated){c.accessCount=(Number(c.accessCount)||0)+1;c.lastAccessAt=new Date().toISOString();if(typeof saveDB==='function')saveDB();}
+  if(!Array.isArray(c.posts))c.posts=[];
+  const isAdmin=(c.admins||[]).includes(u.id),me=profile(u.id);
+  const avatar=c.photo?`<img src="${c.photo}" alt="">`:icon('users');
+  app.innerHTML=`<div class="community-v1-detail" aria-label="Detalhes da comunidade"><header class="community-v1-detail-head"><button type="button" class="community-v1-iconbtn" onclick="showCommunities()" aria-label="Voltar">‹</button><span class="community-v1-avatar">${avatar}</span><div class="community-v1-title"><h1>${escapeText(c.name)}</h1><p>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'} · ${escapeText(c.description||'Comunidade Evolute')}</p></div><button type="button" class="community-v1-iconbtn" onclick="${isAdmin?`showCommunitySettings('${escapeText(c.id)}')`:`communityShowMenu('${escapeText(c.id)}')`}" aria-label="Opções">⋯</button></header><nav class="community-v1-tabs" aria-label="Seções da comunidade"><button type="button" class="community-v1-tab" data-panel="ranking" onclick="communitySwitchPanel('ranking','${escapeText(c.id)}',this)"><span>${icon('trophy')}</span><strong>Campeões</strong></button><button type="button" class="community-v1-tab active" data-panel="checkin" onclick="communitySwitchPanel('checkin','${escapeText(c.id)}',this)"><span>${icon('check')}</span><strong>Check-in</strong></button><button type="button" class="community-v1-tab" data-panel="feed" onclick="communitySwitchPanel('feed','${escapeText(c.id)}',this)"><span>${icon('users')}</span><strong>Feed</strong></button><button type="button" class="community-v1-tab" data-panel="challenges" onclick="communitySwitchPanel('challenges','${escapeText(c.id)}',this)"><span>${icon('target')}</span><strong>Desafios</strong></button></nav><main id="communityTabPanel" class="community-v1-panel" data-community-id="${escapeText(c.id)}"><section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section></main></div>`;
+  window.scrollTo(0,0);
+ };
+ window.communityOpenSectionFromHome=function(panel){
+  const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;
+  const mine=u&&Array.isArray(db.communities)?db.communities.filter(c=>Array.isArray(c.members)&&c.members.includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0)):[];
+  if(!mine.length){alert('Entre ou crie uma comunidade para acessar '+({ranking:'Campeões',checkin:'Check-in',feed:'Feed',challenges:'Desafios'}[panel]||'esta seção')+'.');return;}
+  window.showCommunityDetail(mine[0].id);
+  const tab=document.querySelector('.community-v1-detail .community-v1-tab[data-panel="'+panel+'"]');
+  if(tab)window.communitySwitchPanel(panel,mine[0].id,tab);
+ };
+ window.communitySwitchPanel=function(panel,cid,button){
+  const c=Array.isArray(db.communities)?db.communities.find(x=>x.id===cid):null,host=document.getElementById('communityTabPanel');if(!c||!host)return;
+  document.querySelectorAll('.community-v1-tabs .community-v1-tab').forEach(b=>{const active=b===button||b.dataset.panel===panel;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});
+  if(panel==='checkin'){host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section>`;return;}
+  if(panel==='feed'){
+   const posts=[...(c.posts||[])].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+   host.innerHTML=`<div class="community-v1-feed-actions"><button type="button" class="community-v1-btn primary" onclick="communityToggleComposer()">＋ Nova publicação</button></div><div id="communitySocialFeedList" class="community-social-feed-list">${communityRenderPosts(c,posts)}</div>`;return;
+  }
+  if(panel==='ranking'){
+   const rows=[...(c.members||[])].map(mid=>{const p=profile(mid);return {p,completed:(p.workoutHistory||p.history||[]).length}}).sort((a,b)=>b.completed-a.completed);
+   host.innerHTML=`<section class="community-tab-panel"><h2>Campeões</h2><p class="community-tab-subtitle">Participantes com mais registros de treino.</p>${rows.length?rows.map((r,i)=>`<div class="community-ranking-row"><span class="community-ranking-position">${i+1}</span><span class="community-ranking-avatar">${r.p.photo?`<img src="${r.p.photo}" alt="">`:icon('user')}</span><strong>${escapeText(r.p.name||'Participante')}</strong><span class="community-ranking-score">${r.completed} registro${r.completed===1?'':'s'}</span></div>`).join(''):'<p class="community-social-empty">Ainda não há participantes.</p>'}</section>`;return;
+  }
+  const challenges=Array.isArray(c.challenges)?c.challenges:[];
+  host.innerHTML=`<section class="community-tab-panel"><h2>Desafios</h2><p class="community-tab-subtitle">Metas para evoluir em conjunto.</p>${challenges.length?challenges.map(ch=>`<article class="community-challenge-row"><strong>${escapeText(ch.name||ch.title||'Desafio da comunidade')}</strong>${ch.description?`<p>${escapeText(ch.description)}</p>`:''}</article>`).join(''):'<p class="community-social-empty">Nenhum desafio cadastrado nesta comunidade ainda.</p>'}</section>`;
+ };
+})();
+</script>
+
+
+<style id="community-navigation-gap-fix-v6">
+/* Aproxima a faixa do cabeçalho da comunidade sem alterar os demais módulos. */
+#app nav.community-runtime-tabs { margin-top: -8px !important; margin-bottom: 14px !important; border-radius: 0 !important; box-shadow: none !important; }
+</style>
+
+ 
+
+<style id="community-checkin-button-force-v24">
+#communityCheckinFloatingAdd{
+ position:fixed!important;z-index:2147483000!important;left:50%!important;bottom:calc(24px + env(safe-area-inset-bottom,0px))!important;
+ transform:translateX(-50%)!important;display:none;align-items:center!important;justify-content:center!important;gap:9px!important;
+ width:68px!important;min-width:68px!important;max-width:68px!important;height:68px!important;padding:0!important;
+ border:0!important;border-radius:50%!important;background:#ff6908!important;color:#fff!important;
+ font-family:inherit!important;font-size:38px!important;font-weight:400!important;line-height:1!important;
+ box-shadow:0 6px 22px rgba(255,105,8,.42)!important;cursor:pointer!important;visibility:visible!important;opacity:1!important;
+}
+#communityCheckinFloatingAdd .community-checkin-add-plus{display:block!important;font-size:38px!important;font-weight:400!important;line-height:1!important}
+body.community-checkin-active #communityCheckinFloatingAdd{display:flex!important;visibility:visible!important;opacity:1!important}
+</style>
+<script id="community-checkin-button-force-script-v25">
+(function(){
+ function active(){
+  // O botão flutuante pertence apenas à tela principal do Check-in.
+  // Enquanto o formulário Novo check-in estiver aberto, ele deve desaparecer.
+  const formOpen=!!document.querySelector('#evoluteNewCheckinScreen.open');
+  if(formOpen)return false;
+  const tab=document.querySelector('.community-v1-detail .community-v1-tabs button[data-panel="checkin"].active, .community-social-tabs button[data-panel="checkin"].active');
+  return !!tab;
+ }
+ let scheduled=false;
+ function ensure(){
+  scheduled=false;
+  let b=document.getElementById('communityCheckinFloatingAdd');
+  if(!b){
+   b=document.createElement('button');b.id='communityCheckinFloatingAdd';b.type='button';
+   b.setAttribute('aria-label','Novo check-in');b.title='Novo check-in';
+   b.innerHTML='<span class="community-checkin-add-plus" aria-hidden="true">+</span>';
+   b.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    if(document.getElementById('communityPostPhotoChoice'))return;
+    const chooser=document.createElement('div');
+    chooser.id='communityPostPhotoChoice';
+    chooser.innerHTML='<div class="community-photo-choice-backdrop"><section class="community-photo-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="communityPhotoChoiceTitle"><button type="button" class="community-photo-choice-close" aria-label="Fechar">×</button><div class="community-photo-choice-icon" aria-hidden="true">＋</div><h3 id="communityPhotoChoiceTitle">Novo check-in</h3><p>Escolha uma foto da biblioteca para continuar.</p><button type="button" class="community-photo-choice-option" data-photo-source="gallery"><span class="community-photo-choice-option-icon" aria-hidden="true">▧</span><span><strong>Escolher da biblioteca</strong><small>Selecionar uma foto existente</small></span><span class="community-photo-choice-chevron" aria-hidden="true">›</span></button></section></div>';
+    document.body.appendChild(chooser);
+    function closeChooser(){chooser.remove();}
+    chooser.addEventListener('click',function(ev){
+     if(ev.target===chooser.querySelector('.community-photo-choice-backdrop')||ev.target.closest('.community-photo-choice-close')){closeChooser();return;}
+     const option=ev.target.closest('[data-photo-source]');
+     if(!option)return;
+     const source=option.dataset.photoSource;
+     // Iniciar o seletor enquanto o clique original ainda está ativo. Fechar
+     // primeiro o modal pode fazer o Android ignorar o primeiro input.click().
+     if(source==='camera'){
+      closeChooser();
+      if(typeof window.evoluteOpenNativeCheckinCamera==='function')window.evoluteOpenNativeCheckinCamera();
+      else alert('A câmera do celular não está disponível nesta versão.');
+      return;
+     }
+     if(typeof window.evoluteOpenCommunityPhotoLibrary==='function'){
+      window.evoluteOpenCommunityPhotoLibrary();
+      closeChooser();
+     } else {closeChooser();alert('A biblioteca de fotos não está disponível nesta versão.');}
+    });
+   });
+   document.body.appendChild(b);
+  }
+  const show=active();
+  document.body.classList.toggle('community-checkin-active',show);
+  b.style.setProperty('display',show?'flex':'none','important');
+  b.style.setProperty('visibility','visible','important');
+  b.style.setProperty('opacity','1','important');
+ }
+ function scheduleEnsure(){if(scheduled)return;scheduled=true;setTimeout(ensure,80);}
+ document.addEventListener('click',function(e){if(e.target.closest('.community-v1-tabs button, .community-social-tabs button'))scheduleEnsure();});
+ // Observe only app structure and active classes. Do not observe style changes:
+ // this script updates button styles itself, which would otherwise create a loop.
+ const observer=new MutationObserver(scheduleEnsure);
+ function init(){
+  ensure();
+  observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+ window.communityEnsureVisibleCheckinButton=ensure;
+})();
+</script><style id="community-photo-choice-modal-v28">
+#communityPostPhotoChoice{position:fixed!important;inset:0!important;z-index:2147483600!important}
+#communityPostPhotoChoice .community-photo-choice-backdrop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,18,22,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#communityPostPhotoChoice .community-photo-choice-dialog{position:relative;width:100%;max-width:390px;box-sizing:border-box;padding:28px 20px 20px;background:var(--surface,#fff);color:var(--text,#222);border:1px solid rgba(120,120,120,.16);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.25);font-family:inherit;animation:communityPhotoChoiceIn .18s ease-out}
+#communityPostPhotoChoice .community-photo-choice-close{position:absolute;right:13px;top:12px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(128,128,128,.12);color:inherit;font-size:25px;line-height:1;cursor:pointer}
+#communityPostPhotoChoice .community-photo-choice-icon{display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:0 auto 14px;border-radius:17px;background:rgba(255,105,8,.12);color:#ff6908;font-size:32px;font-weight:400}
+#communityPostPhotoChoice h3{margin:0;text-align:center;font-size:22px;font-weight:800;letter-spacing:-.4px}
+#communityPostPhotoChoice p{margin:8px 0 22px;text-align:center;color:var(--muted,#777);font-size:14px;line-height:1.45}
+#communityPostPhotoChoice .community-photo-choice-option{display:flex;align-items:center;gap:13px;width:100%;min-height:72px;padding:13px 14px;margin-top:10px;border:1px solid rgba(130,130,130,.2);border-radius:17px;background:var(--card,#fff);color:inherit;text-align:left;font:inherit;cursor:pointer;box-sizing:border-box;transition:background .15s,border-color .15s}
+#communityPostPhotoChoice .community-photo-choice-option:active{background:rgba(255,105,8,.08);border-color:#ff6908}
+#communityPostPhotoChoice .community-photo-choice-option-icon{flex:0 0 44px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(255,105,8,.11);color:#ff6908;font-size:25px}
+#communityPostPhotoChoice .community-photo-choice-option strong{display:block;font-size:15px;font-weight:750;line-height:1.35}
+#communityPostPhotoChoice .community-photo-choice-option small{display:block;margin-top:3px;color:var(--muted,#777);font-size:12px;line-height:1.35}
+#communityPostPhotoChoice .community-photo-choice-chevron{margin-left:auto;color:#ff6908;font-size:27px;font-weight:400}
+@keyframes communityPhotoChoiceIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-color-scheme:dark){#communityPostPhotoChoice .community-photo-choice-dialog{background:#202124;color:#f5f5f5;--muted:#b4b4b4;--card:#292a2d}}
+</style>
+
+<style id="community-photo-picker-clean-v54">
+#app .community-photo-choose{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;margin-top:8px;border:0;border-radius:12px;background:#ff6908;color:#fff;font-weight:750;cursor:pointer}
+#app input[type="file"][hidden]{display:none!important}
 </style>
 
 </body>
@@ -25929,29 +26292,7 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 @media(max-width:600px){#communityCheckinFloatingAdd{bottom:calc(30px + env(safe-area-inset-bottom,0px));width:68px;height:68px}}
 </style>
-<script id="community-checkin-floating-add-button-script-20261013">
-(function(){
- function ensureCommunityAdd(){
-  let b=document.getElementById('communityCheckinFloatingAdd');
-  if(!b){
-   b=document.createElement('button');b.id='communityCheckinFloatingAdd';b.type='button';
-   b.setAttribute('aria-label','Adicionar check-in');b.title='Adicionar check-in';b.textContent='+';
-   b.addEventListener('click',function(e){
-    e.preventDefault();e.stopPropagation();
-    if(typeof window.evoluteStartCommunityPostPhoto==='function') window.evoluteStartCommunityPostPhoto();
-    else console.error('Evolute: seleção de foto ainda não foi inicializada.');
-   });
-   document.body.appendChild(b);
-  }
-  const checkin=document.querySelector('.community-social-tabs button[data-panel="checkin"].active');
-  document.body.classList.toggle('community-checkin-active',!!checkin);
- }
- document.addEventListener('click',function(e){if(e.target.closest('.community-social-tabs button'))setTimeout(ensureCommunityAdd,0);});
- const observer=new MutationObserver(ensureCommunityAdd);
- document.addEventListener('DOMContentLoaded',function(){ensureCommunityAdd();const app=document.getElementById('app')||document.body;observer.observe(app,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});});
- if(document.readyState!=='loading')ensureCommunityAdd();
-})();
-</script>
+
 
 
 <!-- Tela de publicação/check-in baseada na referência enviada em 14/10/2026 -->
@@ -26076,7 +26417,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
  }
  function build(){if($('#evoluteNewCheckinScreen'))return $('#evoluteNewCheckinScreen');
   const el=document.createElement('section');el.id='evoluteNewCheckinScreen';el.setAttribute('aria-label','Novo check-in');
-  el.innerHTML=`<header class="nc-header"><button type="button" class="nc-back" aria-label="Voltar">‹</button><h2>Novo check-in</h2><button type="button" class="nc-publish">Publicar</button></header><div class="nc-scroll"><div class="nc-preview-row"><div class="nc-photo-wrap"><div class="nc-photo-empty">Adicione uma foto do treino</div><img class="nc-photo" alt="Prévia da foto" hidden><button type="button" class="nc-edit-photo" aria-label="Adicionar ou editar foto">✎</button></div></div><input class="nc-file" type="file" accept="image/*" capture="environment" hidden><div class="nc-card"><textarea class="nc-description" name="description" placeholder="Escreva algo sobre seu treino" aria-label="Escreva algo sobre seu treino"></textarea></div><div class="nc-datetime"><div class="nc-datebox"><label for="nc-date">Dia</label><input id="nc-date" name="date" type="date"></div><div class="nc-datebox"><label for="nc-time">Hora de início</label><input id="nc-time" name="time" type="time"></div></div><div class="nc-card"><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><label for="nc-location">Localização</label><input id="nc-location" name="location" placeholder="Nenhum"></div><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12M9 12h6M9 15h6"/></svg></span><label for="nc-gym">Academia</label><input id="nc-gym" name="gym" placeholder="Nenhum"></div></div><div class="nc-card"><div class="nc-field"><label for="nc-activity">Atividade</label><select id="nc-activity" name="activity"><option value="">Selecionar atividade</option><option>Musculação</option><option>Cardio</option><option>Corrida</option><option>Caminhada</option><option>Ciclismo</option><option>Alongamento</option><option>Funcional</option><option>Outro</option></select></div><div class="nc-field"><label for="nc-duration">Duração</label><input id="nc-duration" name="duration" placeholder="Ex.: 1h 15min"></div><div class="nc-field"><label for="nc-distance">Distância (quilômetros)</label><input id="nc-distance" name="distance" type="number" min="0" step="0.1" placeholder="0,0 km"></div><div class="nc-field"><label for="nc-calories">Calorias</label><input id="nc-calories" name="calories" type="number" min="0" placeholder="0 kcal"></div></div></div>`;
+  el.innerHTML=`<header class="nc-header"><button type="button" class="nc-back" aria-label="Voltar">‹</button><h2>Novo check-in</h2><button type="button" class="nc-publish">Publicar</button></header><div class="nc-scroll"><div class="nc-preview-row"><div class="nc-photo-wrap"><div class="nc-photo-empty">Adicione uma foto do treino</div><img class="nc-photo" alt="Prévia da foto" hidden><button type="button" class="nc-edit-photo" aria-label="Adicionar ou editar foto">✎</button></div></div><input class="nc-file" type="file" accept="image/*" hidden><div class="nc-card"><textarea class="nc-description" name="description" placeholder="Escreva algo sobre seu treino" aria-label="Escreva algo sobre seu treino"></textarea></div><div class="nc-datetime"><div class="nc-datebox"><label for="nc-date">Dia</label><input id="nc-date" name="date" type="date"></div><div class="nc-datebox"><label for="nc-time">Hora de início</label><input id="nc-time" name="time" type="time"></div></div><div class="nc-card"><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><label for="nc-location">Localização</label><input id="nc-location" name="location" placeholder="Nenhum"></div><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12M9 12h6M9 15h6"/></svg></span><label for="nc-gym">Academia</label><input id="nc-gym" name="gym" placeholder="Nenhum"></div></div><div class="nc-card"><div class="nc-field"><label for="nc-activity">Atividade</label><select id="nc-activity" name="activity"><option value="">Selecionar atividade</option><option>Musculação</option><option>Cardio</option><option>Corrida</option><option>Caminhada</option><option>Ciclismo</option><option>Alongamento</option><option>Funcional</option><option>Outro</option></select></div><div class="nc-field"><label for="nc-duration">Duração</label><input id="nc-duration" name="duration" placeholder="Ex.: 1h 15min"></div><div class="nc-field"><label for="nc-distance">Distância (quilômetros)</label><input id="nc-distance" name="distance" type="number" min="0" step="0.1" placeholder="0,0 km"></div><div class="nc-field"><label for="nc-calories">Calorias</label><input id="nc-calories" name="calories" type="number" min="0" placeholder="0 kcal"></div></div></div>`;
   document.body.appendChild(el);
   const now=new Date(),pad=n=>String(n).padStart(2,'0');$('input[name="date"]',el).value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());$('input[name="time"]',el).value=pad(now.getHours())+':'+pad(now.getMinutes());
   const file=$('.nc-file',el),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);let photo='';
@@ -26134,73 +26475,212 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
     }catch(error){if(token===locationSearchToken)showLocationMessage('A busca de locais está temporariamente indisponível. Tente novamente ou digite o local manualmente.',true);}
    },error=>{if(token!==locationSearchToken)return;if(error.code===1)showLocationMessage('Permita o acesso à localização para ver opções próximas.');else showLocationMessage('Não foi possível obter sua localização agora. Tente novamente ou digite o local manualmente.',true);},{enableHighAccuracy:false,timeout:12000,maximumAge:120000});
   };
-  locationInput.addEventListener('focus',()=>{if(locationPicker.hidden&&!locationInput.value.trim())searchNearbyLocations();});
-  locationInput.addEventListener('click',()=>{if(locationPicker.hidden&&!locationInput.value.trim())searchNearbyLocations();});
-  locationInput.addEventListener('input',()=>{if(!locationInput.value.trim()){setGymRowVisible(false);gymInput.value='';searchNearbyLocations();}else{locationPicker.hidden=true;setGymRowVisible(true);gymInput.value='';}});
+  // Um único acionador evita duas solicitações de GPS no mesmo toque.
+  // Tocar em qualquer parte da linha Localização inicia (ou reinicia) a busca próxima,
+  // inclusive quando uma localização já foi escolhida anteriormente.
+  locationRow.setAttribute('role','button');
+  locationRow.setAttribute('tabindex','0');
+  locationRow.setAttribute('aria-label','Buscar locais próximos usando o GPS do celular');
+  locationInput.setAttribute('readonly','readonly');
+  locationInput.setAttribute('aria-readonly','true');
+  locationInput.style.cursor='pointer';
+  const activateLocationSearch=event=>{
+   if(event){event.preventDefault();event.stopPropagation();}
+   searchNearbyLocations();
+  };
+  locationRow.addEventListener('click',activateLocationSearch);
+  locationRow.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){activateLocationSearch(event);}});
   document.addEventListener('click',event=>{if(!locationRow.contains(event.target)&&!locationPicker.contains(event.target))locationPicker.hidden=true;});
 
   $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
-  file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{photo=String(reader.result||'');el.__evolutePhotoData=photo;img.src=photo;img.hidden=false;empty.hidden=true};reader.readAsDataURL(f)});
+  file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(f)showChosenPhoto(f);file.value='';});
   const close=()=>el.classList.remove('open');$('.nc-back',el).addEventListener('click',close);
   const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();const feed=$('.community-social-tabs button[data-panel="feed"]');if(feed)feed.click();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
  }
  function open(){const el=build();el.classList.add('open');}
+ let photoProcessing=false;
  function showChosenPhoto(file){
-  if(!file)return;
+  if(!file || photoProcessing)return;
+  photoProcessing=true;
   const el=build(),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);
-  // Reduzir a imagem antes de convertê-la para base64. Fotos de celular podem
-  // ter dezenas de megapixels e provocar pressão de memória no WebView Android.
-  const readCompressed=async()=>{
-   try{
-    let bitmap=null;
-    if(typeof createImageBitmap==='function') bitmap=await createImageBitmap(file);
-    if(bitmap){
-     const maxSide=1600,scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
-     const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
-     const ctx=canvas.getContext('2d',{alpha:false});ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close&&bitmap.close();
-     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.82));
-     canvas.width=1;canvas.height=1;
-     if(blob)return blob;
-    }
-   }catch(err){console.warn('Evolute: compressão de imagem indisponível; tentando leitura direta.',err);}
-   return file;
+  // Mostrar a tela Novo check-in imediatamente após a confirmação da foto.
+  // O processamento da imagem acontece em seguida, sem bloquear a navegação.
+  el.classList.add('open');
+  let processingNote=$('.nc-photo-error',el);
+  if(!processingNote){processingNote=document.createElement('p');processingNote.className='nc-photo-error';processingNote.style.cssText='margin:10px 0;color:#777;font-size:14px;line-height:1.4';processingNote.textContent='Preparando sua foto…';img.parentNode.appendChild(processingNote);}
+  // Nunca converter o arquivo original para Base64. Primeiro tenta decodificar
+  // já redimensionando; só o Blob comprimido é convertido para o formato legado.
+  const fail=(message)=>{
+   photoProcessing=false;
+   let note=$('.nc-photo-error',el);
+   if(!note){note=document.createElement('p');note.className='nc-photo-error';note.style.cssText='margin:10px 0;color:#c2410c;font-size:14px;line-height:1.4';img.parentNode.appendChild(note);}
+   note.textContent=message;
+   el.classList.add('open');
   };
-  readCompressed().then(source=>{
-   const reader=new FileReader();
-   reader.onload=()=>{const dataUrl=String(reader.result||'');if(!dataUrl)return;el.__evolutePhotoData=dataUrl;img.src=dataUrl;img.hidden=false;empty.hidden=true;el.classList.add('open');};
-   reader.onerror=()=>{console.error('Evolute: não foi possível carregar a foto selecionada.');el.classList.add('open');};
-   try{reader.readAsDataURL(source);}catch(err){console.error('Evolute: falha ao ler a foto selecionada.',err);el.classList.add('open');}
-  }).catch(err=>{console.error('Evolute: falha ao preparar a foto selecionada.',err);el.classList.add('open');});
+  (async()=>{
+   let bitmap=null,canvas=null,blob=null;
+   try{
+    if(typeof createImageBitmap==='function'){
+     // Nunca cair para createImageBitmap(file) sem opções: isso decodifica a foto
+     // original em resolução total e pode esgotar a memória do WebView Android.
+     const opts={resizeWidth:640,resizeHeight:640,resizeQuality:'low',resizeMode:'contain',imageOrientation:'from-image'};
+     try{bitmap=await createImageBitmap(file,opts);}
+     catch(firstError){
+      // Segunda tentativa com o conjunto mínimo de opções de redimensionamento.
+      // Se o navegador não suportar isso, falhamos sem alocar o bitmap original.
+      try{bitmap=await createImageBitmap(file,{resizeWidth:640,resizeHeight:640});}
+      catch(secondError){throw new Error('O navegador não conseguiu redimensionar a foto com segurança');}
+     }
+    }
+    if(bitmap){
+     const scale=Math.min(1,640/Math.max(bitmap.width,bitmap.height));
+     const w=Math.max(1,Math.round(bitmap.width*scale)),h=Math.max(1,Math.round(bitmap.height*scale));
+     canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+     const ctx=canvas.getContext('2d',{alpha:false});
+     if(!ctx)throw new Error('Canvas indisponível');
+     ctx.drawImage(bitmap,0,0,w,h);
+     blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.68));
+    } else {
+     // Fallback sem decodificação: não ler arquivo original inteiro em memória.
+     throw new Error('Redimensionamento indisponível neste navegador');
+    }
+    if(!blob)throw new Error('Não foi possível comprimir a foto');
+    if(bitmap&&bitmap.close){bitmap.close();bitmap=null;}
+    if(canvas){canvas.width=1;canvas.height=1;canvas=null;}
+    // Converte apenas a imagem final, já pequena, para compatibilidade com o Feed.
+    const reader=new FileReader();
+    const dataUrl=await new Promise((resolve,reject)=>{
+     reader.onload=()=>resolve(String(reader.result||''));
+     reader.onerror=()=>reject(new Error('Falha ao ler a imagem comprimida'));
+     reader.onabort=()=>reject(new Error('Leitura da imagem interrompida'));
+     reader.readAsDataURL(blob);
+    });
+    if(!dataUrl.startsWith('data:image/'))throw new Error('Imagem comprimida inválida');
+    el.__evolutePhotoData=dataUrl;
+    img.src=dataUrl;img.hidden=false;empty.hidden=true;
+    const note=$('.nc-photo-error',el);if(note)note.remove();
+    el.classList.add('open');
+   }catch(err){
+    console.error('Evolute: falha no processamento seguro da foto.',err);
+    fail('Não foi possível preparar esta foto sem exceder a memória do aparelho. Tente uma imagem menor ou escolha uma foto da galeria.');
+   }finally{
+    if(bitmap&&bitmap.close)try{bitmap.close();}catch(_){}
+    if(canvas){canvas.width=1;canvas.height=1;}
+    photoProcessing=false;
+   }
+  })();
+ }
+ // A confirmação final é feita na própria câmera do Android ("Usar foto").
+ // Não criar outra prévia da imagem original dentro do WebView: em aparelhos com
+ // pouca memória, decodificar essa prévia pode derrubar a página antes do formulário.
+ function confirmCapturedCheckinPhoto(file){
+  if(!file)return;
+  const screen=build();
+  screen.classList.add('open');
+  showChosenPhoto(file);
  }
  // Em arquivos abertos via content:// no Android, getUserMedia normalmente não é permitido.
  // Use o seletor nativo com capture para entregar a câmera real do aparelho sem tela de erro.
+ let nativeCameraOpen=false;
  function openNativeCamera(){
-  const input=document.createElement('input');input.type='file';input.accept='image/*';input.setAttribute('capture','environment');
-  input.style.position='fixed';input.style.left='-10000px';input.style.width='1px';input.style.height='1px';document.body.appendChild(input);
-  let finished=false;
-  const cleanup=()=>{if(input.parentNode)input.parentNode.removeChild(input);};
-  input.addEventListener('change',function(){finished=true;const file=input.files&&input.files[0];cleanup();if(file)showChosenPhoto(file);});
-  input.addEventListener('cancel',function(){finished=true;cleanup();});
-  try{input.click();}catch(err){cleanup();console.warn('Evolute: não foi possível iniciar a câmera nativa.',err);}
+  if(nativeCameraOpen)return;
+  nativeCameraOpen=true;
+  // Delegar a captura à câmera nativa do Android. Alguns aparelhos demoram
+  // alguns segundos para disponibilizar o arquivo na primeira captura; por isso
+  // não encerrar o fluxo só porque a página recuperou o foco sem arquivo imediato.
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='image/*';
+  input.setAttribute('capture','environment');
+  input.setAttribute('aria-label','Tirar foto para o check-in');
+  input.style.cssText='position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;z-index:100701';
+  document.body.appendChild(input);
+  let finished=false,returnTimer=null,pollTimer=null,returnDeadline=0;
+  const stopTimers=()=>{
+   if(returnTimer){clearTimeout(returnTimer);returnTimer=null;}
+   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  };
+  const cleanup=()=>{
+   if(finished)return;
+   finished=true;
+   nativeCameraOpen=false;
+   stopTimers();
+   document.removeEventListener('visibilitychange',onReturn);
+   window.removeEventListener('focus',onReturn);
+   setTimeout(()=>{if(input.parentNode)input.parentNode.removeChild(input);},1200);
+  };
+  const receivePhoto=()=>{
+   if(finished)return;
+   const file=input.files&&input.files[0];
+   if(!file)return;
+   // Guardar el objeto File y marcar el flujo como finalizado antes de procesarlo,
+   // evitando que change, input, focus y visibilitychange lo procesen dos veces.
+   cleanup();
+   const screen=build();
+   screen.classList.add('open');
+   showChosenPhoto(file);
+  };
+  const onReturn=()=>{
+   if(document.visibilityState&&document.visibilityState!=='visible')return;
+   // Dar tiempo a Android/WebView para entregar el archivo después de volver.
+   returnDeadline=Date.now()+7000;
+   if(pollTimer)clearInterval(pollTimer);
+   pollTimer=setInterval(()=>{
+    if(finished){stopTimers();return;}
+    if(input.files&&input.files.length){receivePhoto();return;}
+    if(Date.now()>=returnDeadline){
+     // A câmera foi cancelada ou o Android não entregou arquivo: liberar nova tentativa.
+     cleanup();
+    }
+   },250);
+   if(returnTimer)clearTimeout(returnTimer);
+   returnTimer=setTimeout(()=>{
+    if(!finished&&input.files&&input.files.length)receivePhoto();
+   },350);
+  };
+  input.addEventListener('change',receivePhoto);
+  input.addEventListener('input',receivePhoto);
+  input.addEventListener('cancel',cleanup,{once:true});
+  document.addEventListener('visibilitychange',onReturn);
+  window.addEventListener('focus',onReturn);
+  try{
+   // O clique deve ocorrer diretamente no gesto do usuário para abrir a câmera.
+   input.click();
+  }catch(err){
+   cleanup();
+   console.warn('Evolute: não foi possível iniciar a câmera nativa.',err);
+   alert('Não foi possível abrir a câmera. Tente novamente ou escolha uma foto da biblioteca.');
+  }
  }
  function ensurePhotoChoiceModal(){
   let modal=$('#evolutePhotoChoiceModal');if(modal)return modal;
   modal=document.createElement('section');modal.id='evolutePhotoChoiceModal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Adicionar foto');
-  modal.innerHTML='<button type="button" class="epc-backdrop" aria-label="Fechar"></button><div class="epc-card"><div class="epc-handle"></div><div class="epc-heading"><span class="epc-camera-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h3l1.5-2h7l1.5 2h3A1.5 1.5 0 0 1 21.5 9v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.5"/></svg></span><div><h3>Adicionar foto</h3><p>Escolha como deseja adicionar uma foto ao seu check-in.</p></div><button type="button" class="epc-close" aria-label="Fechar">×</button></div><button type="button" class="epc-option epc-take"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7.5h3.2l1.6-2.2h6.4l1.6 2.2H20a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 19.5H4A1.5 1.5 0 0 1 2.5 18V9A1.5 1.5 0 0 1 4 7.5Z"/><circle cx="12" cy="13" r="3.4"/></svg></span><span class="epc-option-copy"><strong>Tirar foto</strong><small>Abrir a câmera do dispositivo</small></span><span class="epc-chevron">›</span></button><button type="button" class="epc-option epc-library"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><span class="epc-option-copy"><strong>Da biblioteca</strong><small>Escolher uma foto já existente</small></span><span class="epc-chevron">›</span></button></div><input class="epc-library-input" type="file" accept="image/*">';
-  const css=document.createElement('style');css.id='evolute-photo-choice-modal-style';css.textContent='#evolutePhotoChoiceModal{position:fixed;inset:0;z-index:100700;display:none;align-items:flex-end;justify-content:center;font-family:inherit;color:#f7f7f8}#evolutePhotoChoiceModal.open{display:flex}#evolutePhotoChoiceModal *{box-sizing:border-box}#evolutePhotoChoiceModal .epc-backdrop{position:absolute;inset:0;border:0;background:rgba(0,0,0,.68);backdrop-filter:blur(3px)}#evolutePhotoChoiceModal .epc-card{position:relative;width:min(100%,520px);padding:10px 20px calc(22px + env(safe-area-inset-bottom));background:#171719;border:1px solid #343438;border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -12px 44px #0006;animation:epc-rise .22s ease-out}#evolutePhotoChoiceModal .epc-handle{width:38px;height:4px;border-radius:4px;background:#55555b;margin:0 auto 19px}#evolutePhotoChoiceModal .epc-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px}#evolutePhotoChoiceModal .epc-camera-mark{width:44px;height:44px;flex:0 0 44px;border-radius:14px;background:#ff69081f;display:grid;place-items:center;color:#ff6908}#evolutePhotoChoiceModal .epc-option-icon svg{display:block;width:25px;height:25px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-camera-mark svg{display:block;width:24px;height:24px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-heading h3{margin:0 0 4px;font-size:19px;font-weight:800;color:#fff}#evolutePhotoChoiceModal .epc-heading p{margin:0;font-size:13px;line-height:1.4;color:#aaaab1}#evolutePhotoChoiceModal .epc-close{margin-left:auto;align-self:flex-start;border:0;background:#2a2a2e;color:#ddd;border-radius:50%;width:30px;height:30px;font-size:22px;line-height:1}#evolutePhotoChoiceModal .epc-option{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 13px;margin-top:10px;border:1px solid #39393e;border-radius:16px;background:#222225;color:#fff}#evolutePhotoChoiceModal .epc-option:active{background:#303034}#evolutePhotoChoiceModal .epc-option-icon{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;background:#ff6908;color:#fff}#evolutePhotoChoiceModal .epc-option-copy{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#evolutePhotoChoiceModal .epc-option-copy strong{font-size:16px;font-weight:750}#evolutePhotoChoiceModal .epc-option-copy small{font-size:12px;color:#aaaab1}#evolutePhotoChoiceModal .epc-chevron{font-size:27px;color:#85858c}#evolutePhotoChoiceModal .epc-library-input{position:fixed!important;left:0!important;bottom:0!important;width:1px!important;height:1px!important;opacity:.01!important;overflow:hidden!important;z-index:-1!important;border:0!important;padding:0!important;margin:0!important}@keyframes epc-rise{from{transform:translateY(20px);opacity:.5}to{transform:translateY(0);opacity:1}}@media(min-width:560px){#evolutePhotoChoiceModal{align-items:center;padding:20px}#evolutePhotoChoiceModal .epc-card{border:1px solid #343438;border-radius:24px;padding-bottom:22px}}';
+  modal.innerHTML='<button type="button" class="epc-backdrop" aria-label="Fechar"></button><div class="epc-card"><div class="epc-handle"></div><div class="epc-heading"><span class="epc-camera-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><div><h3>Escolher foto</h3><p>Selecione uma imagem existente na biblioteca do celular.</p></div><button type="button" class="epc-close" aria-label="Fechar">×</button></div><button type="button" class="epc-option epc-library"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><span class="epc-option-copy"><strong>Escolher da biblioteca</strong><small>Selecionar uma foto já existente</small></span><span class="epc-chevron">›</span><input class="epc-library-input" type="file" accept="image/*"></button></div>';
+  const css=document.createElement('style');css.id='evolute-photo-choice-modal-style';css.textContent='#evolutePhotoChoiceModal{position:fixed;inset:0;z-index:100700;display:none;align-items:flex-end;justify-content:center;font-family:inherit;color:#f7f7f8}#evolutePhotoChoiceModal.open{display:flex}#evolutePhotoChoiceModal *{box-sizing:border-box}#evolutePhotoChoiceModal .epc-backdrop{position:absolute;inset:0;border:0;background:rgba(0,0,0,.68);backdrop-filter:blur(3px)}#evolutePhotoChoiceModal .epc-card{position:relative;width:min(100%,520px);padding:10px 20px calc(22px + env(safe-area-inset-bottom));background:#171719;border:1px solid #343438;border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -12px 44px #0006;animation:epc-rise .22s ease-out}#evolutePhotoChoiceModal .epc-handle{width:38px;height:4px;border-radius:4px;background:#55555b;margin:0 auto 19px}#evolutePhotoChoiceModal .epc-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px}#evolutePhotoChoiceModal .epc-camera-mark{width:44px;height:44px;flex:0 0 44px;border-radius:14px;background:#ff69081f;display:grid;place-items:center;color:#ff6908}#evolutePhotoChoiceModal .epc-option-icon svg{display:block;width:25px;height:25px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-camera-mark svg{display:block;width:24px;height:24px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-heading h3{margin:0 0 4px;font-size:19px;font-weight:800;color:#fff}#evolutePhotoChoiceModal .epc-heading p{margin:0;font-size:13px;line-height:1.4;color:#aaaab1}#evolutePhotoChoiceModal .epc-close{margin-left:auto;align-self:flex-start;border:0;background:#2a2a2e;color:#ddd;border-radius:50%;width:30px;height:30px;font-size:22px;line-height:1}#evolutePhotoChoiceModal .epc-option{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 13px;margin-top:10px;border:1px solid #39393e;border-radius:16px;background:#222225;color:#fff}#evolutePhotoChoiceModal .epc-option:active{background:#303034}#evolutePhotoChoiceModal .epc-option-icon{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;background:#ff6908;color:#fff}#evolutePhotoChoiceModal .epc-option-copy{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#evolutePhotoChoiceModal .epc-option-copy strong{font-size:16px;font-weight:750}#evolutePhotoChoiceModal .epc-option-copy small{font-size:12px;color:#aaaab1}#evolutePhotoChoiceModal .epc-chevron{font-size:27px;color:#85858c}#evolutePhotoChoiceModal .epc-option{position:relative;overflow:hidden}#evolutePhotoChoiceModal .epc-library-input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;z-index:5!important;cursor:pointer!important;pointer-events:auto!important;border:0!important;padding:0!important;margin:0!important}@keyframes epc-rise{from{transform:translateY(20px);opacity:.5}to{transform:translateY(0);opacity:1}}@media(min-width:560px){#evolutePhotoChoiceModal{align-items:center;padding:20px}#evolutePhotoChoiceModal .epc-card{border:1px solid #343438;border-radius:24px;padding-bottom:22px}}';
   document.head.appendChild(css);document.body.appendChild(modal);
   const close=()=>modal.classList.remove('open');$('.epc-backdrop',modal).addEventListener('click',close);$('.epc-close',modal).addEventListener('click',close);
-  $('.epc-take',modal).addEventListener('click',()=>{
-   // Abrir o seletor nativo imediatamente dentro do gesto do usuário.
-   // Não abrir a tela de publicação nem usar setTimeout antes do input.click().
-   close();openNativeCamera();
-  });
-  $('.epc-library',modal).addEventListener('click',()=>{
-   const input=$('.epc-library-input',modal);
-   // Manter o modal montado/visível enquanto o seletor nativo está aberto.
-   // Ocultar o ancestral logo após input.click() pode interromper o retorno
-   // do arquivo em alguns navegadores Android.
-   try{input.click();}catch(err){console.error('Evolute: não foi possível abrir a biblioteca de fotos.',err);}
+  // O botão visível recebe o toque e chama o seletor imediatamente, no mesmo
+  // evento de usuário. Não deixar um input transparente sobre o botão: em alguns
+  // Android/Chrome esse overlay recebe o primeiro toque sem abrir o seletor.
+  const libraryInput=$('.epc-library-input',modal);
+  const libraryButton=$('.epc-library',modal);
+  libraryInput.style.cssText='position:absolute!important;width:1px!important;height:1px!important;left:-10000px!important;top:auto!important;opacity:0!important;pointer-events:none!important;';
+  libraryButton.addEventListener('click',function(event){
+   event.preventDefault();
+   event.stopPropagation();
+   // Abrir o seletor no primeiro toque, usando a API nativa do navegador
+   // quando disponível. O gesto do usuário não deve ser perdido entre telas.
+   try{
+    if(typeof libraryInput.showPicker==='function'){
+     try{libraryInput.showPicker();}
+     catch(showPickerError){libraryInput.click();}
+    }else{
+     libraryInput.click();
+    }
+   }catch(err){
+    console.error('Evolute: falha ao abrir biblioteca no primeiro toque',err);
+    alert('Não foi possível abrir a biblioteca de fotos. Toque novamente para tentar.');
+   }
   });
   $('.epc-library-input',modal).addEventListener('change',()=>{
    const input=$('.epc-library-input',modal),file=input.files&&input.files[0];
@@ -26211,7 +26691,25 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   return modal;
  }
  function startPhotoFlow(){
-  const modal=ensurePhotoChoiceModal();modal.classList.add('open');
+  // Abrir diretamente o seletor do Android no primeiro toque no botão +.
+  // Evita a etapa intermediária de abrir um modal e exigir outro toque para
+  // escolher a biblioteca. A chamada ao input.click() permanece síncrona
+  // dentro do gesto do usuário para respeitar a política do navegador móvel.
+  if(typeof window.evoluteOpenCommunityPhotoLibrary==='function'){
+   window.evoluteOpenCommunityPhotoLibrary();
+   return;
+  }
+  const input=document.createElement('input');
+  input.type='file'; input.accept='image/*';
+  input.style.cssText='position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0;';
+  document.body.appendChild(input);
+  input.addEventListener('change',()=>{
+   const file=input.files&&input.files[0];
+   if(file) showChosenPhoto(file);
+   input.remove();
+  },{once:true});
+  input.addEventListener('cancel',()=>input.remove(),{once:true});
+  input.click();
  }
  // Callback chamado pelo Android depois que a câmera nativa captura/seleciona uma imagem.
  window.evoluteNativePhotoReady=function(dataUrl){
@@ -26224,9 +26722,35 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
    showChosenPhoto(new File([bytes],'evolute-checkin.jpg',{type:mime}));
   } catch(err){ console.error('Evolute: não foi possível receber a foto da câmera Android.',err); }
  };
+ window.evoluteOpenNativeCheckinCamera=openNativeCamera;
  window.evoluteOpenNewCheckin=open;
  window.evoluteStartCommunityPostPhoto=startPhotoFlow;
- window.evoluteOpenCommunityPhotoLibrary=function(){const input=document.createElement('input');input.type='file';input.accept='image/*';input.addEventListener('change',function(){const file=input.files&&input.files[0];if(file)showChosenPhoto(file);});input.click();};
+ window.evoluteOpenCommunityPhotoLibrary=function(){
+  // Abra a tela de preenchimento antes de chamar o seletor Android. Assim ela
+  // já existe quando o navegador retorna da biblioteca, inclusive na primeira tentativa.
+  const screen=build();screen.classList.add('open');
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.setAttribute('aria-label','Escolher foto da biblioteca');
+  input.style.cssText='position:fixed!important;left:0!important;top:0!important;width:1px!important;height:1px!important;opacity:0.01!important;z-index:2147483647!important;';
+  document.body.appendChild(input);
+  let finished=false;
+  const cleanup=()=>{if(finished)return;finished=true;input.remove();};
+  input.addEventListener('change',function(){
+   const file=input.files&&input.files[0];
+   if(file){
+    // Reabrir explicitamente a tela no evento change, pois alguns navegadores
+    // Android retomam a página restaurando o estado visual anterior.
+    screen.classList.add('open');
+    showChosenPhoto(file);
+   }
+   cleanup();
+  },{once:true});
+  input.addEventListener('cancel',cleanup,{once:true});
+  try{
+   // Chamar click de forma síncrona no mesmo gesto do usuário.
+   input.click();
+  }catch(err){cleanup();console.error('Evolute: não foi possível abrir a biblioteca de fotos.',err);alert('Não foi possível abrir a biblioteca. Tente novamente.');}
+ };
 })();
 </script>
 
@@ -26405,3 +26929,259 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 #app .community-calendar-day.has-record img,#app .community-calendar-day.selected img{opacity:1!important}
 #app .community-calendar-day:has(img) .community-calendar-dot{display:none!important}
 </style>
+
+
+<style id="community-navigation-runtime-fix-v4">
+/* Correção aplicada à tela real: uma faixa única com quatro áreas sem botões individuais. */
+#app nav.community-runtime-tabs {
+  display:flex !important; visibility:visible !important; opacity:1 !important;
+  position:relative !important; left:50% !important; transform:translateX(-50%) !important;
+  width:100vw !important; max-width:100vw !important; min-height:58px !important;
+  height:auto !important; box-sizing:border-box !important; align-items:stretch !important;
+  justify-content:space-around !important; gap:0 !important; margin:0 0 14px !important;
+  padding:4px 8px !important; background:#fff !important; color:#24262a !important;
+  border:0 !important; border-top:1px solid #e5e5e5 !important; border-bottom:1px solid #e5e5e5 !important;
+  border-radius:0 !important; box-shadow:none !important;
+  overflow:visible !important; z-index:5 !important;
+}
+#app nav.community-runtime-tabs > button {
+  appearance:none !important; -webkit-appearance:none !important; display:flex !important;
+  visibility:visible !important; opacity:1 !important; position:relative !important;
+  flex:1 1 25% !important; min-width:0 !important; width:25% !important; height:auto !important;
+  min-height:48px !important; max-height:none !important; margin:0 !important; padding:7px 2px 5px !important;
+  border:0 !important; outline:0 !important; box-shadow:none !important; border-radius:0 !important;
+  background:transparent !important; color:#74777d !important; display:flex !important;
+  flex-direction:column !important; align-items:center !important; justify-content:center !important;
+  gap:4px !important; font-size:11px !important; line-height:1.15 !important; font-weight:500 !important;
+}
+#app nav.community-runtime-tabs > button strong {font-size:11px !important; font-weight:600 !important; white-space:normal !important; text-align:center !important;}
+#app nav.community-runtime-tabs > button svg {width:19px !important;height:19px !important;min-width:19px !important;}
+#app nav.community-runtime-tabs > button.active {color:#fe6405 !important;}
+#app nav.community-runtime-tabs > button.active::after {content:"";position:absolute;bottom:0;left:24%;right:24%;height:3px;border-radius:3px;background:#fe6405;}
+</style>
+<script id="community-navigation-runtime-fix-v4-js">
+(function(){
+ 'use strict';
+ const labels=[['ranking','Campeões','trophy'],['checkin','Check-in','check'],['feed','Feed','users'],['challenges','Desafios','target']];
+ function makeIcon(name){try{if(typeof evoIcon==='function')return evoIcon(name);}catch(e){}return name==='ranking'?'🏆':name==='checkin'?'✓':name==='feed'?'☰':'◎';}
+ function activeCommunityId(scope){
+   const host=(scope&&scope.querySelector&&scope.querySelector('[data-community-id]'))||document.querySelector('#communityTabPanel[data-community-id], .community-detail-content[data-community-id]');
+   if(host&&host.dataset.communityId)return host.dataset.communityId;
+   const detail=document.querySelector('.community-v1-detail');
+   if(detail){const fn=detail.querySelector('[onclick*="communitySwitchPanel"]');if(fn){const m=fn.getAttribute('onclick').match(/communitySwitchPanel\('[^']+','([^']+)'/);if(m)return m[1];}}
+   try{const u=typeof communityCurrentUser==='function'?communityCurrentUser():null;const list=Array.isArray(db&&db.communities)?db.communities:[];const c=list.filter(x=>u&&(x.members||[]).includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0))[0];return c&&c.id||'';}catch(e){return '';}
+ }
+ function switchTo(panel,id,btn){
+   const nav=btn&&btn.closest('nav'); if(nav)nav.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.panel===panel);b.setAttribute('aria-pressed',b.dataset.panel===panel?'true':'false');});
+   try{if(typeof communitySwitchPanel==='function'&&id){communitySwitchPanel(panel,id,btn);return;}}catch(e){}
+   try{if(typeof window.communitySwitchPanel==='function'&&id){window.communitySwitchPanel(panel,id,btn);return;}}catch(e){}
+ }
+ function addNav(){
+   const app=document.getElementById('app');if(!app)return;
+   const calendar=app.querySelector('.community-social-calendar');
+   const target=app.querySelector('#communityTabPanel, .community-detail-content, .community-v1-panel')||calendar&&calendar.parentElement;
+   if(!target)return;
+   let nav=target.querySelector(':scope > nav.community-runtime-tabs');
+   if(!nav){
+     nav=document.createElement('nav');nav.className='community-runtime-tabs';nav.setAttribute('aria-label','Navegação da comunidade');
+     const cid=activeCommunityId(target);
+     labels.forEach(([key,label,ico])=>{const b=document.createElement('button');b.type='button';b.dataset.panel=key;b.setAttribute('aria-pressed',key==='checkin'?'true':'false');b.className=key==='checkin'?'active':'';b.innerHTML='<span aria-hidden="true">'+makeIcon(ico)+'</span><strong>'+label+'</strong>';b.addEventListener('click',()=>switchTo(key,activeCommunityId(target)||cid,b));nav.appendChild(b);});
+     if(target.firstElementChild)target.insertBefore(nav,target.firstElementChild);else target.appendChild(nav);
+   }
+ }
+ function start(){addNav();const app=document.getElementById('app');if(app&&window.MutationObserver){const observer=new MutationObserver(()=>addNav());observer.observe(app,{childList:true,subtree:true});}}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>\n
+<style id="community-runtime-tabs-header-gap-fix-v8">
+/* O cabeçalho e a navegação nem sempre compartilham .community-page.
+   Aplicar diretamente à barra realmente inserida pelo script de navegação. */
+html body #app nav.community-runtime-tabs {
+  margin-top: -16px !important;
+}
+</style>
+\n\n
+<style id="community-header-divider-v9">
+/* Linha fina separando visualmente o cabeçalho da barra da Comunidade. */
+html body #app .community-runtime-tabs {
+  border-top: 1px solid #e5e5e5 !important;
+}
+</style>
+\n\n
+<style id="community-header-divider-v10">
+/* Linha divisória na borda SUPERIOR da barra, entre cabeçalho e navegação. */
+html body #app .community-runtime-tabs {
+  border-top: 1px solid #d8d8d8 !important;
+  position: relative !important;
+}
+html body #app .community-runtime-tabs::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: #d8d8d8 !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+</style>
+\n\n
+<style id="community-header-bottom-divider-v11">
+/* Alternativa: linha na parte inferior do cabeçalho principal da aplicação. */
+html body #app header,
+html body #app .app-header,
+html body #app .main-header,
+html body #app .top-header,
+html body #app .header-container {
+  border-bottom: 1px solid #d8d8d8 !important;
+}
+</style>
+\n
+
+<style id="community-runtime-tabs-size-v12">
+/* Aumenta discretamente os ícones e os nomes da navegação da Comunidade. */
+html body #app .community-runtime-tabs {
+  min-height: 88px !important;
+}
+html body #app .community-runtime-tabs button,
+html body #app .community-runtime-tabs a,
+html body #app .community-runtime-tabs [role="button"] {
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+}
+html body #app .community-runtime-tabs button svg,
+html body #app .community-runtime-tabs a svg,
+html body #app .community-runtime-tabs [role="button"] svg {
+  width: 25px !important;
+  height: 25px !important;
+}
+</style>\n
+<style id="community-runtime-tabs-double-divider-v13">
+/* Linhas finas na borda superior e inferior da barra de navegação. */
+html body #app .community-runtime-tabs {
+  border-top: 1px solid #dedede !important;
+  border-bottom: 1px solid #dedede !important;
+  box-sizing: border-box !important;
+}
+</style>
+\n
+
+<style id="community-calendar-post-summary-v17">
+/* Resumo compacto: texto pequeno e discreto abaixo do calendário. */
+.community-calendar-post-summary {
+  margin: 8px 0 0 !important;
+  padding: 7px 10px !important;
+  border: 1px solid #ededed !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #666 !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+.community-calendar-summary-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  padding: 2px 0 !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+.community-calendar-summary-row + .community-calendar-summary-row {
+  border-top: 1px solid #f2f2f2 !important;
+}
+.community-calendar-summary-row span {
+  color: #888 !important;
+  font-size: 10px !important;
+}
+.community-calendar-summary-row strong {
+  color: #555 !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  text-align: right !important;
+  overflow-wrap: anywhere !important;
+}
+</style>
+
+<style id="community-feed-plus-button-v18">
+.community-feed-add-button {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483647 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 58px !important;
+  height: 58px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #FE6405 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 38px !important;
+  font-weight: 300 !important;
+  line-height: 1 !important;
+  padding: 0 0 4px !important;
+}
+.community-post-composer-overlay {
+  position: fixed; inset: 0; z-index: 10000; display: flex;
+  align-items: flex-end; justify-content: center;
+  padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0,0,0,.45);
+}
+.community-post-composer {
+  width: 100%; max-width: 560px; box-sizing: border-box;
+  padding: 18px; border-radius: 18px 18px 14px 14px;
+  background: #fff; color: #222; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.community-post-composer > header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.community-post-composer > header h2 { margin:0; font-size:20px; }
+.community-post-composer > header button { border:0; background:transparent; font-size:28px; color:#666; }
+.community-post-composer label { display:block; margin:10px 0 6px; font-size:13px; font-weight:600; }
+.community-post-composer textarea { width:100%; box-sizing:border-box; padding:12px; border:1px solid #ddd; border-radius:10px; font:inherit; resize:vertical; }
+.community-post-composer input[type=file] { width:100%; font-size:13px; }
+.community-composer-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.community-composer-actions button { border:0; border-radius:10px; padding:11px 16px; font-weight:600; }
+.community-composer-cancel { background:#f1f1f1; color:#333; }
+.community-composer-publish { background:#FE6405; color:#fff; }
+</style>
+
+<style id="community-new-checkin-action-v22">
+.community-new-checkin-action {
+  display:flex;
+  justify-content:center;
+  width:100%;
+  box-sizing:border-box;
+  padding:14px 16px 28px;
+}
+.community-new-checkin-action button {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:min(100%, 320px);
+  min-height:48px;
+  padding:12px 20px;
+  border:0;
+  border-radius:13px;
+  background:#FE6405;
+  color:#fff;
+  font-size:15px;
+  font-weight:700;
+  box-shadow:0 4px 12px rgba(254,100,5,.2);
+  cursor:pointer;
+}
+.community-new-checkin-action button span {
+  font-size:22px;
+  line-height:1;
+  font-weight:400;
+}
+.community-new-checkin-action button:active { transform:scale(.98); }
+</style>
+
