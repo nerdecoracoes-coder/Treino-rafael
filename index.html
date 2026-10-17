@@ -8854,69 +8854,110 @@ function showCommunityDetail(id,justCreated=false){
    <div class="community-social-feed-list" id="communitySocialFeedList">${communityRenderPosts(c,posts)}</div>
   </div>
  </div>`;
- document.getElementById('communityFeedAddButton')?.remove();
- const communityAddButton=document.createElement('button');
- communityAddButton.type='button';
- communityAddButton.id='communityFeedAddButton';
- communityAddButton.className='community-feed-add-button';
- communityAddButton.setAttribute('aria-label','Criar nova postagem');
- communityAddButton.title='Nova postagem';
- communityAddButton.innerHTML='<span aria-hidden="true">+</span>';
- communityAddButton.addEventListener('click',()=>communityOpenPostComposer(c.id));
- document.body.appendChild(communityAddButton);
  window.scrollTo(0,0);
-}
-
-function communityOpenPostComposer(id){
- const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
- if(!c||!u||!(c.members||[]).includes(u.id))return;
- document.getElementById('communityPostComposerModal')?.remove();
- const modal=document.createElement('div');
- modal.id='communityPostComposerModal';
- modal.className='community-post-composer-overlay';
- modal.innerHTML=`<section class="community-post-composer" role="dialog" aria-modal="true" aria-labelledby="communityPostComposerTitle">
-  <header><h2 id="communityPostComposerTitle">Nova postagem</h2><button type="button" aria-label="Fechar" onclick="communityClosePostComposer()">×</button></header>
-  <label for="communityComposerCaption">Escreva sua publicação</label>
-  <textarea id="communityComposerCaption" rows="4" maxlength="2000" placeholder="O que você gostaria de compartilhar?"></textarea>
-  <label class="community-composer-photo-label" for="communityComposerPhoto">Adicionar foto (opcional)</label>
-  <input id="communityComposerPhoto" type="file" accept="image/*">
-  <div class="community-composer-actions"><button type="button" class="community-composer-cancel" onclick="communityClosePostComposer()">Cancelar</button><button type="button" class="community-composer-publish" onclick="communityCreatePost('${esc(c.id)}')">Publicar</button></div>
- </section>`;
- modal.addEventListener('click',e=>{if(e.target===modal)communityClosePostComposer();});
- document.body.appendChild(modal);
- document.getElementById('communityComposerCaption')?.focus();
-}
-function communityClosePostComposer(){document.getElementById('communityPostComposerModal')?.remove();}
-async function communityCreatePost(id){
- const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
- const caption=(document.getElementById('communityComposerCaption')?.value||'').trim();
- const input=document.getElementById('communityComposerPhoto');
- if(!c||!u||!(c.members||[]).includes(u.id))return;
- if(!caption){alert('Escreva o texto da postagem.');return;}
- let photo='';
- if(input?.files?.[0]){
-  const file=input.files[0];
-  if(!file.type.startsWith('image/')){alert('Escolha um arquivo de imagem.');return;}
-  try{photo=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});}
-  catch(e){alert('Não foi possível carregar a imagem. Tente novamente.');return;}
- }
- if(!Array.isArray(c.posts))c.posts=[];
- const post={id:'post_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),userId:u.id,authorId:u.id,caption,createdAt:new Date().toISOString(),likesCount:0,comments:[]};
- if(photo)post.photo=photo;
- c.posts.push(post);
- saveDB();
- if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
-  const synced=await window.evoluteForceCloudSync();
-  if(!synced)alert('A postagem foi adicionada nesta sessão, mas não conseguimos confirmar a sincronização na nuvem. Confira a conexão antes de sair.');
- }
- communityClosePostComposer();
- showCommunityDetail(id,true);
 }
 
 function communityRenderPosts(c,posts){
  const list=Array.isArray(posts)?posts:[];
  if(!list.length)return '<p class="community-social-empty">Ainda não há publicações nesta comunidade.</p>';
- return list.map(post=>{const p=db.profiles.find(x=>x.id===post.authorId)||{};return `<article class="community-social-post" data-post-id="${esc(post.id)}"><header><span class="community-social-post-avatar">${p.photo?`<img src="${p.photo}" alt="">`:evoIcon('user')}</span><div><strong>${esc(p.name||'Participante')}</strong><small>${communityPostDate(post.createdAt)} · ${esc(c.name)}</small></div></header><p>${esc(post.caption||'')}</p>${post.photo?`<img class="community-social-post-photo" src="${post.photo}" alt="Foto publicada na comunidade">`:''}</article>`;}).join('');
+ return list.map(post=>{
+  const p=db.profiles.find(x=>x.id===post.authorId)||{};
+  const loc=post.location&&(post.location.name||post.location.address);
+  const dateValue=post.activityDate||post.activityDateTime||post.createdAt;
+  let dateLabel='';
+  if(dateValue){const date=new Date(String(dateValue).length===10?String(dateValue)+'T00:00:00':dateValue);if(!Number.isNaN(date.getTime()))dateLabel=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});}
+  const timeValue=post.startTime||'';
+  const detailsId='community-post-details-'+String(post.id||Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
+  const extra=[];
+  if(post.activityType)extra.push(`<div class="community-social-post-detail-row"><span>Tipo de atividade</span><strong>${esc(post.activityType)}</strong></div>`);
+  if(post.durationMinutes)extra.push(`<div class="community-social-post-detail-row"><span>Duração</span><strong>${esc(String(post.durationMinutes))} minutos</strong></div>`);
+  if(loc)extra.push(`<div class="community-social-post-detail-row"><span>Localização</span><strong>${esc(loc)}</strong></div>`);
+  const extraDetails=extra.length?extra.join(''):'<p class="community-social-post-no-details">Não foram preenchidas outras informações neste check-in.</p>';
+  return `<article class="community-social-post" data-post-id="${esc(post.id)}"><header><span class="community-social-post-avatar">${p.photo?`<img src="${p.photo}" alt="">`:evoIcon('user')}</span><div><strong>${esc(p.name||'Participante')}</strong><small>${communityPostDate(post.createdAt)} · ${esc(c.name)}</small></div></header>${post.photo?`<img class="community-social-post-photo" src="${post.photo}" alt="Foto publicada no check-in">`:''}<div class="community-social-post-actions"><div class="community-social-post-action-group"><button type="button" aria-label="Curtir publicação" title="Curtir" class="community-social-post-action-icon ${Array.isArray(post.likedBy)&&post.likedBy.includes(communityCurrentUser()?.id)?'liked':''}" aria-pressed="${Array.isArray(post.likedBy)&&post.likedBy.includes(communityCurrentUser()?.id)?'true':'false'}" onclick="communityTogglePostLike('${esc(c.id)}','${esc(post.id)}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.7a5.4 5.4 0 0 0-7.6 0L12 5.9l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.5 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg></button><button type="button" class="community-social-post-count" aria-label="Ver quem curtiu" onclick="communityShowPostReactions('${esc(c.id)}','${esc(post.id)}','likes')">${Array.isArray(post.likedBy)?post.likedBy.length:0}</button></div><div class="community-social-post-action-group"><button type="button" aria-label="Comentar publicação" title="Comentar" class="community-social-post-action-icon" onclick="communityToggleComments('${esc(c.id)}','${esc(post.id)}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg></button><button type="button" class="community-social-post-count" aria-label="Ver quem comentou" onclick="communityShowPostReactions('${esc(c.id)}','${esc(post.id)}','comments')">${Array.isArray(post.comments)?post.comments.length:0}</button></div></div><div class="community-social-post-likers" aria-label="Pessoas que curtiram">${(Array.isArray(post.likedBy)?post.likedBy:[]).map(uid=>db.profiles.find(profile=>profile.id===uid)).filter(Boolean).slice(0,8).map(profile=>`<span class="community-social-post-liker" title="${esc(profile.name||'Participante')}">${profile.photo?`<img src="${profile.photo}" alt="Foto de ${esc(profile.name||'participante')}">`:evoIcon('user')}</span>`).join('')}</div><div class="community-social-post-comments" id="community-comments-${esc(post.id)}" hidden></div><div class="community-social-post-reactions" id="community-reactions-${esc(post.id)}" hidden></div><div class="community-social-post-primary"><div class="community-social-post-meta"><span>Data</span><strong>${esc(dateLabel||'Não informada')}</strong></div><div class="community-social-post-meta"><span>Horário</span><strong>${esc(timeValue||'Não informado')}</strong></div><div class="community-social-post-activity"><p>${post.caption?esc(post.caption):'Nenhuma descrição informada.'}</p></div></div><button type="button" class="community-social-post-more" aria-expanded="false" aria-controls="${detailsId}" onclick="communityTogglePostDetails(this,'${detailsId}')">Ver mais <span aria-hidden="true">⌄</span></button><div id="${detailsId}" class="community-social-post-details" hidden>${extraDetails}</div></article>`;
+ }).join('');
+}
+function communityTogglePostLike(communityId,postId){
+ const community=(db.communities||[]).find(item=>String(item.id)===String(communityId));
+ const post=community&&(community.posts||[]).find(item=>String(item.id)===String(postId));
+ const user=communityCurrentUser();
+ if(!post||!user)return;
+ if(!Array.isArray(post.likedBy))post.likedBy=[];
+ const index=post.likedBy.indexOf(user.id);
+ if(index>=0)post.likedBy.splice(index,1);else post.likedBy.push(user.id);
+ saveDB();
+ const host=document.getElementById('communitySocialFeedList');
+ if(host)host.innerHTML=communityRenderPosts(community,[...(community.posts||[])].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)));
+}
+
+// Duplo clique/toque sobre uma publicação também alterna a curtida, sem interferir nos controles.
+if(!window.__communityPostDoubleClickLikeBound){
+ window.__communityPostDoubleClickLikeBound=true;
+ document.addEventListener('dblclick',function(event){
+  const target=event.target;
+  const postElement=target&&target.closest?target.closest('.community-social-post'):null;
+  if(!postElement)return;
+  if(target.closest('button,a,input,textarea,select,form,.community-social-post-comments,.community-social-post-reactions'))return;
+  const postId=postElement.getAttribute('data-post-id');
+  const communityElement=postElement.closest('[data-community-id]');
+  let communityId=communityElement&&communityElement.getAttribute('data-community-id');
+  if(!communityId){
+   const activeCommunity=(db.communities||[]).find(item=>(item.posts||[]).some(post=>String(post.id)===String(postId)));
+   communityId=activeCommunity&&activeCommunity.id;
+  }
+  if(!communityId||!postId)return;
+  event.preventDefault();
+  communityTogglePostLike(String(communityId),String(postId));
+ });
+}
+
+function communityToggleComments(communityId,postId){
+ const community=(db.communities||[]).find(item=>String(item.id)===String(communityId));
+ const post=community&&(community.posts||[]).find(item=>String(item.id)===String(postId));
+ const panel=document.getElementById('community-comments-'+postId);if(!post||!panel)return;
+ const reactions=document.getElementById('community-reactions-'+postId);if(reactions)reactions.hidden=true;
+ document.querySelectorAll('.community-social-post-comments').forEach(item=>{if(item!==panel)item.hidden=true;});
+ if(!panel.hidden){panel.hidden=true;return;}
+ panel.hidden=false;communityRenderComments(panel,community,post);
+}
+if(!window.__communityCommentOutsideClickBound){
+ window.__communityCommentOutsideClickBound=true;
+ document.addEventListener('click',function(event){
+  const target=event.target;
+  if(target&&target.closest&&target.closest('.community-social-post-action-icon[aria-label="Comentar publicação"]'))return;
+  if(target&&target.closest&&target.closest('.community-social-post-comments'))return;
+  document.querySelectorAll('.community-social-post-comments').forEach(panel=>{panel.hidden=true;});
+ });
+}
+function communityRenderComments(panel,community,post){
+ const comments=Array.isArray(post.comments)?post.comments:[];
+ panel.innerHTML=`<div class="community-social-comments-list">${comments.length?comments.map(comment=>{const profile=db.profiles.find(x=>String(x.id)===String(comment.userId))||{};return `<div class="community-social-comment"><span class="community-social-comment-avatar">${profile.photo?`<img src="${profile.photo}" alt="">`:evoIcon('user')}</span><div><strong>${esc(profile.name||'Participante')}</strong><p>${esc(comment.text||'')}</p></div></div>`}).join(''):'<p class="community-social-comments-empty">Ainda não há comentários. Seja o primeiro a comentar.</p>'}</div><form class="community-social-comment-form" onsubmit="communityAddPostComment(event,'${esc(community.id)}','${esc(post.id)}')"><input name="comment" maxlength="500" placeholder="Escreva um comentário..." aria-label="Escreva um comentário" required><button type="submit" aria-label="Enviar comentário">Enviar</button></form>`;
+}
+function communityAddPostComment(event,communityId,postId){
+ event.preventDefault();const form=event.currentTarget;const input=form.elements.comment;const value=String(input.value||'').trim();const user=communityCurrentUser();
+ const community=(db.communities||[]).find(item=>String(item.id)===String(communityId));const post=community&&(community.posts||[]).find(item=>String(item.id)===String(postId));if(!value||!user||!post)return;
+ if(!Array.isArray(post.comments))post.comments=[];post.comments.push({id:'comment-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),userId:user.id,text:value,createdAt:new Date().toISOString()});saveDB();
+ const host=document.getElementById('communitySocialFeedList');if(host)host.innerHTML=communityRenderPosts(community,[...(community.posts||[])].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)));
+ // Depois de enviar, a lista é redesenhada e a área de comentários permanece fechada.
+}
+function communityShowPostReactions(communityId,postId,type){
+ const community=(db.communities||[]).find(item=>String(item.id)===String(communityId));const post=community&&(community.posts||[]).find(item=>String(item.id)===String(postId));if(!post)return;
+ const panel=document.getElementById('community-reactions-'+postId);if(!panel)return;const commentsPanel=document.getElementById('community-comments-'+postId);if(commentsPanel)commentsPanel.hidden=true;
+ if(!panel.hidden){panel.hidden=true;return;}panel.hidden=false;
+ if(type==='likes'){
+  const profiles=(Array.isArray(post.likedBy)?post.likedBy:[]).map(uid=>db.profiles.find(p=>String(p.id)===String(uid))).filter(Boolean);
+  panel.innerHTML=`<strong>Curtiram esta publicação</strong>${profiles.length?profiles.map(p=>`<div class="community-social-reaction-person"><span class="community-social-comment-avatar">${p.photo?`<img src="${p.photo}" alt="">`:evoIcon('user')}</span>${esc(p.name||'Participante')}</div>`).join(''):'<p class="community-social-comments-empty">Ninguém curtiu ainda.</p>'}`;
+ }else{
+  const comments=Array.isArray(post.comments)?post.comments:[];
+  panel.innerHTML=`<strong>Comentários (${comments.length})</strong>${comments.length?comments.map(comment=>{const p=db.profiles.find(x=>String(x.id)===String(comment.userId))||{};return `<div class="community-social-reaction-person"><span class="community-social-comment-avatar">${p.photo?`<img src="${p.photo}" alt="">`:evoIcon('user')}</span><div><b>${esc(p.name||'Participante')}</b><p>${esc(comment.text||'')}</p></div></div>`}).join(''):'<p class="community-social-comments-empty">Ainda não há comentários.</p>'}`;
+ }
+}
+
+function communityTogglePostDetails(button,detailsId){
+ const details=document.getElementById(detailsId);if(!details)return;
+ const expanded=button.getAttribute('aria-expanded')==='true';
+ button.setAttribute('aria-expanded',expanded?'false':'true');
+ details.hidden=expanded;
+ button.innerHTML=expanded?'Ver mais <span aria-hidden="true">⌄</span>':'Ver menos <span aria-hidden="true">⌃</span>';
 }
 
 function communityOpenMemberProfile(id){
@@ -8935,22 +8976,13 @@ function communityShowMenu(cid){const c=db.communities.find(x=>x.id===cid);if(c)
 function communitySelectDay(cid,day,button){
  document.querySelectorAll('.community-sketch-day').forEach(b=>b.classList.toggle('selected',b===button));
 }
-function communityToggleComposer(){
- const form=document.getElementById('communitySketchComposer');if(!form)return;
- form.classList.toggle('community-composer-open');
- if(form.classList.contains('community-composer-open')){document.getElementById('communityPostCaption')?.focus();form.scrollIntoView({behavior:'smooth',block:'nearest'});}
-}
-
 function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
  const year=viewDate.getFullYear(),month=viewDate.getMonth();
  const days=new Date(year,month+1,0).getDate(),offset=new Date(year,month,1).getDay();
  const today=new Date();
  const chosen=Math.max(1,Math.min(days,Number(selectedDay)||(year===today.getFullYear()&&month===today.getMonth()?today.getDate():1)));
  const posts=Array.isArray(c.posts)?c.posts:[];const byDay={};
- // Combine community feed posts with check-ins created through the dedicated publication form.
- // Date-only values are parsed in local time to avoid timezone shifts to the previous/next day.
- const localCheckins=(()=>{try{const value=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');return Array.isArray(value)?value.map(p=>{const parts=String(p.date||'').split('-').map(Number);const localDate=parts.length===3&&parts.every(Number.isFinite)?new Date(parts[0],parts[1]-1,parts[2],Number(String(p.time||'00:00').split(':')[0])||0,Number(String(p.time||'00:00').split(':')[1])||0):new Date(p.createdAt||p.id||0);return {...p,createdAt:localDate.getTime(),__localCheckin:true};}).filter(p=>p.date&&Number.isFinite(p.createdAt)):[];}catch(e){return [];}})();
- [...posts,...localCheckins].forEach(p=>{if(!p.createdAt)return;const d=new Date(p.createdAt);if(d.getFullYear()===year&&d.getMonth()===month){const n=d.getDate();if(!byDay[n]||new Date(p.createdAt)>new Date(byDay[n].createdAt))byDay[n]=p;}});
+ posts.forEach(p=>{if(!p.createdAt)return;const d=new Date(p.createdAt);if(d.getFullYear()===year&&d.getMonth()===month){const n=d.getDate();if(!byDay[n]||new Date(p.createdAt)>new Date(byDay[n].createdAt))byDay[n]=p;}});
  const weekdays=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
  let cells=weekdays.map(x=>`<span class="community-calendar-weekday">${x}</span>`).join('');
  for(let i=0;i<offset;i++)cells+='<span class="community-calendar-day empty" aria-hidden="true"></span>';
@@ -8963,9 +8995,9 @@ function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
  const date=new Date(year,month,chosen);
  const dateLabel=date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const selectedPost=byDay[chosen];
- const selectedPostAction=selectedPost?(selectedPost.__localCheckin?`<p class="community-calendar-no-post">Check-in publicado neste dia.</p>`:`<button type="button" class="community-calendar-view-post" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(selectedPost.id)}')">Ver publicação <span aria-hidden="true">›</span></button>`):`<p class="community-calendar-no-post">Nenhuma publicação neste dia.</p>`;
+ const selectedPostAction=selectedPost?`<button type="button" class="community-calendar-view-post" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(selectedPost.id)}')">Ver publicação <span aria-hidden="true">›</span></button>`:`<p class="community-calendar-no-post">Nenhuma publicação neste dia.</p>`;
  const selectedPostSummary=selectedPost?(()=>{
-  const ignored=new Set(['id','communityId','authorId','userId','createdAt','date','photo','image','images','video','media','attachments','__localCheckin']);
+  const ignored=new Set(['id','communityId','authorId','userId','createdAt','date','photo','image','images','video','media','attachments']);
   const labels={time:'Horário do check-in',checkinTime:'Horário do check-in',checkInTime:'Horário do check-in',weight:'Peso',duration:'Duração',calories:'Calorias',feeling:'Como me senti',note:'Observações',notes:'Observações',observation:'Observações',caption:'Comentário',description:'Descrição',text:'Comentário',title:'Título'};
   const fields=Object.entries(selectedPost).filter(([key,value])=>!ignored.has(key)&&value!==null&&value!==undefined&&String(value).trim()!==''&&typeof value!=='object'&&typeof value!=='boolean'&& !/photo|image|video|media|avatar|url|base64/i.test(key));
   const rows=fields.map(([key,value])=>`<div class="community-calendar-summary-row"><span>${esc(labels[key]||key.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase()))}</span><strong>${esc(String(value))}</strong></div>`).join('');
@@ -8973,35 +9005,14 @@ function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
  })():'';
  return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div>${selectedPostSummary}`;
 }
-function communityEnsurePostButton(cid){
- const c=db.communities.find(x=>x.id===cid);
- if(!c)return;
- let button=document.getElementById('communityFeedAddButton');
- if(!button){
-  button=document.createElement('button');
-  button.type='button';
-  button.id='communityFeedAddButton';
-  button.className='community-feed-add-button';
-  button.setAttribute('aria-label','Criar nova postagem');
-  button.title='Nova postagem';
-  button.innerHTML='<span aria-hidden="true">+</span>';
-  document.body.appendChild(button);
- }
- button.style.display='flex';
- button.style.visibility='visible';
- button.style.opacity='1';
- button.onclick=()=>communityOpenPostComposer(c.id);
-}
 function communityRenderCheckinPanel(c,viewDate=new Date(),selectedDay=null){
- return `<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,viewDate,selectedDay)}</section>
- <div class="community-new-checkin-action"><button type="button" onclick="if(typeof window.evoluteStartCommunityPostPhoto==='function'){window.evoluteStartCommunityPostPhoto()}else{alert('A opção de adicionar foto não está disponível.')}"><span aria-hidden="true">＋</span> Novo check-in</button></div>`;
+ return `<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,viewDate,selectedDay)}</section>`;
 }
 function communityRefreshCalendar(cid,year,month,day){
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
  const host=document.getElementById('communityTabPanel');if(!host)return;
  const date=new Date(year,month,1);
  host.innerHTML=communityRenderCheckinPanel(c,date,day);
- communityEnsurePostButton(cid);
 }
 function communityChangeCalendarMonth(cid,year,month,delta,day){
  const next=new Date(year,month+delta,1);const maxDay=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
@@ -9014,7 +9025,6 @@ function communityChangeCalendarDay(cid,year,month,day,delta){
 }
 function communityOpenCalendarPost(cid,pid){const c=db.communities.find(x=>x.id===cid),p=c?.posts?.find(x=>x.id===pid);if(!p)return;const node=document.querySelector(`[data-post-id="${CSS.escape(pid)}"]`);if(node){node.scrollIntoView({behavior:'smooth',block:'center'});node.classList.add('community-post-highlight');setTimeout(()=>node.classList.remove('community-post-highlight'),1600);}else alert(p.caption||'Registro da comunidade');}
 function communitySwitchPanel(panel,cid,button){
- communityEnsurePostButton(cid);
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
  document.querySelectorAll('.community-social-tabs button').forEach(b=>b.classList.toggle('active',b===button));
  const host=document.getElementById('communityTabPanel');if(!host)return;
@@ -9039,25 +9049,6 @@ function communityPostDate(value){
  const date=new Date(value||Date.now());
  if(Number.isNaN(date.getTime()))return 'Agora mesmo';
  return date.toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-}
-
-async function publishCommunityPost(id){
- const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
- const caption=(document.getElementById('communityPostCaption')?.value||'').trim();
- const input=document.getElementById('communityPostPhotoInput');
- if(!c||!u||!c.members.includes(u.id))return;
- if(!input?.files?.[0]){alert('Escolha uma foto para publicar.');return;}
- if(!caption){alert('Escreva uma descrição para a foto.');return;}
- const photo=await readCommunityPhoto('communityPostPhotoInput');
- if(photo===false||!photo)return;
- if(!Array.isArray(c.posts))c.posts=[];
- c.posts.push({id:'post_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),userId:u.id,caption,photo,createdAt:new Date().toISOString(),likesCount:0,comments:[]});
- saveDB();
- if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
-  const synced=await window.evoluteForceCloudSync();
-  if(!synced)alert('A publicação foi adicionada nesta sessão, mas não conseguimos confirmar a sincronização na nuvem. Confira a conexão antes de sair.');
- }
- showCommunityDetail(id,true);
 }
 
 function showCommunitySettings(id){
@@ -16125,30 +16116,10 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 </style>
 
 
-<style id="community-new-post-photo-choice-20261013">
-#communityPostPhotoChoice{position:fixed;inset:0;z-index:10020}.community-photo-choice-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);display:flex;align-items:flex-end;justify-content:center;padding:18px;box-sizing:border-box}.community-photo-choice-dialog{width:min(100%,420px);background:#fff;border-radius:24px;padding:22px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 12px 40px rgba(0,0,0,.3);color:#222}.community-photo-choice-dialog h3{margin:0 0 7px;font-size:21px}.community-photo-choice-dialog p{margin:0 0 18px;color:#777;font-size:14px}.community-photo-choice-dialog button{display:block;width:100%;border:0;border-radius:14px;padding:15px 12px;margin-top:9px;background:#ff6908;color:#fff;font-size:16px;font-weight:650;text-align:left}.community-photo-choice-dialog button.community-photo-choice-cancel{background:#f0f0f0;color:#333;text-align:center}
-</style>
 
 
-<style id="evolute-checkin-preview-top-clearance-fix-20261014">
-/* Correção definitiva da prévia: separar a imagem do limite inferior do cabeçalho. */
-#evoluteNewCheckinScreen>.nc-scroll{padding-top:20px!important;}
-#evoluteNewCheckinScreen .nc-preview-row{
-  padding-top:18px!important;
-  min-height:208px!important;
-  margin-top:0!important;
-  margin-bottom:16px!important;
-  overflow:visible!important;
-}
-#evoluteNewCheckinScreen .nc-photo-wrap{
-  margin-top:0!important;
-  overflow:hidden!important;
-}
-#evoluteNewCheckinScreen .nc-photo-wrap .nc-photo{
-  object-fit:contain!important;
-  background:#f4f4f5!important;
-}
-</style>
+
+
 
 
 <!-- EVOLUTE COMMUNITY REBUILD V1: camada nova e isolada; preserva banco e funções compartilhadas -->
@@ -16233,7 +16204,7 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
   if(panel==='checkin'){host.innerHTML=`<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c)}</section>`;return;}
   if(panel==='feed'){
    const posts=[...(c.posts||[])].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
-   host.innerHTML=`<div class="community-v1-feed-actions"><button type="button" class="community-v1-btn primary" onclick="communityToggleComposer()">＋ Nova publicação</button></div><div id="communitySocialFeedList" class="community-social-feed-list">${communityRenderPosts(c,posts)}</div>`;return;
+   host.innerHTML=`<div id="communitySocialFeedList" class="community-social-feed-list">${communityRenderPosts(c,posts)}</div>`;return;
   }
   if(panel==='ranking'){
    const rows=[...(c.members||[])].map(mid=>{const p=profile(mid);return {p,completed:(p.workoutHistory||p.history||[]).length}}).sort((a,b)=>b.completed-a.completed);
@@ -16253,104 +16224,93 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 
  
 
-<style id="community-checkin-button-force-v24">
-#communityCheckinFloatingAdd{
- position:fixed!important;z-index:2147483000!important;left:50%!important;bottom:calc(24px + env(safe-area-inset-bottom,0px))!important;
- transform:translateX(-50%)!important;display:none;align-items:center!important;justify-content:center!important;gap:9px!important;
- width:68px!important;min-width:68px!important;max-width:68px!important;height:68px!important;padding:0!important;
- border:0!important;border-radius:50%!important;background:#ff6908!important;color:#fff!important;
- font-family:inherit!important;font-size:38px!important;font-weight:400!important;line-height:1!important;
- box-shadow:0 6px 22px rgba(255,105,8,.42)!important;cursor:pointer!important;visibility:visible!important;opacity:1!important;
-}
-#communityCheckinFloatingAdd .community-checkin-add-plus{display:block!important;font-size:38px!important;font-weight:400!important;line-height:1!important}
-body.community-checkin-active #communityCheckinFloatingAdd{display:flex!important;visibility:visible!important;opacity:1!important}
-</style>
-<script id="community-checkin-button-force-script-v25">
-(function(){
- function active(){
-  // O botão flutuante pertence apenas à tela principal do Check-in.
-  // Enquanto o formulário Novo check-in estiver aberto, ele deve desaparecer.
-  const formOpen=!!document.querySelector('#evoluteNewCheckinScreen.open');
-  if(formOpen)return false;
-  const tab=document.querySelector('.community-v1-detail .community-v1-tabs button[data-panel="checkin"].active, .community-social-tabs button[data-panel="checkin"].active');
-  return !!tab;
- }
- let scheduled=false;
- function ensure(){
-  scheduled=false;
-  let b=document.getElementById('communityCheckinFloatingAdd');
-  if(!b){
-   b=document.createElement('button');b.id='communityCheckinFloatingAdd';b.type='button';
-   b.setAttribute('aria-label','Novo check-in');b.title='Novo check-in';
-   b.innerHTML='<span class="community-checkin-add-plus" aria-hidden="true">+</span>';
-   b.addEventListener('click',function(e){
-    e.preventDefault();e.stopPropagation();
-    if(document.getElementById('communityPostPhotoChoice'))return;
-    const chooser=document.createElement('div');
-    chooser.id='communityPostPhotoChoice';
-    chooser.innerHTML='<div class="community-photo-choice-backdrop"><section class="community-photo-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="communityPhotoChoiceTitle"><button type="button" class="community-photo-choice-close" aria-label="Fechar">×</button><div class="community-photo-choice-icon" aria-hidden="true">＋</div><h3 id="communityPhotoChoiceTitle">Novo check-in</h3><p>Escolha uma foto da biblioteca para continuar.</p><button type="button" class="community-photo-choice-option" data-photo-source="gallery"><span class="community-photo-choice-option-icon" aria-hidden="true">▧</span><span><strong>Escolher da biblioteca</strong><small>Selecionar uma foto existente</small></span><span class="community-photo-choice-chevron" aria-hidden="true">›</span></button></section></div>';
-    document.body.appendChild(chooser);
-    function closeChooser(){chooser.remove();}
-    chooser.addEventListener('click',function(ev){
-     if(ev.target===chooser.querySelector('.community-photo-choice-backdrop')||ev.target.closest('.community-photo-choice-close')){closeChooser();return;}
-     const option=ev.target.closest('[data-photo-source]');
-     if(!option)return;
-     const source=option.dataset.photoSource;
-     // Iniciar o seletor enquanto o clique original ainda está ativo. Fechar
-     // primeiro o modal pode fazer o Android ignorar o primeiro input.click().
-     if(source==='camera'){
-      closeChooser();
-      if(typeof window.evoluteOpenNativeCheckinCamera==='function')window.evoluteOpenNativeCheckinCamera();
-      else alert('A câmera do celular não está disponível nesta versão.');
-      return;
-     }
-     if(typeof window.evoluteOpenCommunityPhotoLibrary==='function'){
-      window.evoluteOpenCommunityPhotoLibrary();
-      closeChooser();
-     } else {closeChooser();alert('A biblioteca de fotos não está disponível nesta versão.');}
-    });
-   });
-   document.body.appendChild(b);
-  }
-  const show=active();
-  document.body.classList.toggle('community-checkin-active',show);
-  b.style.setProperty('display',show?'flex':'none','important');
-  b.style.setProperty('visibility','visible','important');
-  b.style.setProperty('opacity','1','important');
- }
- function scheduleEnsure(){if(scheduled)return;scheduled=true;setTimeout(ensure,80);}
- document.addEventListener('click',function(e){if(e.target.closest('.community-v1-tabs button, .community-social-tabs button'))scheduleEnsure();});
- // Observe only app structure and active classes. Do not observe style changes:
- // this script updates button styles itself, which would otherwise create a loop.
- const observer=new MutationObserver(scheduleEnsure);
- function init(){
-  ensure();
-  observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
- window.communityEnsureVisibleCheckinButton=ensure;
-})();
-</script><style id="community-photo-choice-modal-v28">
-#communityPostPhotoChoice{position:fixed!important;inset:0!important;z-index:2147483600!important}
-#communityPostPhotoChoice .community-photo-choice-backdrop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,18,22,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-#communityPostPhotoChoice .community-photo-choice-dialog{position:relative;width:100%;max-width:390px;box-sizing:border-box;padding:28px 20px 20px;background:var(--surface,#fff);color:var(--text,#222);border:1px solid rgba(120,120,120,.16);border-radius:24px;box-shadow:0 20px 70px rgba(0,0,0,.25);font-family:inherit;animation:communityPhotoChoiceIn .18s ease-out}
-#communityPostPhotoChoice .community-photo-choice-close{position:absolute;right:13px;top:12px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(128,128,128,.12);color:inherit;font-size:25px;line-height:1;cursor:pointer}
-#communityPostPhotoChoice .community-photo-choice-icon{display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:0 auto 14px;border-radius:17px;background:rgba(255,105,8,.12);color:#ff6908;font-size:32px;font-weight:400}
-#communityPostPhotoChoice h3{margin:0;text-align:center;font-size:22px;font-weight:800;letter-spacing:-.4px}
-#communityPostPhotoChoice p{margin:8px 0 22px;text-align:center;color:var(--muted,#777);font-size:14px;line-height:1.45}
-#communityPostPhotoChoice .community-photo-choice-option{display:flex;align-items:center;gap:13px;width:100%;min-height:72px;padding:13px 14px;margin-top:10px;border:1px solid rgba(130,130,130,.2);border-radius:17px;background:var(--card,#fff);color:inherit;text-align:left;font:inherit;cursor:pointer;box-sizing:border-box;transition:background .15s,border-color .15s}
-#communityPostPhotoChoice .community-photo-choice-option:active{background:rgba(255,105,8,.08);border-color:#ff6908}
-#communityPostPhotoChoice .community-photo-choice-option-icon{flex:0 0 44px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(255,105,8,.11);color:#ff6908;font-size:25px}
-#communityPostPhotoChoice .community-photo-choice-option strong{display:block;font-size:15px;font-weight:750;line-height:1.35}
-#communityPostPhotoChoice .community-photo-choice-option small{display:block;margin-top:3px;color:var(--muted,#777);font-size:12px;line-height:1.35}
-#communityPostPhotoChoice .community-photo-choice-chevron{margin-left:auto;color:#ff6908;font-size:27px;font-weight:400}
-@keyframes communityPhotoChoiceIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(prefers-color-scheme:dark){#communityPostPhotoChoice .community-photo-choice-dialog{background:#202124;color:#f5f5f5;--muted:#b4b4b4;--card:#292a2d}}
-</style>
+
+
 
 <style id="community-photo-picker-clean-v54">
 #app .community-photo-choose{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;margin-top:8px;border:0;border-radius:12px;background:#ff6908;color:#fff;font-weight:750;cursor:pointer}
 #app input[type="file"][hidden]{display:none!important}
+</style>
+
+
+<style id="community-new-checkin-flat-fields-20261017">
+/* Remove os cartões brancos ao redor dos campos, mantendo os próprios controles. */
+#communityNewCheckinFormLayer .ncf-card{background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;margin:0 0 24px!important;box-shadow:none!important}
+#communityNewCheckinFormLayer .ncf-card:last-child{margin-bottom:0!important}
+#communityNewCheckinFormLayer .ncf-photo-row{background:transparent!important}
+</style>
+
+<style id="community-checkin-feed-post-style-20261017">
+.community-social-post-meta{font-size:13px;font-weight:650;color:#555;margin:8px 0}.community-social-post-location{font-size:13px;color:#666;margin:8px 0}.community-social-post-actions{display:flex;gap:18px;padding-top:10px;margin-top:8px;border-top:1px solid #eee}.community-social-post-actions button{border:0;background:transparent;color:#333;font:inherit;font-size:14px;font-weight:600;padding:5px 0;cursor:pointer}.community-social-post-actions button.liked{color:#e74b3c}.community-social-post-actions button.liked:first-letter{color:#e74b3c}
+</style>
+
+<style id="community-feed-checkin-priority-details-20261017">
+#app .community-social-post{padding:16px 0!important;margin:0!important;border:0!important;border-bottom:1px solid #e7e7e7!important;border-radius:0!important;background:transparent!important}
+#app .community-social-post-primary{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+#app .community-social-post-meta{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin:0!important;padding:0!important;color:#555;font-size:13px;font-weight:500}
+#app .community-social-post-meta span,#app .community-social-post-activity>span{color:#777;font-weight:600;flex:0 0 auto}
+#app .community-social-post-meta strong{color:#252525;text-align:right;font-weight:700}
+#app .community-social-post-activity>span{display:block;font-size:13px;margin-bottom:4px}
+#app .community-social-post-activity p{margin:0!important;font-size:14px;line-height:1.45;color:#282828;white-space:pre-wrap;overflow-wrap:anywhere}
+#app .community-social-post-more{display:inline-flex;align-items:center;gap:5px;margin:2px 0 0;padding:4px 0;border:0;background:transparent;color:#f26713;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+#app .community-social-post-more span{font-size:16px;line-height:1}
+#app .community-social-post-details{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f7f7f8}
+#app .community-social-post-details[hidden]{display:none!important}
+#app .community-social-post-detail-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:13px}
+#app .community-social-post-detail-row span{color:#777}
+#app .community-social-post-detail-row strong{text-align:right;color:#292929;overflow-wrap:anywhere}
+#app .community-social-post-no-details{margin:0;color:#777;font-size:13px}
+#app .community-social-post-photo{margin-top:12px!important;border-radius:10px!important}
+</style>
+
+
+<style id="community-feed-compact-date-time-20261017">
+#app .community-social-post-primary{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:6px 12px!important;margin-top:9px!important}
+#app .community-social-post-meta{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:2px!important;min-width:0;font-size:11px!important;line-height:1.25!important}
+#app .community-social-post-meta span,#app .community-social-post-activity>span{font-size:10px!important;line-height:1.25!important;color:#777;font-weight:600}
+#app .community-social-post-meta strong{font-size:11px!important;line-height:1.3!important;text-align:left!important;font-weight:650;overflow-wrap:anywhere}
+#app .community-social-post-activity{grid-column:1/-1;min-width:0}
+#app .community-social-post-activity>span{display:none!important}
+#app .community-social-post-activity p{font-size:11px!important;line-height:1.35!important}
+#app .community-social-post-more{font-size:11px!important;margin-top:6px!important}
+#app .community-social-post-more span{font-size:13px!important}
+#app .community-social-post-details{margin-top:6px!important;padding:7px 9px!important}
+#app .community-social-post-detail-row{gap:8px!important;padding:3px 0!important;font-size:11px!important;line-height:1.3!important}
+#app .community-social-post-no-details{font-size:11px!important}
+#app .community-social-post-actions{gap:14px!important;padding-top:7px!important;margin-top:6px!important}
+#app .community-social-post-actions button{font-size:12px!important;padding:3px 0!important}
+@media(max-width:360px){#app .community-social-post-primary{column-gap:8px!important}}
+#app .community-social-post-likers{display:flex;align-items:center;gap:0;min-height:0;margin-top:4px}
+#app .community-social-post-liker{display:grid;place-items:center;width:23px;height:23px;flex:0 0 23px;overflow:hidden;border:2px solid #fff;border-radius:50%;background:#f1f1f1;color:#777;margin-left:-5px}
+#app .community-social-post-liker:first-child{margin-left:0}
+#app .community-social-post-liker img{display:block;width:100%;height:100%;object-fit:cover}
+#app .community-social-post-liker svg{width:13px;height:13px}
+#app .community-social-post-likers:empty{display:none}
+</style>
+<style id="community-social-post-interactions-modern-20261017">
+#app .community-social-post-actions{display:flex;align-items:center;gap:24px;padding-top:9px!important;margin-top:7px!important;border-top:1px solid #eee}
+#app .community-social-post-action-group{display:inline-flex;align-items:center;gap:7px}
+#app .community-social-post-action-icon{display:grid;place-items:center;width:34px;height:34px;padding:4px!important;border:0;background:transparent;color:#4b5563;cursor:pointer;border-radius:50%;transition:color .15s,background .15s,transform .15s}
+#app .community-social-post-action-icon:active{transform:scale(.92)}
+#app .community-social-post-action-icon svg{display:block;width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#app .community-social-post-action-icon[aria-pressed="true"],#app .community-social-post-action-icon.liked{color:#e53945}
+#app .community-social-post-action-icon.liked svg{fill:#e53945;stroke:#e53945}
+#app .community-social-post-count{border:0;background:transparent;padding:5px 2px;color:#343a40;font-size:14px;font-weight:700;cursor:pointer;min-width:16px}
+#app .community-social-post-reactions,#app .community-social-post-comments{margin-top:9px;padding:10px 12px;background:#f7f8fa;border-radius:12px}
+#app .community-social-post-reactions[hidden],#app .community-social-post-comments[hidden]{display:none!important}
+#app .community-social-post-reactions>strong{display:block;font-size:12px;margin-bottom:8px;color:#454b54}
+#app .community-social-reaction-person,.community-social-comment{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:12px;color:#333}
+#app .community-social-reaction-person p{margin:2px 0 0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+#app .community-social-comment-avatar{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:50%;overflow:hidden;background:#e7e9ed;color:#777}
+#app .community-social-comment-avatar img{width:100%;height:100%;object-fit:cover}
+#app .community-social-comment-avatar svg{width:16px;height:16px}
+#app .community-social-comment>div{min-width:0}
+#app .community-social-comment strong{font-size:12px}
+#app .community-social-comment p{margin:2px 0 0;font-size:12px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+#app .community-social-comments-empty{font-size:12px;color:#777;margin:3px 0 9px}
+#app .community-social-comment-form{display:flex;gap:7px;margin-top:8px}
+#app .community-social-comment-form input{flex:1;min-width:0;border:1px solid #ddd;border-radius:20px;padding:9px 12px;font:inherit;font-size:12px;background:#fff}
+#app .community-social-comment-form button{border:0;border-radius:18px;padding:0 13px;background:#f26713;color:white;font-size:12px;font-weight:700;cursor:pointer}
 </style>
 
 </body>
@@ -26041,7 +26001,6 @@ html body #app .community-page.community-social-page.community-clean-page .commu
 #app .community-social-composer-actions{display:flex;align-items:center;gap:6px}
 #app .community-social-composer-actions label{color:#ff6908;display:flex;align-items:center;gap:3px;font-size:12px}
 #app .community-social-composer-actions label svg{width:22px;height:22px}
-#app #communityPostPhotoInput{display:none}
 #app .community-social-composer-actions button{border:0;background:#ff6908;color:#fff;border-radius:14px;width:48px;height:48px;font-size:30px;line-height:1}
 #app .community-social-feed-list{padding:0 12px}
 #app .community-social-empty{padding:22px 18px;text-align:center;color:#777;font-size:14px}
@@ -26286,659 +26245,22 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 #app .community-page.community-social-page.community-clean-page nav.community-social-tabs[role="navigation"] > button svg { width:21px !important; height:21px !important; }
 </style>
 
-<style id="community-checkin-floating-add-button-20261013">
-#communityCheckinFloatingAdd{position:fixed;z-index:9999;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:70px;height:70px;border:0;border-radius:50%;display:none;align-items:center;justify-content:center;background:#ff6908;color:#fff;font-size:38px;font-weight:400;line-height:1;box-shadow:0 5px 18px rgba(255,105,8,.38);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
-#communityCheckinFloatingAdd:active{transform:translateX(-50%) scale(.94)}
-body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
-@media(max-width:600px){#communityCheckinFloatingAdd{bottom:calc(30px + env(safe-area-inset-bottom,0px));width:68px;height:68px}}
-</style>
+
 
 
 
 <!-- Tela de publicação/check-in baseada na referência enviada em 14/10/2026 -->
-<style id="community-new-checkin-screen-20261014">
-/* Novo check-in no padrão visual do Evolute: fundo claro, cards limpos e laranja da marca. */
-#evoluteNewCheckinScreen{position:fixed;inset:0;z-index:10050;background:#f4f4f5;color:#222226;display:none;flex-direction:column;font-family:inherit;overflow:hidden}
-#evoluteNewCheckinScreen.open{display:flex}
-#evoluteNewCheckinScreen *{box-sizing:border-box}
-#evoluteNewCheckinScreen .nc-header{height:64px;min-height:64px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;padding:0 16px;background:#fff;border-bottom:1px solid #e3e3e5}
-#evoluteNewCheckinScreen .nc-header button{border:0;background:transparent;color:#242428;font-size:30px;line-height:1;padding:4px;cursor:pointer}
-#evoluteNewCheckinScreen .nc-header h2{font-size:21px;font-weight:750;text-align:center;margin:0;white-space:nowrap;color:#222226}
-#evoluteNewCheckinScreen .nc-header .nc-publish{font-size:16px;color:#ff6908;font-weight:800}
-#evoluteNewCheckinScreen .nc-scroll{overflow:auto;overscroll-behavior:contain;padding:16px 16px calc(28px + env(safe-area-inset-bottom,0px));flex:1}
-#evoluteNewCheckinScreen .nc-preview-row{display:grid;grid-template-columns:1fr minmax(112px,150px) 1fr;align-items:center;gap:10px;min-height:190px;margin:0 0 18px;text-align:center}
-#evoluteNewCheckinScreen .nc-side{font-size:13px;line-height:1.35;display:flex;flex-direction:column;align-items:center;gap:9px;color:#55555b}
-#evoluteNewCheckinScreen .nc-bubble{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#ff6908;color:#fff;font-weight:800}
-#evoluteNewCheckinScreen .nc-photo-wrap{position:relative;width:min(100%,150px);height:174px;margin:auto}
-#evoluteNewCheckinScreen .nc-photo{width:100%;height:100%;object-fit:cover;border-radius:14px;background:#e5e5e7;display:block}
-#evoluteNewCheckinScreen .nc-photo-empty{width:100%;height:100%;border:1px dashed #c7c7cc;border-radius:14px;background:#fff;display:grid;place-items:center;color:#77777d;font-size:13px;padding:12px}
-#evoluteNewCheckinScreen .nc-edit-photo{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border:0;border-radius:50%;background:#ff6908;color:#fff;font-size:21px;box-shadow:0 3px 10px #0002}
-#evoluteNewCheckinScreen .nc-card{background:#fff;border:1px solid #e8e8eb;border-radius:16px;padding:12px 16px;margin:0 0 14px;box-shadow:0 2px 8px #17171708}
-#evoluteNewCheckinScreen input,#evoluteNewCheckinScreen textarea,#evoluteNewCheckinScreen select{font:inherit;color:#26262b;background:transparent;border:0;outline:none;width:100%;min-width:0}
-#evoluteNewCheckinScreen input:focus,#evoluteNewCheckinScreen textarea:focus,#evoluteNewCheckinScreen select:focus{outline:none}
-#evoluteNewCheckinScreen input::placeholder,#evoluteNewCheckinScreen textarea::placeholder{color:#929299;opacity:1}
-#evoluteNewCheckinScreen .nc-title{height:52px;font-size:20px;font-weight:650;border-bottom:1px solid #e8e8eb}
-#evoluteNewCheckinScreen .nc-description{height:100px;resize:vertical;padding-top:14px;font-size:16px}
-#evoluteNewCheckinScreen .nc-datetime{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-#evoluteNewCheckinScreen .nc-datebox{min-width:0;background:#fff;border:1px solid #e8e8eb;border-radius:14px;padding:11px 12px}
-#evoluteNewCheckinScreen .nc-datebox label{display:block;font-size:13px;margin-bottom:5px;color:#77777d}
-#evoluteNewCheckinScreen .nc-datebox input{font-size:15px;font-weight:600}
-#evoluteNewCheckinScreen .nc-detail-row{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(70px,auto);gap:9px;align-items:center;min-height:62px;border-bottom:1px solid #ededf0;padding:5px 0}
-#evoluteNewCheckinScreen .nc-detail-row:last-child{border-bottom:0}
-#evoluteNewCheckinScreen .nc-detail-icon{font-size:23px;text-align:center;color:#ff6908}
-#evoluteNewCheckinScreen .nc-detail-row label{font-size:16px;font-weight:600}
-#evoluteNewCheckinScreen .nc-detail-row input,#evoluteNewCheckinScreen .nc-detail-row select{font-size:14px;text-align:right;color:#77777d}
-#evoluteNewCheckinScreen .nc-detail-row select{appearance:auto;max-width:145px}
-#evoluteNewCheckinScreen .nc-detail-row input::placeholder{color:#929299}
-#evoluteNewCheckinScreen .nc-field{min-height:68px;display:flex;flex-direction:column;justify-content:center;gap:7px;border-bottom:1px solid #ededf0;padding:9px 0}
-#evoluteNewCheckinScreen .nc-field:last-child{border-bottom:0}
-#evoluteNewCheckinScreen .nc-field label{font-size:15px;font-weight:650;color:#38383d}
-#evoluteNewCheckinScreen .nc-field input,#evoluteNewCheckinScreen .nc-field select{font-size:15px;color:#77777d}
-#evoluteNewCheckinScreen .nc-publish-wide{display:block;width:100%;border:0;border-radius:14px;background:#ff6908;color:#fff;font-size:16px;font-weight:800;padding:15px;margin:10px 0 20px;box-shadow:0 4px 12px #ff69082b}
-/* Correções de posicionamento da publicação: respeitar hidden e impedir que a prévia invada os campos. */
-#evoluteNewCheckinScreen [hidden]{display:none!important}
-#evoluteNewCheckinScreen .nc-preview-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 150px minmax(0,1fr);align-items:center;min-height:190px;height:auto;gap:10px;overflow:visible}
-#evoluteNewCheckinScreen .nc-photo-wrap{position:relative!important;width:150px!important;max-width:100%!important;height:174px!important;min-height:174px!important;margin:0 auto!important;flex:none!important;overflow:hidden;border-radius:14px}
-#evoluteNewCheckinScreen .nc-photo-wrap .nc-photo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;border-radius:14px!important}
-#evoluteNewCheckinScreen .nc-photo-wrap .nc-photo-empty{position:absolute;inset:0;width:100%;height:100%;}
-#evoluteNewCheckinScreen .nc-edit-photo{z-index:2}
-#evoluteNewCheckinScreen .nc-card{position:relative;clear:both}
-#evoluteNewCheckinScreen .nc-header{flex:0 0 64px;position:relative;z-index:2}
-@media(max-width:380px){#evoluteNewCheckinScreen .nc-preview-row{grid-template-columns:minmax(0,1fr) 140px minmax(0,1fr);min-height:174px}#evoluteNewCheckinScreen .nc-photo-wrap{width:140px!important;height:155px!important;min-height:155px!important}}
-@media(max-width:380px){#evoluteNewCheckinScreen .nc-scroll{padding-left:12px;padding-right:12px}#evoluteNewCheckinScreen .nc-preview-row{min-height:174px}#evoluteNewCheckinScreen .nc-photo-wrap{height:155px}#evoluteNewCheckinScreen .nc-header{padding:0 10px}#evoluteNewCheckinScreen .nc-header h2{font-size:19px}}
-/* Ajuste fino de posicionamento: impedir estilos globais de esticar o cabeçalho e cortar a foto. */
-#evoluteNewCheckinScreen{height:100dvh!important;min-height:0!important;inset:0!important}
-#evoluteNewCheckinScreen>.nc-header{height:64px!important;min-height:64px!important;max-height:64px!important;flex:0 0 64px!important;display:grid!important;grid-template-columns:36px minmax(0,1fr) auto!important;align-items:center!important;padding:0 14px!important;background:#f4f4f5!important;color:#222226!important;border-bottom:1px solid #e3e3e5!important;box-shadow:none!important;overflow:hidden!important}
-#evoluteNewCheckinScreen>.nc-header h2{position:static!important;display:block!important;margin:0!important;padding:0!important;font-size:20px!important;line-height:1.2!important;color:#222226!important;text-align:center!important;transform:none!important}
-#evoluteNewCheckinScreen>.nc-header .nc-back,#evoluteNewCheckinScreen>.nc-header .nc-publish{position:static!important;align-self:center!important;margin:0!important;transform:none!important;white-space:nowrap!important}
-#evoluteNewCheckinScreen>.nc-header .nc-back{font-size:28px!important;color:#333!important}
-#evoluteNewCheckinScreen>.nc-header .nc-publish{font-size:15px!important;color:#ff6908!important}
-#evoluteNewCheckinScreen>.nc-scroll{position:relative!important;display:block!important;flex:1 1 auto!important;min-height:0!important;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important;padding:10px 16px calc(28px + env(safe-area-inset-bottom,0px))!important;margin:0!important;overscroll-behavior:contain!important}
-#evoluteNewCheckinScreen .nc-preview-row{min-height:174px!important;margin:0 0 10px!important;padding:0!important;align-items:center!important;overflow:visible!important}
-#evoluteNewCheckinScreen .nc-photo-wrap{align-self:center!important}
-#evoluteNewCheckinScreen .nc-side{align-self:center!important;margin:0!important;padding:0!important}
-#evoluteNewCheckinScreen .nc-card{margin-top:0!important;margin-bottom:14px!important}
-/* Correção específica: dar respiro acima da foto e dos indicadores laterais.
-   O topo do conteúdo estava encostando no cabeçalho e cortando os círculos. */
-#evoluteNewCheckinScreen>.nc-scroll{
-  padding-top:28px!important;
-}
-#evoluteNewCheckinScreen .nc-preview-row{
-  min-height:190px!important;
-  margin-top:0!important;
-  margin-bottom:16px!important;
-}
-#evoluteNewCheckinScreen .nc-side{
-  align-self:center!important;
-}
-
-/* Ajuste de rolagem: garantir espaço real após o último campo, acima da barra do Android. */
-#evoluteNewCheckinScreen>.nc-scroll{
-  padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important;
-  scroll-padding-bottom:calc(112px + env(safe-area-inset-bottom,0px));
-  -webkit-overflow-scrolling:touch!important;
-}
-#evoluteNewCheckinScreen .nc-field{scroll-margin-bottom:24px}
-#evoluteNewCheckinScreen .nc-publish-wide{margin-bottom:18px!important}
-@media(max-height:760px){
-  #evoluteNewCheckinScreen>.nc-scroll{padding-bottom:calc(132px + env(safe-area-inset-bottom,0px))!important}
-}
-
-/* Remover indicadores redundantes: a comunidade já está definida e publicar existe no cabeçalho. */
-#evoluteNewCheckinScreen .nc-preview-row{
-  grid-template-columns:minmax(0,1fr)!important;
-  justify-items:center!important;
-  min-height:0!important;
-  height:auto!important;
-  padding:12px 0 4px!important;
-  margin-bottom:16px!important;
-}
-#evoluteNewCheckinScreen .nc-preview-row .nc-photo-wrap{
-  grid-column:1!important;
-  justify-self:center!important;
-  margin:0 auto!important;
-}
-#evoluteNewCheckinScreen .nc-preview-row .nc-side{display:none!important}
-</style>
-<script id="community-new-checkin-screen-script-20261014">
-(function(){
- if(window.__evoluteNewCheckinScreenInstalled)return;window.__evoluteNewCheckinScreenInstalled=true;
- function $(sel,root){return (root||document).querySelector(sel)}
- function showCheckinPublishedSuccess(){
-  const existing=document.getElementById('evoluteCheckinSuccessModal');if(existing)existing.remove();
-  const overlay=document.createElement('div');overlay.id='evoluteCheckinSuccessModal';overlay.className='evolute-checkin-success-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','evoluteCheckinSuccessTitle');
-  overlay.innerHTML='<div class="evolute-checkin-success-card"><div class="evolute-checkin-success-icon" aria-hidden="true"><svg viewBox="0 0 48 48" width="34" height="34" fill="none"><circle cx="24" cy="24" r="19" stroke="currentColor" stroke-width="3.5"/><path d="m14 24 7 7 14-15" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3 id="evoluteCheckinSuccessTitle">Publicado com sucesso!</h3><p>Seu check-in foi publicado e já está disponível no feed.</p><button type="button" class="evolute-checkin-success-button">Continuar</button></div>';
-  const dismiss=()=>{
-   // Ao concluir a publicação, voltar ao calendário e forçar sua renderização
-   // com os dados recém-gravados no armazenamento local.
-   const checkinTab=document.querySelector('.community-social-tabs button[data-panel="checkin"]');
-   if(checkinTab){checkinTab.click();}
-   else if(typeof window.evoluteRefreshCommunityCheckinCalendar==='function'){
-    try{window.evoluteRefreshCommunityCheckinCalendar();}catch(err){console.warn('Não foi possível atualizar o calendário do check-in.',err);}
-   }
-   overlay.classList.add('closing');setTimeout(()=>overlay.remove(),160);
-  };
-  overlay.querySelector('button').addEventListener('click',dismiss);
-  overlay.addEventListener('click',event=>{if(event.target===overlay)dismiss();});
-  const onKey=event=>{if(event.key==='Escape'&&document.getElementById('evoluteCheckinSuccessModal')===overlay){dismiss();document.removeEventListener('keydown',onKey);}};
-  document.addEventListener('keydown',onKey);document.body.appendChild(overlay);requestAnimationFrame(()=>overlay.classList.add('visible'));
-  overlay.querySelector('button').focus({preventScroll:true});
- }
- function build(){if($('#evoluteNewCheckinScreen'))return $('#evoluteNewCheckinScreen');
-  const el=document.createElement('section');el.id='evoluteNewCheckinScreen';el.setAttribute('aria-label','Novo check-in');
-  el.innerHTML=`<header class="nc-header"><button type="button" class="nc-back" aria-label="Voltar">‹</button><h2>Novo check-in</h2><button type="button" class="nc-publish">Publicar</button></header><div class="nc-scroll"><div class="nc-preview-row"><div class="nc-photo-wrap"><div class="nc-photo-empty">Adicione uma foto do treino</div><img class="nc-photo" alt="Prévia da foto" hidden><button type="button" class="nc-edit-photo" aria-label="Adicionar ou editar foto">✎</button></div></div><input class="nc-file" type="file" accept="image/*" hidden><div class="nc-card"><textarea class="nc-description" name="description" placeholder="Escreva algo sobre seu treino" aria-label="Escreva algo sobre seu treino"></textarea></div><div class="nc-datetime"><div class="nc-datebox"><label for="nc-date">Dia</label><input id="nc-date" name="date" type="date"></div><div class="nc-datebox"><label for="nc-time">Hora de início</label><input id="nc-time" name="time" type="time"></div></div><div class="nc-card"><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><label for="nc-location">Localização</label><input id="nc-location" name="location" placeholder="Nenhum"></div><div class="nc-detail-row"><span class="nc-detail-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12M9 12h6M9 15h6"/></svg></span><label for="nc-gym">Academia</label><input id="nc-gym" name="gym" placeholder="Nenhum"></div></div><div class="nc-card"><div class="nc-field"><label for="nc-activity">Atividade</label><select id="nc-activity" name="activity"><option value="">Selecionar atividade</option><option>Musculação</option><option>Cardio</option><option>Corrida</option><option>Caminhada</option><option>Ciclismo</option><option>Alongamento</option><option>Funcional</option><option>Outro</option></select></div><div class="nc-field"><label for="nc-duration">Duração</label><input id="nc-duration" name="duration" placeholder="Ex.: 1h 15min"></div><div class="nc-field"><label for="nc-distance">Distância (quilômetros)</label><input id="nc-distance" name="distance" type="number" min="0" step="0.1" placeholder="0,0 km"></div><div class="nc-field"><label for="nc-calories">Calorias</label><input id="nc-calories" name="calories" type="number" min="0" placeholder="0 kcal"></div></div></div>`;
-  document.body.appendChild(el);
-  const now=new Date(),pad=n=>String(n).padStart(2,'0');$('input[name="date"]',el).value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());$('input[name="time"]',el).value=pad(now.getHours())+':'+pad(now.getMinutes());
-  const file=$('.nc-file',el),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);let photo='';
-  // Busca locais próximos usando a localização do celular e apresenta opções selecionáveis.
-  const locationInput=$('#nc-location',el);
-  const locationRow=locationInput.closest('.nc-detail-row');
-  const gymInput=$('#nc-gym',el);
-  const gymRow=gymInput.closest('.nc-detail-row');
-  // O campo Academia só aparece quando o local selecionado não é identificado como academia.
-  gymRow.hidden=true;
-  const setGymRowVisible=visible=>{gymRow.hidden=!visible;gymRow.setAttribute('aria-hidden',visible?'false':'true');};
-  const locationPicker=document.createElement('div');
-  locationPicker.className='nc-location-picker';locationPicker.hidden=true;locationPicker.setAttribute('role','listbox');
-  locationRow.insertAdjacentElement('afterend',locationPicker);
-  let locationSearchToken=0;
-  const showLocationMessage=(message,allowRetry=false,technical='')=>{locationPicker.replaceChildren();const box=document.createElement('div');box.className='nc-location-message';box.textContent=message;locationPicker.appendChild(box);if(technical){const detail=document.createElement('small');detail.className='nc-location-diagnostic';detail.style.cssText='display:block;margin-top:8px;color:#777;font-size:12px;line-height:1.4;overflow-wrap:anywhere';detail.textContent='Diagnóstico: '+technical;locationPicker.appendChild(detail);}if(allowRetry){const retry=document.createElement('button');retry.type='button';retry.className='nc-location-retry';retry.textContent='Tentar novamente';retry.addEventListener('click',searchNearbyLocations);locationPicker.appendChild(retry);}locationPicker.hidden=false;};
-  const isGymPlace=place=>{const t=place&&place.tags||{};return t.amenity==='gym'||t.amenity==='fitness_centre'||t.leisure==='fitness_centre'||t.club==='fitness';};
-  const placeAddress=place=>{const t=place&&place.tags||{};const street=[t['addr:street'],t['addr:housenumber']].filter(Boolean).join(', ');const area=[t['addr:suburb'],t['addr:neighbourhood'],t['addr:city']||t['addr:town']].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · ');return [street,area].filter(Boolean).join(' — ');};
-  const chooseLocation=(place)=>{
-   const tags=place&&place.tags||{};const name=tags.name||tags['name:pt']||'';const address=placeAddress(place);
-   locationInput.value=[name,address].filter(Boolean).join(' — ');
-   if(isGymPlace(place)){gymInput.value=name;setGymRowVisible(false);}else{gymInput.value='';setGymRowVisible(true);}
-   locationPicker.hidden=true;locationInput.dispatchEvent(new Event('change',{bubbles:true}));
-  };
-  const renderNearbyLocations=(places)=>{
-   locationPicker.replaceChildren();
-   if(!places.length){showLocationMessage('Nenhum local próximo encontrado. Você pode digitar o local manualmente.');return;}
-   places.forEach(place=>{
-    const tags=place.tags||{};const name=tags.name||tags['name:pt'];if(!name)return;
-    const gym=isGymPlace(place);
-    const type=gym?'Academia':tags.leisure==='sports_centre'||tags.amenity==='sports_centre'?'Centro esportivo':tags.leisure==='park'?'Parque':tags.leisure==='track'?'Pista':tags.amenity==='cafe'?'Café':tags.amenity==='restaurant'?'Restaurante':'Local próximo';
-    const address=placeAddress(place);
-    const button=document.createElement('button');button.type='button';button.className='nc-location-option';button.setAttribute('role','option');
-    const title=document.createElement('strong');title.textContent=name;
-    const subtitle=document.createElement('small');subtitle.textContent=[type,address,place.distance<1000?Math.round(place.distance)+' m':(place.distance/1000).toFixed(1).replace('.',',')+' km'].filter(Boolean).join(' · ');
-    const copy=document.createElement('span');copy.className='nc-location-copy';copy.append(title,subtitle);button.appendChild(copy);button.addEventListener('click',()=>chooseLocation(place));locationPicker.appendChild(button);
-   });
-   if(!locationPicker.children.length){showLocationMessage('Nenhum local próximo encontrado. Você pode digitar o nome manualmente.');return;}locationPicker.hidden=false;
-  };
-  const searchNearbyLocations=()=>{
-   const token=++locationSearchToken;
-   if(!navigator.geolocation){showLocationMessage('Seu navegador não disponibiliza a localização. Digite o local manualmente.');return;}
-   showLocationMessage('Obtendo sua localização…');
-   navigator.geolocation.getCurrentPosition(async position=>{
-    if(token!==locationSearchToken)return;const lat=position.coords.latitude,lon=position.coords.longitude;
-    showLocationMessage('Procurando locais próximos…');
-    const query='[out:json][timeout:12];(nwr(around:1800,'+lat+','+lon+') ["name"]["amenity"~"fitness_centre|gym|sports_centre|community_centre|cafe|restaurant"];nwr(around:1800,'+lat+','+lon+') ["name"]["leisure"~"fitness_centre|sports_centre|park|track|sports_hall"];);out center tags;';
-    try{
-     // Consulta os servidores em paralelo para reduzir a espera quando algum estiver lento.
-     // Cada servidor tenta POST e, se necessário, GET. O primeiro resultado válido é usado.
-     const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-     const endpointErrors=[];
-     const timedFetch=(url,options,ms=5500)=>{
-      const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),ms);
-      return fetch(url,{...options,signal:controller.signal}).finally(()=>clearTimeout(timer));
-     };
-     const queryEndpoint=async endpoint=>{
-      let postError;
-      try{
-       const response=await timedFetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8','Accept':'application/json'},body:'data='+encodeURIComponent(query)});
-       if(!response.ok)throw new Error('POST HTTP '+response.status);
-       const data=await response.json();if(!data||!Array.isArray(data.elements))throw new Error('Resposta POST inesperada');return data;
-      }catch(err){postError=err;if(token!==locationSearchToken)throw err;}
-      const response=await timedFetch(endpoint+'?data='+encodeURIComponent(query),{headers:{'Accept':'application/json'}},5500);
-      if(!response.ok)throw new Error('GET HTTP '+response.status+' (POST: '+(postError&&postError.message||'falhou')+')');
-      const data=await response.json();if(!data||!Array.isArray(data.elements))throw new Error('Resposta GET inesperada');return data;
-     };
-     const attempts=endpoints.map(endpoint=>queryEndpoint(endpoint).catch(err=>{endpointErrors.push(new URL(endpoint).hostname+': '+(err&&err.message||String(err)));throw err;}));
-     let result=null;
-     try{result=await Promise.any(attempts);}catch(allFailed){result=null;}
-     if(token!==locationSearchToken)return;
-     // Se todos os servidores Overpass falharem, tenta um provedor alternativo
-     // de busca geográfica antes de exibir erro ao usuário.
-     if(!result){
-      const photonErrors=[];
-      const terms=['academia','centro esportivo','parque','pista de corrida'];
-      const photonAttempts=terms.map(async term=>{
-       const url='https://photon.komoot.io/api/?q='+encodeURIComponent(term)+'&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&limit=8&lang=pt';
-       const response=await timedFetch(url,{headers:{'Accept':'application/json'}},6500);
-       if(!response.ok)throw new Error('Photon HTTP '+response.status);
-       const data=await response.json();
-       if(!data||!Array.isArray(data.features))throw new Error('Resposta Photon inesperada');
-       return data.features.map(feature=>{
-        const props=feature.properties||{},coords=feature.geometry&&feature.geometry.coordinates;
-        if(!coords||coords.length<2)return null;
-        const tags={name:props.name||props.street||props.locality||props.city||'',amenity:'',leisure:''};
-        const category=String(props.osm_value||props.type||props.category||'').toLowerCase();
-        if(/gym|fitness/.test(category))tags.amenity='gym';
-        else if(/park/.test(category))tags.leisure='park';
-        else if(/sport|pitch|stadium|track/.test(category))tags.leisure='sports_centre';
-        if(props.street)tags['addr:street']=props.street;
-        if(props.housenumber)tags['addr:housenumber']=props.housenumber;
-        if(props.suburb)tags['addr:suburb']=props.suburb;
-        if(props.city||props.locality)tags['addr:city']=props.city||props.locality;
-        const place={type:'node',lat:coords[1],lon:coords[0],tags};
-        const dlat=(coords[1]-lat)*Math.PI/180,dlon=(coords[0]-lon)*Math.PI/180,a=Math.sin(dlat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(coords[1]*Math.PI/180)*Math.sin(dlon/2)**2;
-        place.distance=6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-        return place;
-       }).filter(Boolean);
-      });
-      const settled=await Promise.allSettled(photonAttempts);
-      const photonPlaces=settled.filter(x=>x.status==='fulfilled').flatMap(x=>x.value);
-      settled.filter(x=>x.status==='rejected').forEach(x=>photonErrors.push(x.reason&&x.reason.message||String(x.reason)));
-      if(photonPlaces.length){result={elements:photonPlaces};}
-      else {const detail=(endpointErrors.join(' | ')||'Serviços Overpass indisponíveis')+' | Photon: '+(photonErrors.join(' | ')||'sem resultados');throw new Error('GPS obtido; provedores de locais não responderam. '+detail);}
-     }
-     const seen=new Set();const places=(result.elements||[]).map(place=>{if(typeof place.distance!=='number'){const point=place.type==='node'?{lat:place.lat,lon:place.lon}:place.center;if(!point)return null;const dlat=(point.lat-lat)*Math.PI/180,dlon=(point.lon-lon)*Math.PI/180,a=Math.sin(dlat/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(point.lat*Math.PI/180)*Math.sin(dlon/2)**2;place.distance=6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}return place;}).filter(place=>{const name=place&&place.tags&&(place.tags.name||place.tags['name:pt']);if(!name||seen.has(name.toLocaleLowerCase()))return false;seen.add(name.toLocaleLowerCase());return true;}).sort((a,b)=>a.distance-b.distance).slice(0,8);
-     renderNearbyLocations(places);
-    }catch(error){if(token===locationSearchToken){const detail=error&&error.message?error.message:String(error);console.error('[Evolute check-in] Falha na busca de locais:',error);showLocationMessage('A localização do celular foi obtida, mas não foi possível consultar os locais próximos. Verifique a conexão e tente novamente.',true,detail);}}
-   },error=>{if(token!==locationSearchToken)return;const code=error&&typeof error.code==='number'?error.code:0;const detail='GeolocationPositionError code='+code+(error&&error.message?'; '+error.message:'');console.warn('[Evolute check-in] Falha no GPS:',detail);if(code===1)showLocationMessage('O acesso à localização foi negado. Ative a permissão de localização para este site no navegador e tente novamente.',true,detail);else if(code===2)showLocationMessage('O celular não conseguiu determinar a localização. Confira se a localização/GPS está ativada e tente novamente.',true,detail);else if(code===3)showLocationMessage('A localização demorou demais para responder. Confira o GPS e tente novamente.',true,detail);else showLocationMessage('Não foi possível obter a localização do celular. Tente novamente.',true,detail);},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
-  };
-  // Um único acionador evita duas solicitações de GPS no mesmo toque.
-  // Tocar em qualquer parte da linha Localização inicia (ou reinicia) a busca próxima,
-  // inclusive quando uma localização já foi escolhida anteriormente.
-  locationRow.setAttribute('role','button');
-  locationRow.setAttribute('tabindex','0');
-  locationRow.setAttribute('aria-label','Buscar locais próximos usando o GPS do celular');
-  locationInput.setAttribute('readonly','readonly');
-  locationInput.setAttribute('aria-readonly','true');
-  locationInput.style.cursor='pointer';
-  const activateLocationSearch=event=>{
-   if(event){event.preventDefault();event.stopPropagation();}
-   searchNearbyLocations();
-  };
-  locationRow.addEventListener('click',activateLocationSearch);
-  locationRow.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){activateLocationSearch(event);}});
-  document.addEventListener('click',event=>{if(!locationRow.contains(event.target)&&!locationPicker.contains(event.target))locationPicker.hidden=true;});
-
-  $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
-  file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(f)showChosenPhoto(f);file.value='';});
-  const close=()=>el.classList.remove('open');$('.nc-back',el).addEventListener('click',close);
-  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
- }
- function open(){const el=build();el.classList.add('open');}
- let photoProcessing=false;
- function showChosenPhoto(file){
-  if(!file || photoProcessing)return;
-  photoProcessing=true;
-  const el=build(),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);
-  // Mostrar a tela Novo check-in imediatamente após a confirmação da foto.
-  // O processamento da imagem acontece em seguida, sem bloquear a navegação.
-  el.classList.add('open');
-  let processingNote=$('.nc-photo-error',el);
-  if(!processingNote){processingNote=document.createElement('p');processingNote.className='nc-photo-error';processingNote.style.cssText='margin:10px 0;color:#777;font-size:14px;line-height:1.4';processingNote.textContent='Preparando sua foto…';img.parentNode.appendChild(processingNote);}
-  // Nunca converter o arquivo original para Base64. Primeiro tenta decodificar
-  // já redimensionando; só o Blob comprimido é convertido para o formato legado.
-  const fail=(message)=>{
-   photoProcessing=false;
-   let note=$('.nc-photo-error',el);
-   if(!note){note=document.createElement('p');note.className='nc-photo-error';note.style.cssText='margin:10px 0;color:#c2410c;font-size:14px;line-height:1.4';img.parentNode.appendChild(note);}
-   note.textContent=message;
-   el.classList.add('open');
-  };
-  (async()=>{
-   let bitmap=null,canvas=null,blob=null;
-   try{
-    if(typeof createImageBitmap==='function'){
-     // Nunca cair para createImageBitmap(file) sem opções: isso decodifica a foto
-     // original em resolução total e pode esgotar a memória do WebView Android.
-     const opts={resizeWidth:640,resizeHeight:640,resizeQuality:'low',resizeMode:'contain',imageOrientation:'from-image'};
-     try{bitmap=await createImageBitmap(file,opts);}
-     catch(firstError){
-      // Segunda tentativa com o conjunto mínimo de opções de redimensionamento.
-      // Se o navegador não suportar isso, falhamos sem alocar o bitmap original.
-      try{bitmap=await createImageBitmap(file,{resizeWidth:640,resizeHeight:640});}
-      catch(secondError){throw new Error('O navegador não conseguiu redimensionar a foto com segurança');}
-     }
-    }
-    if(bitmap){
-     const scale=Math.min(1,640/Math.max(bitmap.width,bitmap.height));
-     const w=Math.max(1,Math.round(bitmap.width*scale)),h=Math.max(1,Math.round(bitmap.height*scale));
-     canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-     const ctx=canvas.getContext('2d',{alpha:false});
-     if(!ctx)throw new Error('Canvas indisponível');
-     ctx.drawImage(bitmap,0,0,w,h);
-     blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.68));
-    } else {
-     // Fallback sem decodificação: não ler arquivo original inteiro em memória.
-     throw new Error('Redimensionamento indisponível neste navegador');
-    }
-    if(!blob)throw new Error('Não foi possível comprimir a foto');
-    if(bitmap&&bitmap.close){bitmap.close();bitmap=null;}
-    if(canvas){canvas.width=1;canvas.height=1;canvas=null;}
-    // Converte apenas a imagem final, já pequena, para compatibilidade com o Feed.
-    const reader=new FileReader();
-    const dataUrl=await new Promise((resolve,reject)=>{
-     reader.onload=()=>resolve(String(reader.result||''));
-     reader.onerror=()=>reject(new Error('Falha ao ler a imagem comprimida'));
-     reader.onabort=()=>reject(new Error('Leitura da imagem interrompida'));
-     reader.readAsDataURL(blob);
-    });
-    if(!dataUrl.startsWith('data:image/'))throw new Error('Imagem comprimida inválida');
-    el.__evolutePhotoData=dataUrl;
-    img.src=dataUrl;img.hidden=false;empty.hidden=true;
-    const note=$('.nc-photo-error',el);if(note)note.remove();
-    el.classList.add('open');
-   }catch(err){
-    console.error('Evolute: falha no processamento seguro da foto.',err);
-    fail('Não foi possível preparar esta foto sem exceder a memória do aparelho. Tente uma imagem menor ou escolha uma foto da galeria.');
-   }finally{
-    if(bitmap&&bitmap.close)try{bitmap.close();}catch(_){}
-    if(canvas){canvas.width=1;canvas.height=1;}
-    photoProcessing=false;
-   }
-  })();
- }
- // A confirmação final é feita na própria câmera do Android ("Usar foto").
- // Não criar outra prévia da imagem original dentro do WebView: em aparelhos com
- // pouca memória, decodificar essa prévia pode derrubar a página antes do formulário.
- function confirmCapturedCheckinPhoto(file){
-  if(!file)return;
-  const screen=build();
-  screen.classList.add('open');
-  showChosenPhoto(file);
- }
- // Em arquivos abertos via content:// no Android, getUserMedia normalmente não é permitido.
- // Use o seletor nativo com capture para entregar a câmera real do aparelho sem tela de erro.
- let nativeCameraOpen=false;
- function openNativeCamera(){
-  if(nativeCameraOpen)return;
-  nativeCameraOpen=true;
-  // Delegar a captura à câmera nativa do Android. Alguns aparelhos demoram
-  // alguns segundos para disponibilizar o arquivo na primeira captura; por isso
-  // não encerrar o fluxo só porque a página recuperou o foco sem arquivo imediato.
-  const input=document.createElement('input');
-  input.type='file';
-  input.accept='image/*';
-  input.setAttribute('capture','environment');
-  input.setAttribute('aria-label','Tirar foto para o check-in');
-  input.style.cssText='position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;z-index:100701';
-  document.body.appendChild(input);
-  let finished=false,returnTimer=null,pollTimer=null,returnDeadline=0;
-  const stopTimers=()=>{
-   if(returnTimer){clearTimeout(returnTimer);returnTimer=null;}
-   if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
-  };
-  const cleanup=()=>{
-   if(finished)return;
-   finished=true;
-   nativeCameraOpen=false;
-   stopTimers();
-   document.removeEventListener('visibilitychange',onReturn);
-   window.removeEventListener('focus',onReturn);
-   setTimeout(()=>{if(input.parentNode)input.parentNode.removeChild(input);},1200);
-  };
-  const receivePhoto=()=>{
-   if(finished)return;
-   const file=input.files&&input.files[0];
-   if(!file)return;
-   // Guardar el objeto File y marcar el flujo como finalizado antes de procesarlo,
-   // evitando que change, input, focus y visibilitychange lo procesen dos veces.
-   cleanup();
-   const screen=build();
-   screen.classList.add('open');
-   showChosenPhoto(file);
-  };
-  const onReturn=()=>{
-   if(document.visibilityState&&document.visibilityState!=='visible')return;
-   // Dar tiempo a Android/WebView para entregar el archivo después de volver.
-   returnDeadline=Date.now()+7000;
-   if(pollTimer)clearInterval(pollTimer);
-   pollTimer=setInterval(()=>{
-    if(finished){stopTimers();return;}
-    if(input.files&&input.files.length){receivePhoto();return;}
-    if(Date.now()>=returnDeadline){
-     // A câmera foi cancelada ou o Android não entregou arquivo: liberar nova tentativa.
-     cleanup();
-    }
-   },250);
-   if(returnTimer)clearTimeout(returnTimer);
-   returnTimer=setTimeout(()=>{
-    if(!finished&&input.files&&input.files.length)receivePhoto();
-   },350);
-  };
-  input.addEventListener('change',receivePhoto);
-  input.addEventListener('input',receivePhoto);
-  input.addEventListener('cancel',cleanup,{once:true});
-  document.addEventListener('visibilitychange',onReturn);
-  window.addEventListener('focus',onReturn);
-  try{
-   // O clique deve ocorrer diretamente no gesto do usuário para abrir a câmera.
-   input.click();
-  }catch(err){
-   cleanup();
-   console.warn('Evolute: não foi possível iniciar a câmera nativa.',err);
-   alert('Não foi possível abrir a câmera. Tente novamente ou escolha uma foto da biblioteca.');
-  }
- }
- function ensurePhotoChoiceModal(){
-  let modal=$('#evolutePhotoChoiceModal');if(modal)return modal;
-  modal=document.createElement('section');modal.id='evolutePhotoChoiceModal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Adicionar foto');
-  modal.innerHTML='<button type="button" class="epc-backdrop" aria-label="Fechar"></button><div class="epc-card"><div class="epc-handle"></div><div class="epc-heading"><span class="epc-camera-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><div><h3>Escolher foto</h3><p>Selecione uma imagem existente na biblioteca do celular.</p></div><button type="button" class="epc-close" aria-label="Fechar">×</button></div><button type="button" class="epc-option epc-library"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><span class="epc-option-copy"><strong>Escolher da biblioteca</strong><small>Selecionar uma foto já existente</small></span><span class="epc-chevron">›</span><input class="epc-library-input" type="file" accept="image/*"></button></div>';
-  const css=document.createElement('style');css.id='evolute-photo-choice-modal-style';css.textContent='#evolutePhotoChoiceModal{position:fixed;inset:0;z-index:100700;display:none;align-items:flex-end;justify-content:center;font-family:inherit;color:#f7f7f8}#evolutePhotoChoiceModal.open{display:flex}#evolutePhotoChoiceModal *{box-sizing:border-box}#evolutePhotoChoiceModal .epc-backdrop{position:absolute;inset:0;border:0;background:rgba(0,0,0,.68);backdrop-filter:blur(3px)}#evolutePhotoChoiceModal .epc-card{position:relative;width:min(100%,520px);padding:10px 20px calc(22px + env(safe-area-inset-bottom));background:#171719;border:1px solid #343438;border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -12px 44px #0006;animation:epc-rise .22s ease-out}#evolutePhotoChoiceModal .epc-handle{width:38px;height:4px;border-radius:4px;background:#55555b;margin:0 auto 19px}#evolutePhotoChoiceModal .epc-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px}#evolutePhotoChoiceModal .epc-camera-mark{width:44px;height:44px;flex:0 0 44px;border-radius:14px;background:#ff69081f;display:grid;place-items:center;color:#ff6908}#evolutePhotoChoiceModal .epc-option-icon svg{display:block;width:25px;height:25px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-camera-mark svg{display:block;width:24px;height:24px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-heading h3{margin:0 0 4px;font-size:19px;font-weight:800;color:#fff}#evolutePhotoChoiceModal .epc-heading p{margin:0;font-size:13px;line-height:1.4;color:#aaaab1}#evolutePhotoChoiceModal .epc-close{margin-left:auto;align-self:flex-start;border:0;background:#2a2a2e;color:#ddd;border-radius:50%;width:30px;height:30px;font-size:22px;line-height:1}#evolutePhotoChoiceModal .epc-option{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 13px;margin-top:10px;border:1px solid #39393e;border-radius:16px;background:#222225;color:#fff}#evolutePhotoChoiceModal .epc-option:active{background:#303034}#evolutePhotoChoiceModal .epc-option-icon{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;background:#ff6908;color:#fff}#evolutePhotoChoiceModal .epc-option-copy{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#evolutePhotoChoiceModal .epc-option-copy strong{font-size:16px;font-weight:750}#evolutePhotoChoiceModal .epc-option-copy small{font-size:12px;color:#aaaab1}#evolutePhotoChoiceModal .epc-chevron{font-size:27px;color:#85858c}#evolutePhotoChoiceModal .epc-option{position:relative;overflow:hidden}#evolutePhotoChoiceModal .epc-library-input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;z-index:5!important;cursor:pointer!important;pointer-events:auto!important;border:0!important;padding:0!important;margin:0!important}@keyframes epc-rise{from{transform:translateY(20px);opacity:.5}to{transform:translateY(0);opacity:1}}@media(min-width:560px){#evolutePhotoChoiceModal{align-items:center;padding:20px}#evolutePhotoChoiceModal .epc-card{border:1px solid #343438;border-radius:24px;padding-bottom:22px}}';
-  document.head.appendChild(css);document.body.appendChild(modal);
-  const close=()=>modal.classList.remove('open');$('.epc-backdrop',modal).addEventListener('click',close);$('.epc-close',modal).addEventListener('click',close);
-  // O botão visível recebe o toque e chama o seletor imediatamente, no mesmo
-  // evento de usuário. Não deixar um input transparente sobre o botão: em alguns
-  // Android/Chrome esse overlay recebe o primeiro toque sem abrir o seletor.
-  const libraryInput=$('.epc-library-input',modal);
-  const libraryButton=$('.epc-library',modal);
-  libraryInput.style.cssText='position:absolute!important;width:1px!important;height:1px!important;left:-10000px!important;top:auto!important;opacity:0!important;pointer-events:none!important;';
-  libraryButton.addEventListener('click',function(event){
-   event.preventDefault();
-   event.stopPropagation();
-   // Abrir o seletor no primeiro toque, usando a API nativa do navegador
-   // quando disponível. O gesto do usuário não deve ser perdido entre telas.
-   try{
-    if(typeof libraryInput.showPicker==='function'){
-     try{libraryInput.showPicker();}
-     catch(showPickerError){libraryInput.click();}
-    }else{
-     libraryInput.click();
-    }
-   }catch(err){
-    console.error('Evolute: falha ao abrir biblioteca no primeiro toque',err);
-    alert('Não foi possível abrir a biblioteca de fotos. Toque novamente para tentar.');
-   }
-  });
-  $('.epc-library-input',modal).addEventListener('change',()=>{
-   const input=$('.epc-library-input',modal),file=input.files&&input.files[0];
-   if(file){close();showChosenPhoto(file);}
-   input.value='';
-  });
-  $('.epc-library-input',modal).addEventListener('cancel',()=>{close();});
-  return modal;
- }
- function startPhotoFlow(){
-  // Abrir diretamente o seletor do Android no primeiro toque no botão +.
-  // Evita a etapa intermediária de abrir um modal e exigir outro toque para
-  // escolher a biblioteca. A chamada ao input.click() permanece síncrona
-  // dentro do gesto do usuário para respeitar a política do navegador móvel.
-  if(typeof window.evoluteOpenCommunityPhotoLibrary==='function'){
-   window.evoluteOpenCommunityPhotoLibrary();
-   return;
-  }
-  const input=document.createElement('input');
-  input.type='file'; input.accept='image/*';
-  input.style.cssText='position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0;';
-  document.body.appendChild(input);
-  input.addEventListener('change',()=>{
-   const file=input.files&&input.files[0];
-   if(file) showChosenPhoto(file);
-   input.remove();
-  },{once:true});
-  input.addEventListener('cancel',()=>input.remove(),{once:true});
-  input.click();
- }
- // Callback chamado pelo Android depois que a câmera nativa captura/seleciona uma imagem.
- window.evoluteNativePhotoReady=function(dataUrl){
-  try {
-   if(!dataUrl || typeof dataUrl!=='string') return;
-   const parts=dataUrl.split(',');
-   const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||'image/jpeg';
-   const raw=atob(parts[1]||''); const bytes=new Uint8Array(raw.length);
-   for(let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
-   showChosenPhoto(new File([bytes],'evolute-checkin.jpg',{type:mime}));
-  } catch(err){ console.error('Evolute: não foi possível receber a foto da câmera Android.',err); }
- };
- window.evoluteOpenNativeCheckinCamera=openNativeCamera;
- window.evoluteOpenNewCheckin=open;
- window.evoluteStartCommunityPostPhoto=startPhotoFlow;
- window.evoluteOpenCommunityPhotoLibrary=function(){
-  // Abra a tela de preenchimento antes de chamar o seletor Android. Assim ela
-  // já existe quando o navegador retorna da biblioteca, inclusive na primeira tentativa.
-  const screen=build();screen.classList.add('open');
-  const input=document.createElement('input');
-  input.type='file';input.accept='image/*';input.setAttribute('aria-label','Escolher foto da biblioteca');
-  input.style.cssText='position:fixed!important;left:0!important;top:0!important;width:1px!important;height:1px!important;opacity:0.01!important;z-index:2147483647!important;';
-  document.body.appendChild(input);
-  let finished=false;
-  const cleanup=()=>{if(finished)return;finished=true;input.remove();};
-  input.addEventListener('change',function(){
-   const file=input.files&&input.files[0];
-   if(file){
-    // Reabrir explicitamente a tela no evento change, pois alguns navegadores
-    // Android retomam a página restaurando o estado visual anterior.
-    screen.classList.add('open');
-    showChosenPhoto(file);
-   }
-   cleanup();
-  },{once:true});
-  input.addEventListener('cancel',cleanup,{once:true});
-  try{
-   // Chamar click de forma síncrona no mesmo gesto do usuário.
-   input.click();
-  }catch(err){cleanup();console.error('Evolute: não foi possível abrir a biblioteca de fotos.',err);alert('Não foi possível abrir a biblioteca. Tente novamente.');}
- };
-})();
-</script>
 
 
-<style id="evolute-checkin-preview-drop-final-20261014">
-/* Ajuste final solicitado: descer a área inteira da foto e dos indicadores abaixo do cabeçalho. */
-#evoluteNewCheckinScreen > .nc-scroll {
-  padding-top: 76px !important;
-}
-#evoluteNewCheckinScreen .nc-preview-row {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-  min-height: 190px !important;
-  overflow: visible !important;
-}
-#evoluteNewCheckinScreen .nc-photo-wrap,
-#evoluteNewCheckinScreen .nc-side {
-  transform: translateY(0) !important;
-}
-</style>
 
 
-<style id="evolute-checkin-white-fields-20261014">
-/* Padronizar os campos da página Novo check-in com os campos brancos do aplicativo. */
-#evoluteNewCheckinScreen input:not([type="file"]),
-#evoluteNewCheckinScreen textarea,
-#evoluteNewCheckinScreen select {
-  background-color: #ffffff !important;
-  color: #26262b !important;
-  border: 1px solid #e5e5e8 !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-  color-scheme: light !important;
-}
-#evoluteNewCheckinScreen .nc-description {
-  display:block !important;
-  width:100% !important;
-  min-height:180px !important;
-  padding:16px !important;
-  border:1px solid #e5e5e8 !important;
-  border-radius:12px !important;
-  resize:vertical;
-}
-#evoluteNewCheckinScreen .nc-datebox input {
-  min-height: 44px !important;
-  padding: 8px 10px !important;
-}
-#evoluteNewCheckinScreen .nc-detail-row input,
-#evoluteNewCheckinScreen .nc-detail-row select,
-#evoluteNewCheckinScreen .nc-field input,
-#evoluteNewCheckinScreen .nc-field select {
-  min-height: 44px !important;
-  padding: 9px 12px !important;
-}
-#evoluteNewCheckinScreen input::placeholder,
-#evoluteNewCheckinScreen textarea::placeholder {
-  color: #929299 !important;
-  opacity: 1 !important;
-}
-#evoluteNewCheckinScreen input[type="date"],
-#evoluteNewCheckinScreen input[type="time"] {
-  color-scheme: light !important;
-}
-</style>
-<style id="evolute-nearby-location-retry-20261014">
-#evoluteNewCheckinScreen .nc-location-retry{display:block;margin:0 12px 10px;padding:8px 13px;border:1px solid #ff6908;border-radius:9px;background:#fff;color:#f26713;font-size:13px;font-weight:700;cursor:pointer}
-#evoluteNewCheckinScreen .nc-location-retry:active{background:#fff1e7}
-</style>
-<style id="evolute-checkin-gym-conditional-20261014">
-#evoluteNewCheckinScreen .nc-detail-row[hidden]{display:none!important}
-</style>
-<style id="evolute-nearby-location-picker-polish-20261014">
-/* Lista de locais próximos: menu discreto, alinhado ao campo e com identidade visual Evolute. */
-#evoluteNewCheckinScreen .nc-location-picker{
-  box-sizing:border-box;
-  width:calc(100% - 39px);
-  margin:-2px 0 12px 39px;
-  padding:4px;
-  border:1px solid #e7e7eb;
-  border-radius:14px;
-  background:#fff;
-  overflow:hidden;
-  box-shadow:0 5px 16px rgba(20,20,25,.08);
-}
-#evoluteNewCheckinScreen .nc-location-picker[hidden]{display:none!important}
-#evoluteNewCheckinScreen .nc-location-option{
-  appearance:none;
-  -webkit-appearance:none;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  width:100%;
-  min-width:0;
-  margin:0;
-  padding:11px 10px;
-  border:0;
-  border-bottom:1px solid #f0f0f2;
-  border-radius:9px;
-  background:#fff;
-  color:#29292e;
-  text-align:left;
-  font:inherit;
-  cursor:pointer;
-}
-#evoluteNewCheckinScreen .nc-location-option:last-child{border-bottom:0}
-#evoluteNewCheckinScreen .nc-location-option:active{background:#fff3e9}
-#evoluteNewCheckinScreen .nc-location-option::before{
-  content:"";
-  display:block;
-  flex:0 0 8px;
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:#ff6908;
-}
-#evoluteNewCheckinScreen .nc-location-option .nc-location-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
-#evoluteNewCheckinScreen .nc-location-option strong{display:block;overflow:hidden;color:#303036;font-size:14px;font-weight:650;line-height:1.3;text-overflow:ellipsis;white-space:nowrap}
-#evoluteNewCheckinScreen .nc-location-option small{display:block;color:#85858d;font-size:12px;line-height:1.3}
-#evoluteNewCheckinScreen .nc-location-message{padding:12px 13px;color:#777780;font-size:13px;line-height:1.45}
-@media(max-width:420px){
- #evoluteNewCheckinScreen .nc-location-picker{width:calc(100% - 39px);margin-left:39px}
- #evoluteNewCheckinScreen .nc-location-option{padding:10px 8px}
- #evoluteNewCheckinScreen .nc-location-option strong{font-size:13px}
-}
-</style>
+
+
+
+
+
+
+
 
 <style id="community-calendar-navigation-modern-v1">
 #app .community-social-calendar{padding:20px 16px 16px!important;border:1px solid #e7e7eb!important;border-radius:24px!important;background:linear-gradient(160deg,#fff 0%,#f6f6f7 100%)!important;box-shadow:0 8px 26px rgba(25,25,30,.055)!important;color:#24252a!important}
@@ -27167,84 +26489,439 @@ html body #app .community-runtime-tabs {
 }
 </style>
 
-<style id="community-feed-plus-button-v18">
-.community-feed-add-button {
-  position: fixed !important;
-  left: 50% !important;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-  transform: translateX(-50%) !important;
-  z-index: 2147483647 !important;
-  visibility: visible !important;
+
+
+<!-- Novo botão de check-in: apenas interface, sem ações de câmera/galeria implementadas -->
+<style id="community-new-checkin-choice-ui-v1">
+#communityNewCheckinFab{position:fixed!important;left:50%!important;right:auto!important;bottom:calc(92px + env(safe-area-inset-bottom, 0px))!important;transform:translateX(-50%)!important;z-index:9990!important;width:60px!important;height:60px!important;border:0!important;border-radius:50%!important;background:#ff6908!important;color:#fff!important;display:none;align-items:center!important;justify-content:center!important;font-size:38px!important;font-weight:300!important;line-height:1!important;box-shadow:0 6px 18px rgba(255,105,8,.34)!important;cursor:pointer!important;-webkit-tap-highlight-color:transparent!important}
+#communityNewCheckinFab:active{transform:translateX(-50%) scale(.96)!important}
+#communityNewCheckinBackdrop{position:fixed!important;inset:0!important;z-index:9998!important;display:none!important;align-items:flex-end!important;justify-content:center!important;padding:20px 16px calc(24px + env(safe-area-inset-bottom, 0px))!important;background:rgba(20,20,24,.42)!important;box-sizing:border-box!important}
+#communityNewCheckinBackdrop.open{display:flex!important}
+#communityNewCheckinSheet{width:min(100%,440px)!important;background:#fff!important;color:#24252a!important;border-radius:24px!important;padding:22px 18px 18px!important;box-shadow:0 14px 50px rgba(0,0,0,.2)!important;box-sizing:border-box!important}
+#communityNewCheckinSheet .cnc-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;margin:0 0 7px!important}
+#communityNewCheckinSheet h2{margin:0!important;font-size:21px!important;font-weight:800!important;color:#24252a!important}
+#communityNewCheckinSheet .cnc-close{width:36px!important;height:36px!important;border:0!important;border-radius:50%!important;background:#f3f3f5!important;color:#555!important;font-size:24px!important;line-height:1!important;cursor:pointer!important}
+#communityNewCheckinSheet p{margin:0 0 18px!important;color:#777!important;font-size:14px!important}
+#communityNewCheckinSheet .cnc-option{width:100%!important;min-height:58px!important;display:flex!important;align-items:center!important;gap:14px!important;padding:12px 14px!important;margin-top:10px!important;border:1px solid #e8e8eb!important;border-radius:16px!important;background:#fff!important;color:#29292f!important;text-align:left!important;font-size:16px!important;font-weight:700!important;cursor:pointer!important;box-sizing:border-box!important}
+#communityNewCheckinSheet .cnc-option-icon{width:40px!important;height:40px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:12px!important;background:#fff0e6!important;color:#f26713!important;font-size:22px!important;flex-shrink:0!important}
+#communityNewCheckinSheet .cnc-option:active{background:#fff7f1!important;border-color:#ffbd91!important}
+</style>
+<button id="communityNewCheckinFab" type="button" aria-label="Criar novo check-in" title="Novo check-in">+</button>
+<div id="communityNewCheckinBackdrop" role="dialog" aria-modal="true" aria-labelledby="communityNewCheckinTitle">
+  <section id="communityNewCheckinSheet">
+    <div class="cnc-heading"><h2 id="communityNewCheckinTitle">Novo check-in</h2><button class="cnc-close" type="button" aria-label="Fechar">×</button></div>
+    <p>Como você deseja adicionar uma foto?</p>
+    <button class="cnc-option" id="communityNewCheckinTakePhoto" type="button"><span class="cnc-option-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h-4L8.5 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L14 4Z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span>Tirar foto</span></button>
+    <button class="cnc-option" id="communityNewCheckinChooseGallery" type="button"><span class="cnc-option-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg></span><span>Escolher da galeria</span></button>
+  </section>
+</div>
+<input id="communityNewCheckinCameraInput" type="file" accept="image/*" capture="environment" hidden>
+<input id="communityNewCheckinGalleryInput" type="file" accept="image/*" hidden>
+<style id="community-new-checkin-photo-confirm-style">
+#communityNewCheckinConfirm{position:fixed;inset:0;z-index:10010;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(20,20,24,.58);box-sizing:border-box}
+#communityNewCheckinConfirm.open{display:flex}
+#communityNewCheckinConfirm .cnc-confirm-card{width:min(100%,440px);max-height:90vh;overflow:auto;background:#fff;color:#24252a;border-radius:22px;padding:20px;box-shadow:0 16px 48px rgba(0,0,0,.24);box-sizing:border-box}
+#communityNewCheckinConfirm h2{margin:0 0 8px;font-size:21px;font-weight:800}
+#communityNewCheckinConfirm p{margin:0 0 14px;color:#777;font-size:14px}
+#communityNewCheckinPreview{display:block;width:100%;max-height:55vh;object-fit:contain;background:#f3f3f5;border-radius:14px}
+#communityNewCheckinConfirm .cnc-confirm-actions{display:flex;gap:10px;margin-top:16px}
+#communityNewCheckinConfirm button{min-height:46px;border-radius:12px;padding:10px 14px;font-size:15px;font-weight:700;cursor:pointer;flex:1}
+#communityNewCheckinRetake{background:#f3f3f5;border:1px solid #e5e5e8;color:#333}
+#communityNewCheckinUsePhoto{background:#ff6908;border:1px solid #ff6908;color:#fff}
+</style>
+<div id="communityNewCheckinConfirm" role="dialog" aria-modal="true" aria-labelledby="communityNewCheckinConfirmTitle">
+ <section class="cnc-confirm-card">
+  <h2 id="communityNewCheckinConfirmTitle">Confirmar foto</h2>
+  <p>Confira se esta é a foto que deseja usar.</p>
+  <img id="communityNewCheckinPreview" alt="Prévia da foto selecionada">
+  <div class="cnc-confirm-actions"><button id="communityNewCheckinRetake" type="button">Escolher outra</button><button id="communityNewCheckinUsePhoto" type="button">Confirmar foto</button></div>
+ </section>
+</div>
+
+<style id="community-new-checkin-form-style-v1">
+#communityNewCheckinFormLayer{position:fixed;inset:0;z-index:10020;display:none;overflow:auto;background:#f5f5f6;color:#25262b;box-sizing:border-box;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+#communityNewCheckinFormLayer.open{display:block}
+#communityNewCheckinFormLayer .ncf-wrap{width:min(100%,560px);margin:0 auto}
+#communityNewCheckinFormLayer .ncf-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+#communityNewCheckinFormLayer .ncf-back{border:0;background:#fff;border-radius:50%;width:42px;height:42px;font-size:24px;color:#333;box-shadow:0 2px 8px #0000000c}
+#communityNewCheckinFormLayer h2{font-size:23px;margin:0;font-weight:800}
+#communityNewCheckinFormLayer .ncf-card{background:#fff;border:1px solid #e9e9ed;border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px #00000005}
+#communityNewCheckinFormLayer .ncf-photo-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+#communityNewCheckinFormLayer .ncf-photo{width:100%;height:170px;object-fit:cover;border-radius:14px;background:#f1f1f3;display:block}
+#communityNewCheckinFormLayer .ncf-publish{border:0;border-radius:14px;background:#ff6908;color:white;font-size:15px;font-weight:800;padding:13px 16px;min-height:48px}
+#communityNewCheckinFormLayer label{display:block;font-size:14px;font-weight:750;margin:0 0 8px;color:#33343a}
+#communityNewCheckinFormLayer textarea,#communityNewCheckinFormLayer select,#communityNewCheckinFormLayer input[type=text],#communityNewCheckinFormLayer input[type=number]{box-sizing:border-box;width:100%;border:1px solid #dedee3;border-radius:12px;background:#fff;padding:13px 12px;font:inherit;font-size:15px;color:#25262b;outline-color:#ff6908}
+#communityNewCheckinFormLayer textarea{min-height:100px;resize:vertical}
+#communityNewCheckinFormLayer .ncf-location-button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:1px solid #dedee3;background:#fff;border-radius:12px;padding:13px;color:#333;font-weight:700;font-size:15px}
+#communityNewCheckinFormLayer .ncf-location-status{font-size:13px;color:#777;margin-top:8px;line-height:1.4}
+#communityNewCheckinFormLayer .ncf-place-list{display:grid;gap:8px;margin-top:10px}
+#communityNewCheckinFormLayer .ncf-place{display:flex;align-items:center;gap:10px;text-align:left;border:1px solid #e6e6eb;background:#fff;border-radius:12px;padding:11px;font-size:14px;color:#333}
+#communityNewCheckinFormLayer .ncf-place.selected{border-color:#ff6908;background:#fff5ee}
+#communityNewCheckinFormLayer .ncf-duration{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+#communityNewCheckinFormLayer .ncf-duration span{color:#777;font-size:14px}
+#communityNewCheckinFormLayer .ncf-date-time-field{position:relative;min-width:0}
+#communityNewCheckinFormLayer .ncf-date-time-input{box-sizing:border-box;width:100%;min-width:0;min-height:58px;border:1px solid #dedee3;border-radius:12px;background:#fff;padding:12px 42px 12px 12px;font:inherit;font-size:16px;font-weight:700;color:#25262b;outline-color:#ff6908;appearance:none;-webkit-appearance:none}
+#communityNewCheckinFormLayer .ncf-date-time-input::-webkit-calendar-picker-indicator{position:absolute;right:12px;width:22px;height:22px;margin:0;opacity:0;cursor:pointer}
+#communityNewCheckinFormLayer .ncf-date-time-icon{position:absolute;right:13px;top:50%;transform:translateY(-50%);width:23px;height:23px;color:#111;pointer-events:none}
+#communityNewCheckinFormLayer .ncf-form-message{display:none;margin-top:12px;border-radius:12px;background:#fff5ee;color:#9a4307;padding:12px;font-size:14px}
+#communityNewCheckinFormLayer .ncf-form-message.show{display:block}
+@media(max-width:390px){#communityNewCheckinFormLayer .ncf-photo-row{grid-template-columns:1fr}#communityNewCheckinFormLayer .ncf-photo{height:210px}#communityNewCheckinFormLayer .ncf-publish{width:100%}}
+</style>
+<div id="communityNewCheckinFormLayer" role="dialog" aria-modal="true" aria-labelledby="communityNewCheckinFormTitle">
+ <div class="ncf-wrap">
+  <div class="ncf-header"><button id="communityNewCheckinFormBack" class="ncf-back" type="button" aria-label="Voltar">‹</button><h2 id="communityNewCheckinFormTitle">Novo check-in</h2></div>
+  <div class="ncf-card"><div class="ncf-photo-row"><img id="communityNewCheckinFormPhoto" class="ncf-photo" alt="Prévia da foto do check-in"><button id="communityNewCheckinPublish" class="ncf-publish" type="button">Publicar</button></div></div>
+  <div class="ncf-card"><label for="communityNewCheckinCaption">Sobre sua atividade</label><textarea id="communityNewCheckinCaption" placeholder="Como foi sua atividade? Escreva algo sobre este momento..."></textarea></div>
+  <div class="ncf-date-time-row">
+   <div class="ncf-card"><label for="communityNewCheckinDate">Dia</label><div class="ncf-date-time-field"><input id="communityNewCheckinDate" class="ncf-date-time-input" type="date" aria-label="Dia do check-in"><svg class="ncf-date-time-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="1.5"></rect><path d="M7.5 2.8v4.4M16.5 2.8v4.4M3.5 9.5h17"></path></svg></div></div>
+   <div class="ncf-card"><label for="communityNewCheckinStartTime">Hora de início</label><div class="ncf-date-time-field"><input id="communityNewCheckinStartTime" class="ncf-date-time-input" type="time" aria-label="Hora de início da atividade"><svg class="ncf-date-time-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"></circle><path d="M12 6.8v5.6l3.8 2.2"></path></svg></div></div>
+  </div>
+  <div class="ncf-card"><label>Localização</label><button id="communityNewCheckinFindLocation" class="ncf-location-button" type="button"><span aria-hidden="true">📍</span><span id="communityNewCheckinLocationButtonText">Encontrar locais próximos</span></button><div id="communityNewCheckinLocationStatus" class="ncf-location-status">Toque para usar o GPS e procurar locais cadastrados nas proximidades.</div><div id="communityNewCheckinPlaces" class="ncf-place-list"></div></div>
+  <div class="ncf-card"><label for="communityNewCheckinActivityType">Tipo de atividade</label><select id="communityNewCheckinActivityType"><option value="">Selecione uma atividade</option><option>Musculação</option><option>Corrida</option><option>Crossfit</option><option>Cardio</option><option>Ciclismo</option><option>Caminhada</option><option>Alongamento</option><option>Funcional</option><option>Natação</option><option>Outros</option></select></div>
+  <div class="ncf-card"><label for="communityNewCheckinDuration">Duração da atividade</label><div class="ncf-duration"><input id="communityNewCheckinDuration" type="number" min="1" max="1440" step="1" placeholder="Ex.: 45"><span>minutos</span></div></div>
+  <div id="communityNewCheckinFormMessage" class="ncf-form-message" role="status"></div>
+ </div>
+</div>
+
+<script id="community-new-checkin-choice-ui-v1-js">
+(function(){
+ 'use strict';
+ const fab=document.getElementById('communityNewCheckinFab');
+ const backdrop=document.getElementById('communityNewCheckinBackdrop');
+ const cameraInput=document.getElementById('communityNewCheckinCameraInput');
+ const galleryInput=document.getElementById('communityNewCheckinGalleryInput');
+ const confirmLayer=document.getElementById('communityNewCheckinConfirm');
+ const preview=document.getElementById('communityNewCheckinPreview');
+ const takePhoto=document.getElementById('communityNewCheckinTakePhoto');
+ const chooseGallery=document.getElementById('communityNewCheckinChooseGallery');
+ const usePhoto=document.getElementById('communityNewCheckinUsePhoto');
+ const retake=document.getElementById('communityNewCheckinRetake');
+ const formLayer=document.getElementById('communityNewCheckinFormLayer');
+ const formPhoto=document.getElementById('communityNewCheckinFormPhoto');
+ const formBack=document.getElementById('communityNewCheckinFormBack');
+ const publishButton=document.getElementById('communityNewCheckinPublish');
+ const findLocationButton=document.getElementById('communityNewCheckinFindLocation');
+ const locationStatus=document.getElementById('communityNewCheckinLocationStatus');
+ const locationButtonText=document.getElementById('communityNewCheckinLocationButtonText');
+ const placesBox=document.getElementById('communityNewCheckinPlaces');
+ const formMessage=document.getElementById('communityNewCheckinFormMessage');
+ if(!fab||!backdrop||!cameraInput||!galleryInput||!confirmLayer||!preview)return;
+ let pendingFile=null, previewUrl=null, lastSource='gallery';
+ const closeMenu=()=>backdrop.classList.remove('open');
+ const closeConfirm=()=>{confirmLayer.classList.remove('open');if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}preview.removeAttribute('src');};
+ fab.addEventListener('click',()=>backdrop.classList.add('open'));
+ backdrop.querySelector('.cnc-close').addEventListener('click',closeMenu);
+ backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeMenu();});
+ takePhoto.addEventListener('click',()=>{lastSource='camera';closeMenu();cameraInput.value='';cameraInput.click();});
+ chooseGallery.addEventListener('click',()=>{lastSource='gallery';closeMenu();galleryInput.value='';galleryInput.click();});
+ function onFileSelected(file){
+   if(!file)return;
+   if(!file.type||!file.type.startsWith('image/')){alert('Escolha um arquivo de imagem.');return;}
+   pendingFile=file;
+   if(previewUrl)URL.revokeObjectURL(previewUrl);
+   previewUrl=URL.createObjectURL(file);
+   preview.src=previewUrl;
+   confirmLayer.classList.add('open');
+ }
+ cameraInput.addEventListener('change',()=>onFileSelected(cameraInput.files&&cameraInput.files[0]));
+ galleryInput.addEventListener('change',()=>onFileSelected(galleryInput.files&&galleryInput.files[0]));
+ retake.addEventListener('click',()=>{closeConfirm();if(lastSource==='camera'){cameraInput.value='';cameraInput.click();}else{galleryInput.value='';galleryInput.click();}});
+ usePhoto.addEventListener('click',async()=>{
+   if(!pendingFile)return;
+   const selectedFile=pendingFile;
+   try{
+     /* Data URL keeps the confirmed preview available across overlays and local-file browser sessions. */
+     const photoDataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Não foi possível carregar a prévia da foto.'));reader.readAsDataURL(selectedFile);});
+     if(!photoDataUrl.startsWith('data:image/'))throw new Error('A foto selecionada não pôde ser exibida.');
+     window.evolutePendingCheckinPhoto=selectedFile;
+     window.evolutePendingCheckinPhotoDataUrl=photoDataUrl;
+     window.evolutePendingCheckinPhotoSource=lastSource;
+     formPhoto.onload=()=>{formPhoto.style.display='block';};
+     formPhoto.onerror=()=>{formPhoto.removeAttribute('src');formPhoto.alt='Não foi possível exibir a prévia da foto';};
+     formPhoto.src=photoDataUrl;
+     closeConfirm();
+     pendingFile=null;
+     formMessage.classList.remove('show');formMessage.textContent='';
+     formLayer.classList.add('open');
+     window.dispatchEvent(new CustomEvent('evolute:checkin-photo-confirmed',{detail:{file:window.evolutePendingCheckinPhoto,source:window.evolutePendingCheckinPhotoSource,dataUrl:photoDataUrl}}));
+   }catch(err){formMessage.textContent=err?.message||'Não foi possível carregar a foto.';formMessage.classList.add('show');}
+ });
+ formBack.addEventListener('click',()=>{formLayer.classList.remove('open');closeConfirm();});
+ findLocationButton.addEventListener('click',async()=>{
+   placesBox.innerHTML='';
+   if(!navigator.geolocation){locationStatus.textContent='Este navegador não oferece acesso ao GPS.';return;}
+   locationStatus.textContent='Obtendo sua localização pelo GPS…';findLocationButton.disabled=true;
+   navigator.geolocation.getCurrentPosition(async pos=>{
+     const lat=pos.coords.latitude,lon=pos.coords.longitude;
+     window.evolutePendingCheckinCoordinates={latitude:lat,longitude:lon};
+     locationStatus.textContent='Buscando locais próximos…';
+     try{
+       const query='[out:json][timeout:15];(node(around:1500,'+lat+','+lon+')[name];way(around:1500,'+lat+','+lon+')[name];relation(around:1500,'+lat+','+lon+')[name];);out center tags 20;';
+       const response=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query),{method:'GET'});
+       if(!response.ok)throw new Error('places');
+       const data=await response.json();
+       const places=(data.elements||[]).map(el=>({id:String(el.type)+'-'+el.id,name:el.tags&&el.tags.name||'',type:el.tags&&(el.tags.amenity||el.tags.leisure||el.tags.shop||el.tags.sport||el.tags.building)||'Local',lat:el.lat??(el.center&&el.center.lat),lon:el.lon??(el.center&&el.center.lon)})).filter(p=>p.name&&Number.isFinite(p.lat)&&Number.isFinite(p.lon)).map(p=>({...p,distance:Math.round(6371000*2*Math.asin(Math.sqrt(Math.sin((p.lat-lat)*Math.PI/360)**2+Math.cos(lat*Math.PI/180)*Math.cos(p.lat*Math.PI/180)*Math.sin((p.lon-lon)*Math.PI/360)**2)))})).sort((a,b)=>a.distance-b.distance).slice(0,12);
+       if(!places.length){locationStatus.textContent='Não encontramos locais próximos. Você pode tentar novamente mais tarde.';return;}
+       locationStatus.textContent='Selecione um local próximo (até cerca de 1,5 km). Os locais vêm do OpenStreetMap.';
+       places.forEach(place=>{const b=document.createElement('button');b.type='button';b.className='ncf-place';b.innerHTML='<span aria-hidden="true">📍</span><span style="flex:1;min-width:0"><strong></strong><br><small style="color:#777"></small></span><span aria-hidden="true">○</span>';b.querySelector('strong').textContent=place.name;b.querySelector('small').textContent=place.type+' · '+(place.distance<1000?place.distance+' m':(place.distance/1000).toFixed(1)+' km');b.addEventListener('click',()=>{placesBox.querySelectorAll('.ncf-place').forEach(x=>{x.classList.remove('selected');x.lastElementChild.textContent='○'});b.classList.add('selected');b.lastElementChild.textContent='✓';window.evolutePendingCheckinLocation={name:place.name,type:place.type,latitude:place.lat,longitude:place.lon,distanceMeters:place.distance};locationButtonText.textContent=place.name;});placesBox.appendChild(b);});
+     }catch(err){locationStatus.textContent='Não foi possível consultar os locais próximos. Verifique a conexão e tente novamente.';}
+     finally{findLocationButton.disabled=false;}
+   },err=>{findLocationButton.disabled=false;locationStatus.textContent=err.code===1?'Permissão de localização negada. Autorize o GPS no navegador para procurar locais próximos.':'Não foi possível obter sua localização. Verifique o GPS e tente novamente.';},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+ });
+ publishButton.addEventListener('click',async()=>{
+   const caption=document.getElementById('communityNewCheckinCaption').value.trim();
+   const activity=document.getElementById('communityNewCheckinActivityType').value;
+   const duration=Number(document.getElementById('communityNewCheckinDuration').value);
+   const dateValue=document.getElementById('communityNewCheckinDate')?.value||'';
+   const timeValue=document.getElementById('communityNewCheckinStartTime')?.value||'';
+   const photoFile=window.evolutePendingCheckinPhoto||null;
+   if(!photoFile&&!window.evolutePendingCheckinPhotoDataUrl){formMessage.textContent='Escolha e confirme uma foto antes de publicar.';formMessage.classList.add('show');return;}
+   if(!caption){formMessage.textContent='Escreva algo sobre sua atividade antes de publicar.';formMessage.classList.add('show');document.getElementById('communityNewCheckinCaption').focus();return;}
+   if(!dateValue){formMessage.textContent='Selecione a data da atividade.';formMessage.classList.add('show');document.getElementById('communityNewCheckinDate').focus();return;}
+   if(!timeValue){formMessage.textContent='Selecione o horário de início da atividade.';formMessage.classList.add('show');document.getElementById('communityNewCheckinStartTime').focus();return;}
+   const validDuration=Number.isFinite(duration)&&duration>=1&&duration<=1440?duration:null;
+   const communityPanel=document.querySelector('#communityTabPanel[data-community-id], .community-detail-content[data-community-id], .community-v1-panel[data-community-id]');
+   const communityId=communityPanel?.getAttribute('data-community-id')||document.querySelector('[data-community-id].community-detail-content')?.dataset.communityId||'';
+   const community=Array.isArray(db?.communities)?db.communities.find(c=>String(c.id)===String(communityId)):null;
+   const profile=typeof getProfile==='function'?getProfile():null;
+   if(!community){formMessage.textContent='Não foi possível identificar a comunidade atual. Abra a comunidade e tente novamente.';formMessage.classList.add('show');return;}
+   if(!profile||!profile.id){formMessage.textContent='Não foi possível identificar seu perfil. Entre no seu perfil e tente novamente.';formMessage.classList.add('show');return;}
+   publishButton.disabled=true;publishButton.textContent='Publicando…';
+   try{
+     const photoData=window.evolutePendingCheckinPhotoDataUrl||await new Promise((resolve,reject)=>{
+       if(typeof photoFile==='string'){resolve(photoFile);return;}
+       if(!(photoFile instanceof Blob)){reject(new Error('A foto selecionada não está disponível.'));return;}
+       const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Não foi possível ler a foto selecionada.'));reader.readAsDataURL(photoFile);
+     });
+     const createdAt=new Date().toISOString();
+     const activityDateTime=dateValue&&timeValue?new Date(dateValue+'T'+timeValue).toISOString():createdAt;
+     const post={id:'post_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8),authorId:profile.id,caption,photo:photoData,createdAt,activityType:activity||'',durationMinutes:validDuration,activityDate:dateValue,startTime:timeValue,location:window.evolutePendingCheckinLocation||null,coordinates:window.evolutePendingCheckinCoordinates||null,source:'checkin',activityDateTime};
+     if(!Array.isArray(community.posts))community.posts=[];
+     community.posts.push(post);
+     if(typeof saveDB==='function'&&!saveDB())throw new Error('Não foi possível salvar a publicação. Verifique o espaço disponível e tente novamente.');
+     window.evolutePendingCheckinDraft=post;
+     window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:{communityId:community.id,post}}));
+     formMessage.textContent='Publicação adicionada ao feed da comunidade.';formMessage.classList.add('show');
+     window.evolutePendingCheckinPhoto=null;window.evolutePendingCheckinPhotoDataUrl=null;window.evolutePendingCheckinPhotoSource=null;
+     setTimeout(()=>{
+       formLayer.classList.remove('open');
+       const feedButton=document.querySelector('.community-social-tabs [data-panel="feed"], .community-v1-detail .community-v1-tab[data-panel="feed"], nav.community-runtime-tabs [data-panel="feed"]');
+       if(typeof window.communitySwitchPanel==='function'&&feedButton){window.communitySwitchPanel('feed',community.id,feedButton);}
+       else if(typeof window.showCommunityDetail==='function'){window.showCommunityDetail(community.id);const b=document.querySelector('.community-social-tabs [data-panel="feed"], .community-v1-detail .community-v1-tab[data-panel="feed"]');if(b&&typeof window.communitySwitchPanel==='function')window.communitySwitchPanel('feed',community.id,b);}
+       else {const list=document.getElementById('communitySocialFeedList');if(list&&typeof communityRenderPosts==='function')list.innerHTML=communityRenderPosts(community,[...community.posts].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));}
+     },450);
+   }catch(err){formMessage.textContent=err?.message||'Não foi possível publicar. Tente novamente.';formMessage.classList.add('show');}
+   finally{publishButton.disabled=false;publishButton.textContent='Publicar';}
+ });
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();closeConfirm();formLayer.classList.remove('open');}});
+ function updateVisibility(){
+   const app=document.getElementById('app');
+   if(!app){fab.style.display='none';return;}
+   const calendar=app.querySelector('.community-social-calendar');
+   const active=app.querySelector('nav.community-runtime-tabs [data-panel="checkin"].active');
+   const legacyActive=app.querySelector('[data-panel="checkin"].active');
+   const shown=!!calendar&&!!(active||legacyActive)&&calendar.getClientRects().length>0;
+   fab.style.display=shown?'flex':'none';
+   if(!shown){closeMenu();closeConfirm();}
+ }
+ const schedule=()=>{if(window.requestAnimationFrame)requestAnimationFrame(updateVisibility);else updateVisibility();};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+ if(window.MutationObserver){const obs=new MutationObserver(schedule);obs.observe(document.getElementById('app')||document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});}
+ window.addEventListener('resize',schedule);
+})();
+</script>
+
+
+<style id="community-new-checkin-date-time-fields-20261017">
+#communityNewCheckinFormLayer .ncf-date-time-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 24px}
+#communityNewCheckinFormLayer .ncf-date-time-row .ncf-card{min-width:0;margin:0!important}
+#communityNewCheckinFormLayer .ncf-date-time-row label{display:block;margin:0 0 10px;font-weight:700;color:#35353a}
+#communityNewCheckinFormLayer .ncf-date-time-input{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:58px;padding:12px 14px;border:1px solid #dedee3;border-radius:16px;background:#fff;color:#222;font:inherit;font-weight:600;color-scheme:light}
+@media(max-width:390px){#communityNewCheckinFormLayer .ncf-date-time-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#communityNewCheckinFormLayer .ncf-date-time-row .ncf-card{padding:10px}#communityNewCheckinFormLayer .ncf-date-time-input{padding:10px 8px;font-size:13px;min-height:52px}}
+</style>
+<script id="community-new-checkin-date-time-defaults-20261017">
+(function(){
+ const dateInput=document.getElementById('communityNewCheckinDate');
+ const timeInput=document.getElementById('communityNewCheckinStartTime');
+ if(!dateInput||!timeInput)return;
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ if(!dateInput.value)dateInput.value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+ if(!timeInput.value)timeInput.value=pad(now.getHours())+':'+pad(now.getMinutes());
+})();
+</script>
+
+
+<style id="community-new-checkin-light-fields-and-visible-icons-20261017">
+/* Correção visual: campos claros mesmo quando há estilos globais escuros. */
+#communityNewCheckinFormLayer textarea,
+#communityNewCheckinFormLayer select,
+#communityNewCheckinFormLayer input[type="text"],
+#communityNewCheckinFormLayer input[type="number"],
+#communityNewCheckinFormLayer input[type="date"],
+#communityNewCheckinFormLayer input[type="time"],
+#communityNewCheckinFormLayer .ncf-date-time-input {
+  background-color: #ffffff !important;
+  color: #25262b !important;
+  border-color: #dedee3 !important;
+  color-scheme: light !important;
+  -webkit-text-fill-color: #25262b !important;
+  box-shadow: none;
+}
+#communityNewCheckinFormLayer textarea::placeholder,
+#communityNewCheckinFormLayer input::placeholder {
+  color: #85858b !important;
+  -webkit-text-fill-color: #85858b !important;
   opacity: 1 !important;
-  pointer-events: auto !important;
-  width: 58px !important;
-  height: 58px !important;
-  border: 0 !important;
-  border-radius: 50% !important;
-  background: #FE6405 !important;
-  color: #fff !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 38px !important;
-  font-weight: 300 !important;
-  line-height: 1 !important;
-  padding: 0 0 4px !important;
 }
-.community-post-composer-overlay {
-  position: fixed; inset: 0; z-index: 10000; display: flex;
-  align-items: flex-end; justify-content: center;
-  padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: rgba(0,0,0,.45);
+#communityNewCheckinFormLayer .ncf-date-time-field {
+  position: relative !important;
 }
-.community-post-composer {
-  width: 100%; max-width: 560px; box-sizing: border-box;
-  padding: 18px; border-radius: 18px 18px 14px 14px;
-  background: #fff; color: #222; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+#communityNewCheckinFormLayer .ncf-date-time-icon {
+  display: block !important;
+  width: 23px !important;
+  height: 23px !important;
+  color: #111111 !important;
+  stroke: #111111 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 2;
+  pointer-events: none;
 }
-.community-post-composer > header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
-.community-post-composer > header h2 { margin:0; font-size:20px; }
-.community-post-composer > header button { border:0; background:transparent; font-size:28px; color:#666; }
-.community-post-composer label { display:block; margin:10px 0 6px; font-size:13px; font-weight:600; }
-.community-post-composer textarea { width:100%; box-sizing:border-box; padding:12px; border:1px solid #ddd; border-radius:10px; font:inherit; resize:vertical; }
-.community-post-composer input[type=file] { width:100%; font-size:13px; }
-.community-composer-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
-.community-composer-actions button { border:0; border-radius:10px; padding:11px 16px; font-weight:600; }
-.community-composer-cancel { background:#f1f1f1; color:#333; }
-.community-composer-publish { background:#FE6405; color:#fff; }
+#communityNewCheckinFormLayer .ncf-date-time-input {
+  padding-right: 44px !important;
+}
+#communityNewCheckinFormLayer input[type="date"]::-webkit-calendar-picker-indicator,
+#communityNewCheckinFormLayer input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0 !important;
+}
 </style>
 
-<style id="community-new-checkin-action-v22">
-.community-new-checkin-action {
-  display:flex;
-  justify-content:center;
-  width:100%;
-  box-sizing:border-box;
-  padding:14px 16px 28px;
-}
-.community-new-checkin-action button {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:9px;
-  width:min(100%, 320px);
-  min-height:48px;
-  padding:12px 20px;
-  border:0;
-  border-radius:13px;
-  background:#FE6405;
-  color:#fff;
-  font-size:15px;
-  font-weight:700;
-  box-shadow:0 4px 12px rgba(254,100,5,.2);
-  cursor:pointer;
-}
-.community-new-checkin-action button span {
-  font-size:22px;
-  line-height:1;
-  font-weight:400;
-}
-.community-new-checkin-action button:active { transform:scale(.98); }
+<style id="community-checkin-photo-preview-robust-20261017">
+#communityNewCheckinFormPhoto{display:block;object-fit:cover;min-width:0;min-height:180px;background:#f0f0f3;color:#666;border-radius:16px}
+#communityNewCheckinFormPhoto[src^="data:image/"]{visibility:visible;opacity:1}
 </style>
 
+
+<style id="evolute-feed-full-width-20261017">
+/* Feed: publicações de ponta a ponta, no estilo de largura do Instagram.
+   O seletor :has limita o ajuste ao painel quando ele está exibindo publicações. */
+@media (max-width: 767px) {
+  #app .community-page.community-social-page #communityTabPanel:has(.community-social-feed-list),
+  #app .community-v1-detail #communityTabPanel:has(.community-social-feed-list),
+  #app .community-v1-detail .community-detail-content:has(.community-social-feed-list) {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  #app .community-social-feed-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 0 0 calc(50% - 50vw) !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+  #app .community-social-feed-list > .community-social-post {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 0 12px !important;
+    padding: 12px 16px !important;
+    box-sizing: border-box !important;
+    border: 0 !important;
+    border-bottom: 1px solid #e8e8e8 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: var(--cv1-bg, #fff) !important;
+  }
+  #app .community-social-feed-list > .community-social-post .community-social-post-photo {
+    display: block !important;
+    width: calc(100% + 32px) !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 10px -16px 0 !important;
+    border-radius: 0 !important;
+    object-fit: cover !important;
+  }
+}
+@media (min-width: 768px) {
+  #app .community-social-feed-list { width: 100%; max-width: 100%; }
+  #app .community-social-feed-list > .community-social-post { box-sizing: border-box; }
+}
+</style>
+
+<script id="community-navigation-active-sync-v1">
+(function(){
+  'use strict';
+  function detectPanel(host){
+    if(!host)return '';
+    if(host.querySelector('.community-social-feed-list, #communitySocialFeedList'))return 'feed';
+    if(host.querySelector('.community-social-calendar, .community-checkin-panel, [data-checkin-form]'))return 'checkin';
+    const heading=(host.querySelector('h2')?.textContent||'').trim().toLowerCase();
+    if(heading.includes('campeões')||heading.includes('campeoes'))return 'ranking';
+    if(heading.includes('desafios'))return 'challenges';
+    return '';
+  }
+  function sync(){
+    const host=document.getElementById('communityTabPanel')||document.querySelector('.community-detail-content[data-community-id], .community-v1-panel');
+    const panel=detectPanel(host); if(!panel)return;
+    document.querySelectorAll('nav.community-runtime-tabs, nav.community-social-tabs, nav.community-v1-tabs').forEach(nav=>{
+      nav.querySelectorAll('button[data-panel]').forEach(button=>{
+        const active=button.dataset.panel===panel;
+        button.classList.toggle('active',active);
+        button.setAttribute('aria-pressed',active?'true':'false');
+      });
+    });
+  }
+  function start(){
+    sync();
+    const app=document.getElementById('app');
+    if(app&&window.MutationObserver){
+      const observer=new MutationObserver(sync);
+      observer.observe(app,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-panel']});
+    }
+    document.addEventListener('click',function(event){
+      if(event.target.closest('nav.community-runtime-tabs button[data-panel], nav.community-social-tabs button[data-panel], nav.community-v1-tabs button[data-panel]'))setTimeout(sync,0);
+    },true);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
+
+
+
+<style id="evolute-feed-back-to-top-20261017">
+#evoluteFeedBackToTop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 180px);left:50%;transform:translateX(-50%);z-index:2147483000;width:48px;height:48px;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#222;color:#fff;box-shadow:0 3px 14px rgba(0,0,0,.25);cursor:pointer;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s ease,visibility .18s ease}
+#evoluteFeedBackToTop.is-visible{opacity:1;visibility:visible;pointer-events:auto}
+#evoluteFeedBackToTop svg{width:25px;height:25px;display:block;stroke:currentColor;stroke-width:2.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+@media(prefers-reduced-motion:reduce){#evoluteFeedBackToTop{transition:none}}
+</style>
+<script id="evolute-feed-back-to-top-script-20261017">
+(function(){
+ 'use strict';
+ let button, active=false, raf=0;
+ const selectors=['#communityTabPanel','.community-detail-content','.community-v1-panel','.community-page'];
+ function currentFeed(){return !!document.querySelector('#app .community-social-feed-list') && !!document.querySelector('#app nav.community-social-tabs button[data-panel="feed"].active, #app nav.community-runtime-tabs button[data-panel="feed"].active, #app nav.community-v1-tabs button[data-panel="feed"].active');}
+ function feedPanel(){return document.querySelector('#app .community-social-feed-list')?.closest('#communityTabPanel,.community-detail-content,.community-v1-panel,.community-page')||document.querySelector('#app .community-social-feed-list');}
+ function scrollTargets(){const out=[window,document.scrollingElement,document.documentElement,document.body];const panel=feedPanel();let n=panel;while(n&&n!==document.body){if(n.scrollHeight>n.clientHeight+20)out.push(n);n=n.parentElement;}return [...new Set(out.filter(Boolean))];}
+ function amountScrolled(){let max=window.scrollY||document.documentElement.scrollTop||document.body.scrollTop||0;const panel=feedPanel();let n=panel;while(n&&n!==document.body){if(n.scrollTop>max)max=n.scrollTop;n=n.parentElement;}return max;}
+ function update(){if(!button)return;const show=currentFeed()&&amountScrolled()>180;button.classList.toggle('is-visible',show);button.setAttribute('aria-hidden',show?'false':'true');button.tabIndex=show?0:-1;}
+ function scrollTop(){const panel=feedPanel();const targets=scrollTargets();try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){window.scrollTo(0,0)}for(const el of targets){if(el===window||el===document.scrollingElement||el===document.documentElement||el===document.body){try{el.scrollTo({top:0,behavior:'smooth'});}catch(_){el.scrollTop=0;}}else if(panel&&(el===panel||el.contains(panel)||panel.contains(el))){try{el.scrollTo({top:0,behavior:'smooth'});}catch(_){el.scrollTop=0;}}} }
+ function start(){if(!document.body)return;button=document.getElementById('evoluteFeedBackToTop');if(!button){button=document.createElement('button');button.id='evoluteFeedBackToTop';button.type='button';button.setAttribute('aria-label','Voltar ao início do Feed');button.setAttribute('title','Voltar ao início');button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>';document.body.appendChild(button);button.addEventListener('click',scrollTop);}
+ const listen=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;update();});};
+ window.addEventListener('scroll',listen,{passive:true});document.addEventListener('scroll',listen,{passive:true,capture:true});document.addEventListener('click',()=>setTimeout(update,80),true);
+ if(window.MutationObserver){new MutationObserver(listen).observe(document.getElementById('app')||document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','data-panel']});}
+ update();setInterval(update,700);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
