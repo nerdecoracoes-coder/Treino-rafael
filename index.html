@@ -4645,11 +4645,6 @@ body:has(.home-reference-dashboard) .home-hero-actions .home-menu-button .evo-ui
 .evolute-checkin-success-button:active{background:#dc580b;transform:scale(.99)}
 </style>
 
-<style id="community-calendar-photo-actions-v70">
-.community-calendar-day.has-record img{cursor:pointer;pointer-events:auto}
-.community-calendar-post-actions{display:none!important}
-</style>
-<!-- Evolute Training v92: estilos exatamente duplicados removidos; acionamento de localização centralizado. -->
 </head>
 
 <body>
@@ -8963,56 +8958,21 @@ function communityRenderCalendar(c,viewDate=new Date(),selectedDay=null){
   const post=byDay[day],isToday=year===today.getFullYear()&&month===today.getMonth()&&day===today.getDate();
   const author=post?(db.profiles.find(p=>p.id===post.authorId)||{}):{};
   const photo=post&&post.photo;
-  cells+=`<button type="button" class="community-calendar-day${post?' has-record':''}${day===chosen?' selected':''}${isToday?' today':''}" aria-label="${photo?`Abrir opções da postagem do dia ${day}`:`Selecionar ${day} de ${month+1} de ${year}${post?', com publicação':''}`}" aria-pressed="${day===chosen?'true':'false'}" onclick="${photo?`communityOpenCalendarPostActions('${esc(c.id)}','${esc(post.id)}',${!!post.__localCheckin},${year},${month},${day})`:`communitySelectCalendarDate('${esc(c.id)}',${year},${month},${day})`}">${photo?`<img src="${photo}" alt="Abrir opções da publicação do dia ${day}" draggable="false">`:''}<span class="community-calendar-day-number">${day}</span>${post?'<i class="community-calendar-dot" aria-hidden="true"></i>':''}</button>`;
+  cells+=`<button type="button" class="community-calendar-day${post?' has-record':''}${day===chosen?' selected':''}${isToday?' today':''}" aria-label="Selecionar ${day} de ${month+1} de ${year}${post?', com publicação':''}" aria-pressed="${day===chosen?'true':'false'}" onclick="communitySelectCalendarDate('${esc(c.id)}',${year},${month},${day})">${photo?`<img src="${photo}" alt="">`:''}<span class="community-calendar-day-number">${day}</span>${post?'<i class="community-calendar-dot" aria-hidden="true"></i>':''}</button>`;
  }
  const date=new Date(year,month,chosen);
  const dateLabel=date.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const selectedPost=byDay[chosen];
- const selectedPostIsLocal=!!(selectedPost&&selectedPost.__localCheckin);
+ const selectedPostAction=selectedPost?(selectedPost.__localCheckin?`<p class="community-calendar-no-post">Check-in publicado neste dia.</p>`:`<button type="button" class="community-calendar-view-post" onclick="communityOpenCalendarPost('${esc(c.id)}','${esc(selectedPost.id)}')">Ver publicação <span aria-hidden="true">›</span></button>`):`<p class="community-calendar-no-post">Nenhuma publicação neste dia.</p>`;
  const selectedPostSummary=selectedPost?(()=>{
   const ignored=new Set(['id','communityId','authorId','userId','createdAt','date','photo','image','images','video','media','attachments','__localCheckin']);
   const labels={time:'Horário do check-in',checkinTime:'Horário do check-in',checkInTime:'Horário do check-in',weight:'Peso',duration:'Duração',calories:'Calorias',feeling:'Como me senti',note:'Observações',notes:'Observações',observation:'Observações',caption:'Comentário',description:'Descrição',text:'Comentário',title:'Título'};
   const fields=Object.entries(selectedPost).filter(([key,value])=>!ignored.has(key)&&value!==null&&value!==undefined&&String(value).trim()!==''&&typeof value!=='object'&&typeof value!=='boolean'&& !/photo|image|video|media|avatar|url|base64/i.test(key));
   const rows=fields.map(([key,value])=>`<div class="community-calendar-summary-row"><span>${esc(labels[key]||key.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase()))}</span><strong>${esc(String(value))}</strong></div>`).join('');
-  // O resumo do dia não contém ações. Editar/Excluir só aparecem ao tocar na foto da postagem no calendário.
   return rows?`<article class="community-calendar-post-summary">${rows}</article>`:'';
  })():'';
  return `<div class="community-calendar-heading"><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},-1,${chosen})" aria-label="Mês anterior">‹</button><h2>${date.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</h2><button type="button" class="community-calendar-month-arrow" onclick="communityChangeCalendarMonth('${esc(c.id)}',${year},${month},1,${chosen})" aria-label="Próximo mês">›</button></div><div class="community-calendar-grid">${cells}</div>${selectedPostSummary}`;
 }
-function communityOpenCalendarPostActions(cid,pid,isLocal,year,month,day){
- const existing=document.getElementById('communityCalendarPostActionsModal');existing?.remove();
- const modal=document.createElement('div');modal.id='communityCalendarPostActionsModal';modal.className='community-post-composer-overlay';
- modal.innerHTML=`<section class="community-post-composer" role="dialog" aria-modal="true" aria-labelledby="communityCalendarPostActionsTitle"><header><h2 id="communityCalendarPostActionsTitle">Opções da postagem</h2><button type="button" aria-label="Fechar" onclick="document.getElementById('communityCalendarPostActionsModal')?.remove()">×</button></header><p>O que você deseja fazer com esta postagem?</p><div class="community-composer-actions"><button type="button" class="community-composer-cancel" onclick="document.getElementById('communityCalendarPostActionsModal')?.remove()">Cancelar</button><button type="button" class="community-composer-publish" onclick="document.getElementById('communityCalendarPostActionsModal')?.remove();communityEditCalendarPost('${esc(cid)}','${esc(pid)}',${!!isLocal})">Editar postagem</button><button type="button" class="community-calendar-delete-post" onclick="document.getElementById('communityCalendarPostActionsModal')?.remove();communityDeleteCalendarPost('${esc(cid)}','${esc(pid)}',${!!isLocal},${year},${month},${day})">Excluir postagem</button></div></section>`;
- modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});document.body.appendChild(modal);
-}
-
-function communityEditCalendarPost(cid,pid,isLocal){
- if(isLocal){
-  let posts=[];try{posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]')}catch(e){}
-  const post=posts.find(x=>String(x.id)===String(pid));if(!post){alert('Não foi possível localizar este check-in.');return;}
-  document.getElementById('communityCalendarEditModal')?.remove();
-  const modal=document.createElement('div');modal.id='communityCalendarEditModal';modal.className='community-post-composer-overlay';
-  const fields=[['title','Descrição',post.title||post.description||'','text'],['date','Data',post.date||'','date'],['time','Horário',post.time||'','time'],['location','Localização',post.location||'','text'],['activity','Atividade',post.activity||'','text'],['duration','Duração',post.duration||'','text'],['distance','Distância (km)',post.distance||'','number'],['calories','Calorias',post.calories||'','number']];
-  modal.innerHTML=`<section class="community-post-composer" role="dialog" aria-modal="true" aria-labelledby="communityCalendarEditTitle"><header><h2 id="communityCalendarEditTitle">Editar check-in</h2><button type="button" aria-label="Fechar" onclick="document.getElementById('communityCalendarEditModal')?.remove()">×</button></header><div class="community-calendar-edit-fields">${fields.map(([key,label,value,type])=>`<label>${label}<input data-edit-field="${key}" type="${type}" value="${esc(String(value))}" ${key==='title'?'required':''}></label>`).join('')}</div><div class="community-composer-actions"><button type="button" class="community-composer-cancel" onclick="document.getElementById('communityCalendarEditModal')?.remove()">Cancelar</button><button type="button" class="community-composer-publish" onclick="communitySaveCalendarPostEdit('${esc(pid)}')">Salvar alterações</button></div></section>`;
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});document.body.appendChild(modal);return;
- }
- const c=db.communities.find(x=>x.id===cid),p=c?.posts?.find(x=>String(x.id)===String(pid));if(!p){alert('Não foi possível localizar esta publicação.');return;}
- const next=prompt('Editar texto da publicação:',p.caption||'');if(next===null)return;p.caption=next.trim();saveDB();communityRefreshCalendar(cid,new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
-}
-function communitySaveCalendarPostEdit(pid){
- const modal=document.getElementById('communityCalendarEditModal');if(!modal)return;let posts=[];try{posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]')}catch(e){}
- const post=posts.find(x=>String(x.id)===String(pid));if(!post){alert('Não foi possível localizar este check-in.');modal.remove();return;}
- modal.querySelectorAll('[data-edit-field]').forEach(input=>{post[input.dataset.editField]=input.value.trim()});if(!post.title){alert('Preencha a descrição do check-in.');return;}
- try{localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(post.photo&&post.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[post.date]=post.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){alert('Não foi possível salvar as alterações neste dispositivo.');return;}
- modal.remove();const d=new Date(`${post.date||''}T12:00:00`);if(typeof communityRefreshCalendar==='function'&&!Number.isNaN(d.getTime())){const tab=document.querySelector('.community-social-tabs button[data-panel="checkin"].active');const cid=tab?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];if(cid)communityRefreshCalendar(cid,d.getFullYear(),d.getMonth(),d.getDate());else document.querySelector('.community-social-tabs button[data-panel="checkin"].active')?.click();}else document.querySelector('.community-social-tabs button[data-panel="checkin"].active')?.click();
-}
-function communityDeleteCalendarPost(cid,pid,isLocal,year,month,day){
- if(!confirm('Deseja excluir esta publicação? Esta ação não pode ser desfeita.'))return;
- if(isLocal){let posts=[];try{posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]')}catch(e){}const removed=posts.find(x=>String(x.id)===String(pid));posts=posts.filter(x=>String(x.id)!==String(pid));try{localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(removed?.date&&!posts.some(x=>x.date===removed.date&&x.photo)){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');delete thumbs[removed.date];localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){alert('Não foi possível excluir o check-in.');return;}}
- else{const c=db.communities.find(x=>x.id===cid);if(!c)return;c.posts=(c.posts||[]).filter(x=>String(x.id)!==String(pid));saveDB();}
- communityRefreshCalendar(cid,year,month,day);
-}
-
 function communityEnsurePostButton(cid){
  const c=db.communities.find(x=>x.id===cid);
  if(!c)return;
@@ -9033,10 +8993,8 @@ function communityEnsurePostButton(cid){
  button.onclick=()=>communityOpenPostComposer(c.id);
 }
 function communityRenderCheckinPanel(c,viewDate=new Date(),selectedDay=null){
- // O único botão de criação de check-in é o botão flutuante circular.
- // Não renderizar o antigo botão horizontal dentro do calendário, pois ele
- // aparecia junto do botão flutuante após publicar/atualizar a tela.
- return `<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,viewDate,selectedDay)}</section>`;
+ return `<section class="community-social-calendar" aria-label="Calendário mensal">${communityRenderCalendar(c,viewDate,selectedDay)}</section>
+ <div class="community-new-checkin-action"><button type="button" onclick="if(typeof window.evoluteStartCommunityPostPhoto==='function'){window.evoluteStartCommunityPostPhoto()}else{alert('A opção de adicionar foto não está disponível.')}"><span aria-hidden="true">＋</span> Novo check-in</button></div>`;
 }
 function communityRefreshCalendar(cid,year,month,day){
  const c=db.communities.find(x=>x.id===cid);if(!c)return;
@@ -16307,16 +16265,6 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 #communityCheckinFloatingAdd .community-checkin-add-plus{display:block!important;font-size:38px!important;font-weight:400!important;line-height:1!important}
 body.community-checkin-active #communityCheckinFloatingAdd{display:flex!important;visibility:visible!important;opacity:1!important}
 </style>
-<style id="community-calendar-edit-delete-styles">
-.community-calendar-post-actions{display:flex;gap:10px;justify-content:flex-end;margin:12px 0 4px;flex-wrap:wrap}
-.community-calendar-post-actions button{min-height:42px;padding:9px 18px;border-radius:12px;border:1px solid #ff6908;background:#fff;color:#e7650b;font:inherit;font-weight:700;cursor:pointer}
-.community-calendar-post-actions .community-calendar-delete-post{border-color:#dc2626;color:#b91c1c}
-#communityCalendarEditModal .community-post-composer{max-height:85vh;overflow:auto}
-.community-calendar-edit-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
-.community-calendar-edit-fields label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:700;color:#555}
-.community-calendar-edit-fields input{width:100%;min-width:0;box-sizing:border-box;padding:12px;border:1px solid #ddd;border-radius:10px;font:inherit;color:#222;background:#fff}
-@media(max-width:480px){.community-calendar-edit-fields{grid-template-columns:1fr}}
-</style>
 <script id="community-checkin-button-force-script-v25">
 (function(){
  function active(){
@@ -16337,12 +16285,30 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex!importan
    b.innerHTML='<span class="community-checkin-add-plus" aria-hidden="true">+</span>';
    b.addEventListener('click',function(e){
     e.preventDefault();e.stopPropagation();
-    // Usar o seletor único implementado no fluxo novo: câmera nativa ou biblioteca.
-    if(typeof window.evoluteStartCommunityPostPhoto==='function'){
-     window.evoluteStartCommunityPostPhoto();
-    } else {
-     alert('As opções de foto ainda estão sendo carregadas. Tente novamente.');
-    }
+    if(document.getElementById('communityPostPhotoChoice'))return;
+    const chooser=document.createElement('div');
+    chooser.id='communityPostPhotoChoice';
+    chooser.innerHTML='<div class="community-photo-choice-backdrop"><section class="community-photo-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="communityPhotoChoiceTitle"><button type="button" class="community-photo-choice-close" aria-label="Fechar">×</button><div class="community-photo-choice-icon" aria-hidden="true">＋</div><h3 id="communityPhotoChoiceTitle">Novo check-in</h3><p>Escolha uma foto da biblioteca para continuar.</p><button type="button" class="community-photo-choice-option" data-photo-source="gallery"><span class="community-photo-choice-option-icon" aria-hidden="true">▧</span><span><strong>Escolher da biblioteca</strong><small>Selecionar uma foto existente</small></span><span class="community-photo-choice-chevron" aria-hidden="true">›</span></button></section></div>';
+    document.body.appendChild(chooser);
+    function closeChooser(){chooser.remove();}
+    chooser.addEventListener('click',function(ev){
+     if(ev.target===chooser.querySelector('.community-photo-choice-backdrop')||ev.target.closest('.community-photo-choice-close')){closeChooser();return;}
+     const option=ev.target.closest('[data-photo-source]');
+     if(!option)return;
+     const source=option.dataset.photoSource;
+     // Iniciar o seletor enquanto o clique original ainda está ativo. Fechar
+     // primeiro o modal pode fazer o Android ignorar o primeiro input.click().
+     if(source==='camera'){
+      closeChooser();
+      if(typeof window.evoluteOpenNativeCheckinCamera==='function')window.evoluteOpenNativeCheckinCamera();
+      else alert('A câmera do celular não está disponível nesta versão.');
+      return;
+     }
+     if(typeof window.evoluteOpenCommunityPhotoLibrary==='function'){
+      window.evoluteOpenCommunityPhotoLibrary();
+      closeChooser();
+     } else {closeChooser();alert('A biblioteca de fotos não está disponível nesta versão.');}
+    });
    });
    document.body.appendChild(b);
   }
@@ -16385,55 +16351,6 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex!importan
 <style id="community-photo-picker-clean-v54">
 #app .community-photo-choose{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 18px;margin-top:8px;border:0;border-radius:12px;background:#ff6908;color:#fff;font-weight:750;cursor:pointer}
 #app input[type="file"][hidden]{display:none!important}
-</style>
-
-
-<style id="community-checkin-single-add-button-v65">
-/* Mantém apenas o botão circular flutuante de Novo check-in. */
-#communityTabPanel .community-new-checkin-action,
-#communityTabPanel .community-new-checkin-action button { display:none!important; }
-</style>
-
-<style id="community-checkin-duplicate-fab-fix-v66">
-/* Corrige botões legados e possíveis cópias do botão flutuante. */
-.community-new-checkin-action,
-.community-new-checkin-action button,
-button[aria-label="Novo check-in"]:not(#communityCheckinFloatingAdd),
-button[title="Novo check-in"]:not(#communityCheckinFloatingAdd) { display:none !important; }
-</style>
-<script id="community-checkin-duplicate-fab-cleanup-v66">
-(function(){
-  function clean(){
-    const buttons=[...document.querySelectorAll('#communityCheckinFloatingAdd')];
-    // IDs deveriam ser únicos; se algum fluxo antigo criar cópias, conserva só o primeiro.
-    buttons.slice(1).forEach(button=>button.remove());
-    document.querySelectorAll('.community-new-checkin-action').forEach(el=>{el.style.setProperty('display','none','important');});
-    document.querySelectorAll('button[aria-label="Novo check-in"],button[title="Novo check-in"]').forEach(button=>{
-      if(button.id!=='communityCheckinFloatingAdd')button.style.setProperty('display','none','important');
-    });
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clean,{once:true});else clean();
-  const observer=new MutationObserver(clean);
-  observer.observe(document.documentElement,{childList:true,subtree:true});
-})();
-</script>
-
-
-<style id="community-calendar-post-actions-centered-v72">
-/* Mantém a janela de ações da postagem centralizada e acima do botão flutuante. */
-#communityCalendarPostActionsModal.community-post-composer-overlay {
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px)) !important;
-}
-#communityCalendarPostActionsModal .community-post-composer {
-  width: min(100%, 420px) !important;
-  max-height: min(78vh, 560px) !important;
-  overflow-y: auto !important;
-  border-radius: 18px !important;
-  margin-top: -9vh !important;
-  box-shadow: 0 12px 36px rgba(0,0,0,.24) !important;
-}
 </style>
 
 </body>
@@ -19048,93 +18965,6 @@ body:has(.home-reference-dashboard) main#app {
 }
 
 </style>
-
-
-<!-- Correção v77: ocultar o botão flutuante enquanto qualquer janela de escolha de foto/check-in estiver aberta. -->
-<style id="community-checkin-hide-fab-while-photo-modal-v77">
-  body:has(#communityPostPhotoChoice) #communityCheckinFloatingAdd,
-  body:has(#communityPostPhotoChoice) #communityFeedAddButton,
-  body:has(#communityPostPhotoChoice) button[aria-label="Novo check-in"],
-  body:has(#communityPostPhotoChoice) button[title="Novo check-in"],
-  body:has(#communityCalendarPostActionsModal:not([hidden])) #communityCheckinFloatingAdd,
-  body:has(#communityCalendarPostActionsModal:not([hidden])) #communityFeedAddButton,
-  body:has(.community-photo-choice-backdrop) #communityCheckinFloatingAdd,
-  body:has(.community-photo-choice-backdrop) #communityFeedAddButton {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-  #communityPostPhotoChoice, #communityCalendarPostActionsModal { z-index: 2147483647 !important; }
-</style>
-
-
-
-<!-- v79: botão (+) restrito à aba Check-in e sempre oculto durante seletores/modais. -->
-<style id="community-checkin-fab-scope-v79">
-  #communityCheckinFloatingAdd,
-  #communityFeedAddButton,
-  .community-feed-add-button { z-index: 1000 !important; }
-  body.community-checkin-fab-hidden #communityCheckinFloatingAdd,
-  body.community-checkin-fab-hidden #communityFeedAddButton,
-  body.community-checkin-fab-hidden .community-feed-add-button,
-  body.community-checkin-fab-hidden .community-new-checkin-action,
-  body.community-checkin-fab-hidden .community-new-checkin-action button {
-    display:none !important; visibility:hidden !important; opacity:0 !important;
-    pointer-events:none !important;
-  }
-  body.community-photo-choice-open #communityCheckinFloatingAdd,
-  body.community-photo-choice-open #communityFeedAddButton,
-  body.community-photo-choice-open .community-feed-add-button,
-  body.community-photo-choice-open .community-new-checkin-action,
-  body.community-photo-choice-open .community-new-checkin-action button {
-    display:none !important; visibility:hidden !important; opacity:0 !important;
-    pointer-events:none !important;
-  }
-  #communityPostPhotoChoice { z-index:2147483647 !important; }
-</style>
-<script id="community-checkin-fab-scope-script-v79">
-(function(){
-  if(window.__communityCheckinFabScopeV79) return;
-  window.__communityCheckinFabScopeV79=true;
-  function sync(){
-    const fab=document.getElementById('communityCheckinFloatingAdd');
-    const feedButtons=document.querySelectorAll('#communityFeedAddButton,.community-feed-add-button,.community-new-checkin-action');
-    const checkinTab=document.querySelector(
-      '.community-v1-detail .community-v1-tabs button[data-panel="checkin"].active,'+
-      '.community-social-tabs button[data-panel="checkin"].active,'+
-      '.community-v1-tabs button[data-panel="checkin"].active'
-    );
-    const picker=document.getElementById('communityPostPhotoChoice');
-    const modalOpen=!!(
-      (picker && !picker.hidden && getComputedStyle(picker).display!=='none' && picker.getAttribute('aria-hidden')!=='true') ||
-      document.querySelector('.community-photo-choice-backdrop') ||
-      document.querySelector('#communityCalendarPostActionsModal:not([hidden])') ||
-      document.querySelector('#evoluteNewCheckinScreen.open')
-    );
-    const allowed=!!checkinTab && !modalOpen;
-    document.body.classList.toggle('community-checkin-active',allowed);
-    document.body.classList.toggle('community-photo-choice-open',modalOpen);
-    document.body.classList.toggle('community-checkin-fab-hidden',!allowed || modalOpen);
-    if(fab){
-      fab.style.setProperty('display',allowed?'flex':'none','important');
-      fab.style.setProperty('visibility',allowed?'visible':'hidden','important');
-      fab.style.setProperty('opacity',allowed?'1':'0','important');
-      fab.style.setProperty('pointer-events',allowed?'auto':'none','important');
-    }
-    feedButtons.forEach(el=>{
-      el.style.setProperty('display','none','important');
-      el.style.setProperty('visibility','hidden','important');
-      el.style.setProperty('pointer-events','none','important');
-    });
-  }
-  function schedule(){ requestAnimationFrame(sync); setTimeout(sync,100); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',schedule,{once:true}); else schedule();
-  new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden','aria-hidden','style','data-panel']});
-  document.addEventListener('click',schedule,true);
-  window.addEventListener('pageshow',schedule);
-})();
-</script>
 </html>
 
 <style id="evolute-home-compact-mobile-v1">
@@ -26511,11 +26341,6 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
 #evoluteNewCheckinScreen .nc-photo-wrap{position:relative!important;width:150px!important;max-width:100%!important;height:174px!important;min-height:174px!important;margin:0 auto!important;flex:none!important;overflow:hidden;border-radius:14px}
 #evoluteNewCheckinScreen .nc-photo-wrap .nc-photo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;border-radius:14px!important}
 #evoluteNewCheckinScreen .nc-photo-wrap .nc-photo-empty{position:absolute;inset:0;width:100%;height:100%;}
-/* v86: respeitar o atributo hidden da imagem e do espaço reservado.
-   A regra display:block da foto podia sobrepor o hidden nativo e impedir a troca visual. */
-#evoluteNewCheckinScreen .nc-photo[hidden],
-#evoluteNewCheckinScreen .nc-photo-empty[hidden]{display:none!important;}
-
 #evoluteNewCheckinScreen .nc-edit-photo{z-index:2}
 #evoluteNewCheckinScreen .nc-card{position:relative;clear:both}
 #evoluteNewCheckinScreen .nc-header{flex:0 0 64px;position:relative;z-index:2}
@@ -26584,30 +26409,13 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   const overlay=document.createElement('div');overlay.id='evoluteCheckinSuccessModal';overlay.className='evolute-checkin-success-overlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','evoluteCheckinSuccessTitle');
   overlay.innerHTML='<div class="evolute-checkin-success-card"><div class="evolute-checkin-success-icon" aria-hidden="true"><svg viewBox="0 0 48 48" width="34" height="34" fill="none"><circle cx="24" cy="24" r="19" stroke="currentColor" stroke-width="3.5"/><path d="m14 24 7 7 14-15" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3 id="evoluteCheckinSuccessTitle">Publicado com sucesso!</h3><p>Seu check-in foi publicado e já está disponível no feed.</p><button type="button" class="evolute-checkin-success-button">Continuar</button></div>';
   const dismiss=()=>{
-   // Atualiza o calendário explicitamente com o check-in que acabou de ser salvo.
-   // Não depende apenas de trocar de aba, pois essa troca pode não disparar a renderização.
-   const last=window.__evoluteLastPublishedCheckin||{};
+   // Ao concluir a publicação, voltar ao calendário e forçar sua renderização
+   // com os dados recém-gravados no armazenamento local.
    const checkinTab=document.querySelector('.community-social-tabs button[data-panel="checkin"]');
-   const panel=document.getElementById('communityTabPanel');
-   const cid=panel?.dataset?.communityId||document.querySelector('.community-social-tabs button[data-panel="checkin"]')?.getAttribute('onclick')?.match(/communitySwitchPanel\('checkin','([^']+)'/)?.[1];
-   const refresh=()=>{
-    try{
-     if(cid&&typeof window.communitySwitchPanel==='function'&&checkinTab){
-      window.communitySwitchPanel('checkin',cid,checkinTab);
-     }else if(checkinTab){
-      checkinTab.click();
-     }
-     if(cid&&typeof window.communityRefreshCalendar==='function'){
-      const parts=String(last.date||'').split('-').map(Number);
-      const valid=parts.length===3&&parts.every(Number.isFinite)&&parts[0]>0&&parts[1]>=1&&parts[1]<=12&&parts[2]>=1&&parts[2]<=31;
-      const date=valid?new Date(parts[0],parts[1]-1,1):new Date();
-      const day=valid?parts[2]:new Date().getDate();
-      window.communityRefreshCalendar(cid,date.getFullYear(),date.getMonth(),day);
-}
-    }catch(err){console.warn('Não foi possível atualizar o calendário do check-in.',err);}
-   };
-   refresh();
-   requestAnimationFrame(()=>setTimeout(refresh,80));
+   if(checkinTab){checkinTab.click();}
+   else if(typeof window.evoluteRefreshCommunityCheckinCalendar==='function'){
+    try{window.evoluteRefreshCommunityCheckinCalendar();}catch(err){console.warn('Não foi possível atualizar o calendário do check-in.',err);}
+   }
    overlay.classList.add('closing');setTimeout(()=>overlay.remove(),160);
   };
   overlay.querySelector('button').addEventListener('click',dismiss);
@@ -26750,48 +26558,90 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   $('.nc-edit-photo',el).addEventListener('click',()=>{startPhotoFlow()});
   file.addEventListener('change',()=>{const f=file.files&&file.files[0];if(f)showChosenPhoto(f);file.value='';});
   const close=()=>el.classList.remove('open');$('.nc-back',el).addEventListener('click',close);
-  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};window.__evoluteLastPublishedCheckin=data;try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
+  const publish=()=>{const description=$('textarea[name="description"]',el).value.trim();if(!description){$('textarea[name="description"]',el).focus();$('textarea[name="description"]',el).placeholder='Escreva algo sobre seu treino';return;}const data={id:Date.now(),title:description,description:'',date:$('input[name="date"]',el).value,time:$('input[name="time"]',el).value,location:$('input[name="location"]',el).value,gym:$('input[name="gym"]',el).value,activity:$('select[name="activity"]',el).value,duration:$('input[name="duration"]',el).value,distance:$('input[name="distance"]',el).value,calories:$('input[name="calories"]',el).value,photo:el.__evolutePhotoData||photo};try{const posts=JSON.parse(localStorage.getItem('evoluteCommunityCheckinPostsV1')||'[]');posts.unshift(data);localStorage.setItem('evoluteCommunityCheckinPostsV1',JSON.stringify(posts));if(data.photo&&data.date){const thumbs=JSON.parse(localStorage.getItem('evoluteCommunityCalendarPhotosV1')||'{}');thumbs[data.date]=data.photo;localStorage.setItem('evoluteCommunityCalendarPhotosV1',JSON.stringify(thumbs));}}catch(e){}close();window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:data}));showCheckinPublishedSuccess();};$('.nc-publish',el).addEventListener('click',publish);$('.nc-publish-wide',el).addEventListener('click',publish);return el;
  }
  function open(){const el=build();el.classList.add('open');}
  let photoProcessing=false;
  function showChosenPhoto(file){
-  if(!file)return;
+  if(!file || photoProcessing)return;
+  photoProcessing=true;
   const el=build(),img=$('.nc-photo',el),empty=$('.nc-photo-empty',el);
-  // Reutiliza a tela original de preenchimento. A prévia é lida diretamente
-  // do File selecionado, sem depender de ObjectURL/createImageBitmap no Android.
+  // Mostrar a tela Novo check-in imediatamente após a confirmação da foto.
+  // O processamento da imagem acontece em seguida, sem bloquear a navegação.
   el.classList.add('open');
-  img.hidden=true;
-  img.removeAttribute('src');
-  empty.hidden=false;
-  const reader=new FileReader();
-  reader.onload=()=>{
-   const dataUrl=String(reader.result||'');
-   if(!dataUrl.startsWith('data:image/')){
-    console.error('Evolute: o arquivo selecionado não retornou uma imagem válida.');
-    return;
-   }
-   // Manter o dado original imediatamente para que a tela e o post usem
-   // exatamente a foto escolhida. O src recebe um Data URL autossuficiente.
-   el.__evolutePhotoData=dataUrl;
-   img.onload=()=>{img.hidden=false;empty.hidden=true;el.classList.add('open');};
-   img.onerror=()=>{
-    img.hidden=true;empty.hidden=false;
-    console.error('Evolute: o navegador não conseguiu decodificar a imagem selecionada.');
-   };
-   img.src=dataUrl;
-   // Reafirmar visibilidade quando o carregamento de imagem terminar.
-   if(img.complete && img.naturalWidth>0){img.hidden=false;empty.hidden=true;}
+  let processingNote=$('.nc-photo-error',el);
+  if(!processingNote){processingNote=document.createElement('p');processingNote.className='nc-photo-error';processingNote.style.cssText='margin:10px 0;color:#777;font-size:14px;line-height:1.4';processingNote.textContent='Preparando sua foto…';img.parentNode.appendChild(processingNote);}
+  // Nunca converter o arquivo original para Base64. Primeiro tenta decodificar
+  // já redimensionando; só o Blob comprimido é convertido para o formato legado.
+  const fail=(message)=>{
+   photoProcessing=false;
+   let note=$('.nc-photo-error',el);
+   if(!note){note=document.createElement('p');note.className='nc-photo-error';note.style.cssText='margin:10px 0;color:#c2410c;font-size:14px;line-height:1.4';img.parentNode.appendChild(note);}
+   note.textContent=message;
    el.classList.add('open');
   };
-  reader.onerror=()=>{
-   img.hidden=true;empty.hidden=false;
-   console.error('Evolute: falha ao ler o arquivo de imagem selecionado.',reader.error);
-  };
-  try{reader.readAsDataURL(file);}catch(err){
-   console.error('Evolute: não foi possível ler a foto selecionada.',err);
-  }
+  (async()=>{
+   let bitmap=null,canvas=null,blob=null;
+   try{
+    if(typeof createImageBitmap==='function'){
+     // Nunca cair para createImageBitmap(file) sem opções: isso decodifica a foto
+     // original em resolução total e pode esgotar a memória do WebView Android.
+     const opts={resizeWidth:640,resizeHeight:640,resizeQuality:'low',resizeMode:'contain',imageOrientation:'from-image'};
+     try{bitmap=await createImageBitmap(file,opts);}
+     catch(firstError){
+      // Segunda tentativa com o conjunto mínimo de opções de redimensionamento.
+      // Se o navegador não suportar isso, falhamos sem alocar o bitmap original.
+      try{bitmap=await createImageBitmap(file,{resizeWidth:640,resizeHeight:640});}
+      catch(secondError){throw new Error('O navegador não conseguiu redimensionar a foto com segurança');}
+     }
+    }
+    if(bitmap){
+     const scale=Math.min(1,640/Math.max(bitmap.width,bitmap.height));
+     const w=Math.max(1,Math.round(bitmap.width*scale)),h=Math.max(1,Math.round(bitmap.height*scale));
+     canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+     const ctx=canvas.getContext('2d',{alpha:false});
+     if(!ctx)throw new Error('Canvas indisponível');
+     ctx.drawImage(bitmap,0,0,w,h);
+     blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.68));
+    } else {
+     // Fallback sem decodificação: não ler arquivo original inteiro em memória.
+     throw new Error('Redimensionamento indisponível neste navegador');
+    }
+    if(!blob)throw new Error('Não foi possível comprimir a foto');
+    if(bitmap&&bitmap.close){bitmap.close();bitmap=null;}
+    if(canvas){canvas.width=1;canvas.height=1;canvas=null;}
+    // Converte apenas a imagem final, já pequena, para compatibilidade com o Feed.
+    const reader=new FileReader();
+    const dataUrl=await new Promise((resolve,reject)=>{
+     reader.onload=()=>resolve(String(reader.result||''));
+     reader.onerror=()=>reject(new Error('Falha ao ler a imagem comprimida'));
+     reader.onabort=()=>reject(new Error('Leitura da imagem interrompida'));
+     reader.readAsDataURL(blob);
+    });
+    if(!dataUrl.startsWith('data:image/'))throw new Error('Imagem comprimida inválida');
+    el.__evolutePhotoData=dataUrl;
+    img.src=dataUrl;img.hidden=false;empty.hidden=true;
+    const note=$('.nc-photo-error',el);if(note)note.remove();
+    el.classList.add('open');
+   }catch(err){
+    console.error('Evolute: falha no processamento seguro da foto.',err);
+    fail('Não foi possível preparar esta foto sem exceder a memória do aparelho. Tente uma imagem menor ou escolha uma foto da galeria.');
+   }finally{
+    if(bitmap&&bitmap.close)try{bitmap.close();}catch(_){}
+    if(canvas){canvas.width=1;canvas.height=1;}
+    photoProcessing=false;
+   }
+  })();
  }
-
+ // A confirmação final é feita na própria câmera do Android ("Usar foto").
+ // Não criar outra prévia da imagem original dentro do WebView: em aparelhos com
+ // pouca memória, decodificar essa prévia pode derrubar a página antes do formulário.
+ function confirmCapturedCheckinPhoto(file){
+  if(!file)return;
+  const screen=build();
+  screen.classList.add('open');
+  showChosenPhoto(file);
+ }
  // Em arquivos abertos via content:// no Android, getUserMedia normalmente não é permitido.
  // Use o seletor nativo com capture para entregar a câmera real do aparelho sem tela de erro.
  let nativeCameraOpen=false;
@@ -26868,7 +26718,7 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
  function ensurePhotoChoiceModal(){
   let modal=$('#evolutePhotoChoiceModal');if(modal)return modal;
   modal=document.createElement('section');modal.id='evolutePhotoChoiceModal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Adicionar foto');
-  modal.innerHTML='<button type="button" class="epc-backdrop" aria-label="Fechar"></button><div class="epc-card"><div class="epc-handle"></div><div class="epc-heading"><span class="epc-camera-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><div><h3>Escolher foto</h3><p>Selecione uma imagem existente na biblioteca do celular.</p></div><button type="button" class="epc-close" aria-label="Fechar">×</button></div><button type="button" class="epc-option epc-camera"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span class="epc-option-copy"><strong>Tirar foto</strong><small>Abrir a câmera do celular</small></span><span class="epc-chevron">›</span></button><button type="button" class="epc-option epc-library"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><span class="epc-option-copy"><strong>Escolher foto</strong><small>Selecionar uma foto já existente</small></span><span class="epc-chevron">›</span><input class="epc-library-input" type="file" accept="image/*"></button></div>';
+  modal.innerHTML='<button type="button" class="epc-backdrop" aria-label="Fechar"></button><div class="epc-card"><div class="epc-handle"></div><div class="epc-heading"><span class="epc-camera-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><div><h3>Escolher foto</h3><p>Selecione uma imagem existente na biblioteca do celular.</p></div><button type="button" class="epc-close" aria-label="Fechar">×</button></div><button type="button" class="epc-option epc-library"><span class="epc-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3.5" width="18" height="17" rx="2.2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></span><span class="epc-option-copy"><strong>Escolher da biblioteca</strong><small>Selecionar uma foto já existente</small></span><span class="epc-chevron">›</span><input class="epc-library-input" type="file" accept="image/*"></button></div>';
   const css=document.createElement('style');css.id='evolute-photo-choice-modal-style';css.textContent='#evolutePhotoChoiceModal{position:fixed;inset:0;z-index:100700;display:none;align-items:flex-end;justify-content:center;font-family:inherit;color:#f7f7f8}#evolutePhotoChoiceModal.open{display:flex}#evolutePhotoChoiceModal *{box-sizing:border-box}#evolutePhotoChoiceModal .epc-backdrop{position:absolute;inset:0;border:0;background:rgba(0,0,0,.68);backdrop-filter:blur(3px)}#evolutePhotoChoiceModal .epc-card{position:relative;width:min(100%,520px);padding:10px 20px calc(22px + env(safe-area-inset-bottom));background:#171719;border:1px solid #343438;border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 -12px 44px #0006;animation:epc-rise .22s ease-out}#evolutePhotoChoiceModal .epc-handle{width:38px;height:4px;border-radius:4px;background:#55555b;margin:0 auto 19px}#evolutePhotoChoiceModal .epc-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px}#evolutePhotoChoiceModal .epc-camera-mark{width:44px;height:44px;flex:0 0 44px;border-radius:14px;background:#ff69081f;display:grid;place-items:center;color:#ff6908}#evolutePhotoChoiceModal .epc-option-icon svg{display:block;width:25px;height:25px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-camera-mark svg{display:block;width:24px;height:24px;fill:none!important;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#evolutePhotoChoiceModal .epc-heading h3{margin:0 0 4px;font-size:19px;font-weight:800;color:#fff}#evolutePhotoChoiceModal .epc-heading p{margin:0;font-size:13px;line-height:1.4;color:#aaaab1}#evolutePhotoChoiceModal .epc-close{margin-left:auto;align-self:flex-start;border:0;background:#2a2a2e;color:#ddd;border-radius:50%;width:30px;height:30px;font-size:22px;line-height:1}#evolutePhotoChoiceModal .epc-option{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:15px 13px;margin-top:10px;border:1px solid #39393e;border-radius:16px;background:#222225;color:#fff}#evolutePhotoChoiceModal .epc-option:active{background:#303034}#evolutePhotoChoiceModal .epc-option-icon{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;background:#ff6908;color:#fff}#evolutePhotoChoiceModal .epc-option-copy{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}#evolutePhotoChoiceModal .epc-option-copy strong{font-size:16px;font-weight:750}#evolutePhotoChoiceModal .epc-option-copy small{font-size:12px;color:#aaaab1}#evolutePhotoChoiceModal .epc-chevron{font-size:27px;color:#85858c}#evolutePhotoChoiceModal .epc-option{position:relative;overflow:hidden}#evolutePhotoChoiceModal .epc-library-input{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;z-index:5!important;cursor:pointer!important;pointer-events:auto!important;border:0!important;padding:0!important;margin:0!important}@keyframes epc-rise{from{transform:translateY(20px);opacity:.5}to{transform:translateY(0);opacity:1}}@media(min-width:560px){#evolutePhotoChoiceModal{align-items:center;padding:20px}#evolutePhotoChoiceModal .epc-card{border:1px solid #343438;border-radius:24px;padding-bottom:22px}}';
   document.head.appendChild(css);document.body.appendChild(modal);
   const close=()=>modal.classList.remove('open');$('.epc-backdrop',modal).addEventListener('click',close);$('.epc-close',modal).addEventListener('click',close);
@@ -26877,58 +26727,52 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
   // Android/Chrome esse overlay recebe o primeiro toque sem abrir o seletor.
   const libraryInput=$('.epc-library-input',modal);
   const libraryButton=$('.epc-library',modal);
-  // v82: deixar o input real cobrindo a opção inteira. Assim o próprio toque
-  // do usuário chega ao input file e abre o seletor nativo do Android; não usar
-  // input.click() programático, que pode ser bloqueado quando o input está oculto.
-  libraryInput.style.cssText='position:absolute!important;inset:0!important;width:100%!important;height:100%!important;left:0!important;top:0!important;opacity:0.01!important;z-index:10!important;pointer-events:auto!important;display:block!important;cursor:pointer!important;';
-  // v85: preparar a tela de preenchimento ANTES de o Android abrir a galeria.
-  // Assim, se o WebView restaurar a página ao voltar do seletor, o formulário
-  // já estará aberto; a seleção apenas acrescenta a foto.
-  libraryInput.addEventListener('pointerdown',()=>{
-   const screen=build();
-   screen.style.setProperty('z-index','2147483000','important');
-   screen.classList.add('open');
-  },{passive:true});
-  $('.epc-camera',modal).addEventListener('click',function(event){
-   event.preventDefault();event.stopPropagation();close();
-   // A câmera é aberta pelo seletor nativo do aparelho (capture=environment),
-   // sem criar uma câmera dentro do aplicativo.
-   if(typeof window.evoluteOpenNativeCheckinCamera==='function')window.evoluteOpenNativeCheckinCamera();
-   else alert('A câmera do celular não está disponível neste momento.');
+  libraryInput.style.cssText='position:absolute!important;width:1px!important;height:1px!important;left:-10000px!important;top:auto!important;opacity:0!important;pointer-events:none!important;';
+  libraryButton.addEventListener('click',function(event){
+   event.preventDefault();
+   event.stopPropagation();
+   // Abrir o seletor no primeiro toque, usando a API nativa do navegador
+   // quando disponível. O gesto do usuário não deve ser perdido entre telas.
+   try{
+    if(typeof libraryInput.showPicker==='function'){
+     try{libraryInput.showPicker();}
+     catch(showPickerError){libraryInput.click();}
+    }else{
+     libraryInput.click();
+    }
+   }catch(err){
+    console.error('Evolute: falha ao abrir biblioteca no primeiro toque',err);
+    alert('Não foi possível abrir a biblioteca de fotos. Toque novamente para tentar.');
+   }
   });
   $('.epc-library-input',modal).addEventListener('change',()=>{
    const input=$('.epc-library-input',modal),file=input.files&&input.files[0];
-   if(file){
-    // Capturar o File e abrir o formulário no mesmo callback change, sem esperar
-    // requestAnimationFrame: no Android, a página pode restaurar a tela anterior
-    // entre o retorno da galeria e o próximo frame, exigindo um segundo toque.
-    const selectedFile=file;
-    close();
-    const screen=build();
-    screen.style.setProperty('z-index','2147483000','important');
-    document.body.classList.remove('community-photo-choice-open');
-    document.getElementById('communityPostPhotoChoice')?.classList.remove('open');
-    document.getElementById('communityCheckinFloatingAdd')?.style.setProperty('display','none','important');
-    screen.classList.add('open');
-    showChosenPhoto(selectedFile);
-    // Reafirmar a mesma tela original após o retorno da galeria Android.
-    setTimeout(()=>{screen.classList.add('open');screen.style.setProperty('z-index','2147483000','important');},0);
-   }
+   if(file){close();showChosenPhoto(file);}
    input.value='';
   });
-  $('.epc-library-input',modal).addEventListener('cancel',()=>{
-   close();
-   // Se a pessoa cancelar a galeria, não deixar o formulário vazio aberto.
-   const screen=document.getElementById('evoluteNewCheckinScreen');
-   if(screen && !screen.querySelector('.nc-photo')?.getAttribute('src'))screen.classList.remove('open');
-  });
+  $('.epc-library-input',modal).addEventListener('cancel',()=>{close();});
   return modal;
  }
  function startPhotoFlow(){
-  // O botão Novo check-in abre as duas opções. Cada opção chama diretamente
-  // a API nativa correspondente após o toque do usuário.
-  const modal=ensurePhotoChoiceModal();
-  modal.classList.add('open');
+  // Abrir diretamente o seletor do Android no primeiro toque no botão +.
+  // Evita a etapa intermediária de abrir um modal e exigir outro toque para
+  // escolher a biblioteca. A chamada ao input.click() permanece síncrona
+  // dentro do gesto do usuário para respeitar a política do navegador móvel.
+  if(typeof window.evoluteOpenCommunityPhotoLibrary==='function'){
+   window.evoluteOpenCommunityPhotoLibrary();
+   return;
+  }
+  const input=document.createElement('input');
+  input.type='file'; input.accept='image/*';
+  input.style.cssText='position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0;';
+  document.body.appendChild(input);
+  input.addEventListener('change',()=>{
+   const file=input.files&&input.files[0];
+   if(file) showChosenPhoto(file);
+   input.remove();
+  },{once:true});
+  input.addEventListener('cancel',()=>input.remove(),{once:true});
+  input.click();
  }
  // Callback chamado pelo Android depois que a câmera nativa captura/seleciona uma imagem.
  window.evoluteNativePhotoReady=function(dataUrl){
@@ -26959,10 +26803,8 @@ body.community-checkin-active #communityCheckinFloatingAdd{display:flex}
    if(file){
     // Reabrir explicitamente a tela no evento change, pois alguns navegadores
     // Android retomam a página restaurando o estado visual anterior.
-    screen.style.setProperty('z-index','2147483000','important');
     screen.classList.add('open');
-    document.body.classList.remove('community-photo-choice-open');
-    requestAnimationFrame(()=>{screen.classList.add('open');showChosenPhoto(file);setTimeout(()=>screen.classList.add('open'),80);});
+    showChosenPhoto(file);
    }
    cleanup();
   },{once:true});
@@ -27406,148 +27248,3 @@ html body #app .community-runtime-tabs {
 .community-new-checkin-action button:active { transform:scale(.98); }
 </style>
 
-
-<style id="community-checkin-single-fab-root-fix-v67">
-/* A duplicação vinha do botão legado de postagem do Feed, que continuava
-   flutuando quando a aba Check-in era aberta. Mantém o FAB próprio do Check-in. */
-body.community-checkin-active #communityFeedAddButton,
-body.community-checkin-active .community-feed-add-button {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-/* Se o formulário de check-in estiver aberto, nenhum FAB deve ficar por cima dele. */
-body.community-checkin-active:has(#evoluteNewCheckinScreen.open) #communityCheckinFloatingAdd {
-  display: none !important;
-}
-</style>
-<script id="community-checkin-single-fab-root-fix-script-v67">
-(function(){
-  function sync(){
-    const formOpen=!!document.querySelector('#evoluteNewCheckinScreen.open');
-    const checkinActive=document.body.classList.contains('community-checkin-active');
-    document.querySelectorAll('#communityFeedAddButton, .community-feed-add-button').forEach(el=>{
-      if(checkinActive){el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important');el.style.setProperty('pointer-events','none','important');}
-      else {el.style.removeProperty('display');el.style.removeProperty('visibility');el.style.removeProperty('pointer-events');}
-    });
-    const fab=document.getElementById('communityCheckinFloatingAdd');
-    if(fab && formOpen){fab.style.setProperty('display','none','important');}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
-  new MutationObserver(sync).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
-})();
-</script>
-
-
-<!-- Correção v75: o botão flutuante não pode aparecer sobre o seletor de foto. -->
-<style id="community-photo-choice-hide-floating-button-v75">
-  body:has(#communityPostPhotoChoice) #communityCheckinFloatingAdd,
-  body:has(#communityPostPhotoChoice) #communityFeedAddButton,
-  body:has(#communityPostPhotoChoice) .community-feed-add-button,
-  body:has(#communityPostPhotoChoice) .community-new-checkin-action {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-  #communityPostPhotoChoice { z-index: 2147483647 !important; }
-  #communityPostPhotoChoice .community-photo-choice-backdrop { z-index: 1 !important; }
-  #communityPostPhotoChoice .community-photo-choice-dialog { position: relative; z-index: 2 !important; }
-</style>
-<script id="community-photo-choice-hide-floating-button-script-v76">
-(function(){
-  function syncPhotoChoice(){
-    const picker=document.getElementById('communityPostPhotoChoice');
-    const isOpen=!!picker && getComputedStyle(picker).display!=='none' && picker.getAttribute('aria-hidden')!=='true' && !picker.hidden;
-    document.body.classList.toggle('community-photo-choice-open',isOpen);
-    ['communityCheckinFloatingAdd','communityFeedAddButton'].forEach(id=>{
-      const el=document.getElementById(id); if(!el) return;
-      if(isOpen){
-        if(el.style.display!=='none') el.style.setProperty('display','none','important');
-        if(el.style.visibility!=='hidden') el.style.setProperty('visibility','hidden','important');
-        if(el.style.pointerEvents!=='none') el.style.setProperty('pointer-events','none','important');
-      } else if(el.style.display==='none' && id==='communityCheckinFloatingAdd') {
-        /* Deixa a lógica original do aplicativo controlar a visibilidade ao fechar. */
-        el.style.removeProperty('display'); el.style.removeProperty('visibility'); el.style.removeProperty('pointer-events');
-      }
-    });
-    document.querySelectorAll('.community-feed-add-button,.community-new-checkin-action').forEach(el=>{
-      if(isOpen){
-        if(el.style.display!=='none') el.style.setProperty('display','none','important');
-        if(el.style.visibility!=='hidden') el.style.setProperty('visibility','hidden','important');
-        if(el.style.pointerEvents!=='none') el.style.setProperty('pointer-events','none','important');
-      }
-    });
-  }
-  function init(){
-    syncPhotoChoice();
-    /* Não observar alterações de style: a própria correção altera styles e criava um ciclo infinito. */
-    new MutationObserver(syncPhotoChoice).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden','aria-hidden']});
-    document.addEventListener('click',()=>setTimeout(syncPhotoChoice,50),true);
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
-})();
-</script>
-
-
-<!-- Correção v78: garante que o seletor de fotos seja uma camada fixa acima de todos os botões flutuantes. -->
-<style id="community-photo-choice-top-layer-v78">
-  #communityPostPhotoChoice {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100dvh !important;
-    z-index: 2147483647 !important;
-    isolation: isolate !important;
-  }
-  #communityPostPhotoChoice .community-photo-choice-backdrop {
-    position: absolute !important;
-    inset: 0 !important;
-    z-index: 1 !important;
-  }
-  #communityPostPhotoChoice .community-photo-choice-dialog {
-    position: relative !important;
-    z-index: 2 !important;
-  }
-  body.community-photo-choice-open #communityCheckinFloatingAdd,
-  body.community-photo-choice-open #communityFeedAddButton,
-  body.community-photo-choice-open .community-feed-add-button,
-  body.community-photo-choice-open .community-new-checkin-action,
-  body:has(#communityPostPhotoChoice) #communityCheckinFloatingAdd,
-  body:has(#communityPostPhotoChoice) #communityFeedAddButton,
-  body:has(#communityPostPhotoChoice) .community-feed-add-button,
-  body:has(#communityPostPhotoChoice) .community-new-checkin-action {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    z-index: -1 !important;
-  }
-</style>
-<script id="community-photo-choice-enforce-top-layer-v78">
-(function(){
-  function enforce(){
-    const modal=document.getElementById('communityPostPhotoChoice');
-    const open=!!modal && !modal.hidden && modal.getAttribute('aria-hidden')!=='true' && getComputedStyle(modal).display!=='none';
-    document.body.classList.toggle('community-photo-choice-open',open);
-    if(!open)return;
-    modal.style.setProperty('position','fixed','important');
-    modal.style.setProperty('inset','0','important');
-    modal.style.setProperty('z-index','2147483647','important');
-    ['communityCheckinFloatingAdd','communityFeedAddButton'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el){el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important');el.style.setProperty('pointer-events','none','important');el.style.setProperty('z-index','-1','important');}
-    });
-    document.querySelectorAll('.community-feed-add-button,.community-new-checkin-action').forEach(el=>{
-      el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important');el.style.setProperty('pointer-events','none','important');
-    });
-  }
-  function init(){
-    enforce();
-    new MutationObserver(enforce).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden','aria-hidden']});
-    document.addEventListener('click',()=>requestAnimationFrame(enforce),true);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
