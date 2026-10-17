@@ -8529,8 +8529,8 @@ function communityCurrentUser(){
 function communityRandomCode(){
  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  let code="";
- for(let i=0;i<8;i++)code+=chars[Math.floor(Math.random()*chars.length)];
- return code.slice(0,4)+"-"+code.slice(4);
+ for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+ return code;
 }
 
 function communityUniqueCode(){
@@ -8683,6 +8683,33 @@ async function compressCommunityPhoto(file){
 // armazenada como rascunho independente e o input é liberado para nova seleção.
 window.__evoluteCommunityPhotoDrafts = window.__evoluteCommunityPhotoDrafts || Object.create(null);
 window.__evoluteCommunityPhotoBusy = window.__evoluteCommunityPhotoBusy || Object.create(null);
+
+function openCommunityPhotoChoices(inputId){
+ const camera=document.getElementById('editCommunityPhotoCameraInput');
+ const gallery=document.getElementById(inputId);
+ const useCamera=confirm('Escolha OK para tirar uma foto com a câmera.\n\nEscolha Cancelar para selecionar uma foto da galeria.');
+ const target=useCamera&&camera?camera:gallery;
+ if(target){target.value='';target.click();}
+}
+function communityPhotoInputSelected(sourceInput,targetInputId,previewId){
+ const target=document.getElementById(targetInputId),file=sourceInput?.files?.[0];
+ if(!file||!target)return;
+ try{const transfer=new DataTransfer();transfer.items.add(file);target.files=transfer.files;previewCommunityPhoto(targetInputId,previewId);}
+ catch(err){previewCommunityPhotoFromInput(sourceInput,previewId);}
+}
+async function previewCommunityPhotoFromInput(input,previewId){
+ const preview=document.getElementById(previewId),file=input?.files?.[0];if(!preview||!file)return;
+ const oldMarkup=preview.innerHTML;let url=null;
+ try{
+  url=URL.createObjectURL(file);
+  const img=await new Promise((resolve,reject)=>{const el=new Image();el.onload=()=>el.naturalWidth&&el.naturalHeight?resolve(el):reject(new Error('Não foi possível abrir a foto.'));el.onerror=()=>reject(new Error('O navegador não conseguiu abrir esta foto.'));el.src=url;});
+  const canvas=document.createElement('canvas'),scale=Math.min(1,720/Math.max(img.naturalWidth,img.naturalHeight));canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Não foi possível preparar a foto.');ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  const data=canvas.toDataURL('image/jpeg',.8);window.__evoluteCommunityPhotoDrafts=window.__evoluteCommunityPhotoDrafts||Object.create(null);window.__evoluteCommunityPhotoDrafts[input.id]=data;
+  preview.innerHTML='';const out=document.createElement('img');out.alt='Prévia da foto da comunidade';out.src=data;preview.appendChild(out);
+ }catch(err){preview.innerHTML=oldMarkup;alert('Não foi possível usar esta foto. Tente outra imagem ou escolha uma cópia salva no dispositivo.');}
+ finally{if(url)URL.revokeObjectURL(url);try{input.value='';}catch(e){}}
+}
 
 async function previewCommunityPhoto(inputId, previewId){
  const input=document.getElementById(inputId);
@@ -9082,7 +9109,7 @@ function showEditCommunity(id){
  delete window.__evoluteCommunityPhotoDrafts?.editCommunityPhotoInput;
  const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
  if(!c||!u||!c.admins?.includes(u.id)){showCommunities();return;}
- app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunityDetail('${esc(c.id)}')">‹&nbsp; voltar para comunidade</button><h1>Editar comunidade</h1><p class="muted">Atualize o perfil que aparece para os participantes.</p><div class="community-form-lines"><label>Foto da comunidade<button type="button" class="primary community-photo-choose" onclick="document.getElementById('editCommunityPhotoInput').click()">Escolher foto</button><input id="editCommunityPhotoInput" type="file" accept="image/*" hidden onchange="previewCommunityPhoto('editCommunityPhotoInput','editCommunityPhotoPreview')"><small class="community-photo-help">Você pode trocar a foto quantas vezes precisar. A foto salva só muda ao confirmar em Salvar alterações.</small><span id="editCommunityPhotoPreview" class="community-photo-preview">${c.photo?`<img src="${c.photo}" alt="Foto atual da comunidade">`:evoIcon('users')}</span></label><label>Nome da comunidade<input id="editCommunityName" maxlength="60" value="${esc(c.name)}"></label><label>Descrição<input id="editCommunityDescription" maxlength="140" value="${esc(c.description||'')}"></label></div><button type="button" class="primary community-primary" onclick="saveCommunityProfile('${esc(c.id)}')">Salvar alterações</button></div>`;
+ app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunityDetail('${esc(c.id)}')">‹&nbsp; voltar para comunidade</button><h1>Editar comunidade</h1><p class="muted">Atualize o perfil que aparece para os participantes.</p><div class="community-form-lines"><label>Foto da comunidade<button type="button" class="primary community-photo-choose" onclick="openCommunityPhotoChoices('editCommunityPhotoInput')">Escolher foto</button><input id="editCommunityPhotoInput" type="file" accept="image/*" hidden onchange="previewCommunityPhoto('editCommunityPhotoInput','editCommunityPhotoPreview')"><input id="editCommunityPhotoCameraInput" type="file" accept="image/*" capture="environment" hidden onchange="communityPhotoInputSelected(this,'editCommunityPhotoInput','editCommunityPhotoPreview')"><small class="community-photo-help">Você pode tirar uma foto ou escolher uma da galeria. A foto salva só muda ao confirmar em Salvar alterações.</small><span id="editCommunityPhotoPreview" class="community-photo-preview">${c.photo?`<img src="${c.photo}" alt="Foto atual da comunidade">`:evoIcon('users')}</span></label><label>Nome da comunidade<input id="editCommunityName" maxlength="60" value="${esc(c.name)}"></label><label>Descrição<input id="editCommunityDescription" maxlength="140" value="${esc(c.description||'')}"></label><label>Categoria<input id="editCommunityCategory" maxlength="60" value="${esc(c.category||'')}" placeholder="Ex.: Treino, estudos, bem-estar"></label></div><button type="button" class="primary community-primary" onclick="saveCommunityProfile('${esc(c.id)}')">Salvar alterações</button></div>`;
  window.scrollTo(0,0);
 }
 
@@ -9093,7 +9120,7 @@ async function saveCommunityProfile(id){
  if(!name){alert('Informe o nome da comunidade.');return;}
  const photo=await readCommunityPhoto('editCommunityPhotoInput');
  if(photo===false){return;}
- c.name=name;c.description=document.getElementById('editCommunityDescription')?.value.trim()||'';
+ c.name=name;c.description=document.getElementById('editCommunityDescription')?.value.trim()||'';c.category=document.getElementById('editCommunityCategory')?.value.trim()||'';
  if(photo)c.photo=photo;
  saveDB();
  if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
@@ -9105,7 +9132,7 @@ async function saveCommunityProfile(id){
 
 function showCommunityCodeJoin(){
  setTab("btnComm");
- app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunities()">‹&nbsp; voltar para comunidades</button><h1>Entrar com código</h1><p class="muted">Cole o código recebido. O acesso por código entra diretamente na comunidade.</p><div class="community-form-lines"><label>Código da comunidade<input id="communityCodeInput" maxlength="9" placeholder="Ex.: FCB7-K92P" autocapitalize="characters"></label></div><button type="button" class="primary community-primary" onclick="joinCommunityByCode()">${evoIcon('key')} Entrar na comunidade</button></div>`;
+ app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunities()">‹&nbsp; voltar para comunidades</button><h1>Entrar com código</h1><p class="muted">Cole o código recebido. O acesso por código entra diretamente na comunidade.</p><div class="community-form-lines"><label>Código da comunidade<input id="communityCodeInput" maxlength="9" placeholder="Ex.: A7K9P2" autocapitalize="characters"></label></div><button type="button" class="primary community-primary" onclick="joinCommunityByCode()">${evoIcon('key')} Entrar na comunidade</button></div>`;
  window.scrollTo(0,0);
 }
 
@@ -9152,7 +9179,8 @@ function toggleCommunityAdmin(id,userId){
 
 function regenerateCommunityCode(id){
  const c=db.communities.find(x=>x.id===id); const u=communityCurrentUser(); if(!c||!u||!c.admins.includes(u.id))return;
- c.code=communityUniqueCode(); saveDB(); showCommunityDetail(id,true);
+ if(!confirm('Gerar um novo código? O código atual deixará de funcionar para novas entradas.'))return;
+ c.code=communityUniqueCode(); saveDB(); showCommunitySettings(id);
 }
 
 async function communityCopyCode(code){
@@ -16134,6 +16162,7 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
 .community-v1-btn.primary{background:var(--primary,#e85d4a);border-color:transparent;color:#fff}
 .community-v1-section-title{font-size:17px;font-weight:800;margin:22px 0 12px}
 .community-v1-card{display:flex;align-items:center;gap:12px;padding:13px;margin:9px 0;border:1px solid var(--cv1-border);border-radius:15px;background:var(--cv1-bg);color:inherit;text-align:left;width:100%;cursor:pointer;min-width:0}
+.community-v1-card-wrap{display:flex;align-items:stretch;gap:8px;margin:9px 0;min-width:0}.community-v1-card-wrap .community-v1-card{margin:0;flex:1;min-width:0}.community-v1-edit-btn{flex:0 0 auto;align-self:center;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 10px;border:1px solid var(--cv1-border);border-radius:10px;background:var(--cv1-bg);color:var(--cv1-text);font:inherit;font-size:12px;font-weight:750;cursor:pointer}.community-v1-edit-btn span{white-space:nowrap}.community-v1-edit-btn{width:40px;min-width:40px;padding:8px}.community-v1-edit-btn svg{width:20px;height:20px;display:block;flex:0 0 auto}@media(max-width:380px){.community-v1-edit-btn{padding:8px;width:40px}.community-v1-edit-btn span{display:none}}
 .community-v1-avatar{width:48px;height:48px;flex:0 0 48px;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(128,128,128,.12);font-weight:800}
 .community-v1-avatar img{width:100%;height:100%;object-fit:cover}
 .community-v1-card-copy{min-width:0;flex:1}.community-v1-card-copy strong{display:block;font-size:15px;overflow-wrap:anywhere}.community-v1-card-copy small{display:block;color:var(--cv1-muted);font-size:12px;margin-top:4px;line-height:1.4}
@@ -16174,7 +16203,7 @@ html body #app .community-page.community-social-page.community-clean-page > nav.
   if(!Array.isArray(db.communities))db.communities=[];
   const mine=db.communities.filter(c=>Array.isArray(c.members)&&c.members.includes(u.id)).sort((a,b)=>new Date(b.lastAccessAt||b.createdAt||0)-new Date(a.lastAccessAt||a.createdAt||0));
   const discoverable=db.communities.filter(c=>c.discoverable&&!(c.members||[]).includes(u.id));
-  const card=(c)=>`<button type="button" class="community-v1-card" onclick="showCommunityDetail('${escapeText(c.id)}')"><span class="community-v1-avatar">${c.photo?`<img src="${c.photo}" alt="">`:icon('users')}</span><span class="community-v1-card-copy"><strong>${escapeText(c.name||'Comunidade')}</strong><small>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'}${c.description?' · '+escapeText(c.description):''}</small></span><span aria-hidden="true">›</span></button>`;
+  const card=(c)=>{const isAdmin=Array.isArray(c.admins)&&c.admins.includes(u.id);return `<div class="community-v1-card-wrap"><button type="button" class="community-v1-card" onclick="showCommunityDetail('${escapeText(c.id)}')"><span class="community-v1-avatar">${c.photo?`<img src="${c.photo}" alt="">`:icon('users')}</span><span class="community-v1-card-copy"><strong>${escapeText(c.name||'Comunidade')}</strong><small>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'}${c.description?' · '+escapeText(c.description):''}</small></span><span aria-hidden="true">›</span></button>${isAdmin?`<button type="button" class="community-v1-edit-btn" title="Configurações da comunidade" onclick="event.stopPropagation();showCommunitySettings('${escapeText(c.id)}')" aria-label="Configurações da comunidade ${escapeText(c.name||'')}">${icon('settings')}</button>`:''}</div>`};
   app.innerHTML=`<div class="community-v1-home"><header class="community-v1-heading"><div><h1>Comunidades</h1><p>Treine junto, compartilhe sua evolução e mantenha a motivação.</p></div></header><nav class="community-v1-tabs community-v1-home-tabs" aria-label="Navegação das comunidades"><button type="button" class="community-v1-tab" data-panel="ranking" onclick="communityOpenSectionFromHome('ranking')"><span>${icon('trophy')}</span><strong>Campeões</strong></button><button type="button" class="community-v1-tab" data-panel="checkin" onclick="communityOpenSectionFromHome('checkin')"><span>${icon('check')}</span><strong>Check-in</strong></button><button type="button" class="community-v1-tab" data-panel="feed" onclick="communityOpenSectionFromHome('feed')"><span>${icon('users')}</span><strong>Feed</strong></button><button type="button" class="community-v1-tab" data-panel="challenges" onclick="communityOpenSectionFromHome('challenges')"><span>${icon('target')}</span><strong>Desafios</strong></button></nav><div class="community-v1-actions"><button type="button" class="community-v1-btn primary" onclick="showCreateCommunity()">＋ Criar comunidade</button><button type="button" class="community-v1-btn" onclick="showCommunityCodeJoin()">⌁ Entrar com código</button><button type="button" class="community-v1-btn" onclick="showCommunitySearch()">⌕ Encontrar comunidades</button><button type="button" class="community-v1-btn" onclick="communityFocusSearch('')">⌕ Buscar publicações</button></div><h2 class="community-v1-section-title">Minhas comunidades</h2>${mine.length?`<div class="community-v1-list">${mine.map(card).join('')}</div>`:'<div class="community-v1-empty">Você ainda não participa de uma comunidade.<br>Crie uma ou entre com um código de convite.</div>'}${discoverable.length?`<h2 class="community-v1-section-title">Descubra</h2><div class="community-v1-list">${discoverable.slice(0,8).map(card).join('')}</div>`:''}</div>`;
   window.scrollTo(0,0);
  };
@@ -26606,7 +26635,7 @@ html body #app .community-runtime-tabs {
  const placesBox=document.getElementById('communityNewCheckinPlaces');
  const formMessage=document.getElementById('communityNewCheckinFormMessage');
  if(!fab||!backdrop||!cameraInput||!galleryInput||!confirmLayer||!preview)return;
- let pendingFile=null, previewUrl=null, lastSource='gallery';
+ let pendingFile=null, previewUrl=null, formPreviewUrl=null, lastSource='gallery';
  const closeMenu=()=>backdrop.classList.remove('open');
  const closeConfirm=()=>{confirmLayer.classList.remove('open');if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}preview.removeAttribute('src');};
  fab.addEventListener('click',()=>backdrop.classList.add('open'));
@@ -26626,27 +26655,36 @@ html body #app .community-runtime-tabs {
  cameraInput.addEventListener('change',()=>onFileSelected(cameraInput.files&&cameraInput.files[0]));
  galleryInput.addEventListener('change',()=>onFileSelected(galleryInput.files&&galleryInput.files[0]));
  retake.addEventListener('click',()=>{closeConfirm();if(lastSource==='camera'){cameraInput.value='';cameraInput.click();}else{galleryInput.value='';galleryInput.click();}});
- usePhoto.addEventListener('click',async()=>{
-   if(!pendingFile)return;
+ usePhoto.addEventListener('click',()=>{
+   if(!pendingFile||usePhoto.disabled)return;
    const selectedFile=pendingFile;
    try{
-     /* Data URL keeps the confirmed preview available across overlays and local-file browser sessions. */
-     const photoDataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Não foi possível carregar a prévia da foto.'));reader.readAsDataURL(selectedFile);});
-     if(!photoDataUrl.startsWith('data:image/'))throw new Error('A foto selecionada não pôde ser exibida.');
+     /* Reaproveita a URL que já exibiu a foto na confirmação; não cria uma segunda URL nem converte o arquivo. */
+     if(formPreviewUrl){URL.revokeObjectURL(formPreviewUrl);formPreviewUrl=null;}
+     if(!previewUrl){previewUrl=URL.createObjectURL(selectedFile);}
+     formPreviewUrl=previewUrl;
+     previewUrl=null; // a URL passa a pertencer à prévia do formulário
+     formPhoto.onerror=()=>{formPhoto.style.display='block';formPhoto.alt='Não foi possível exibir a prévia da foto';};
+     formPhoto.onload=()=>{formPhoto.style.display='block';formPhoto.alt='Prévia da foto do check-in';};
+     formPhoto.style.display='block';
+     formPhoto.src=formPreviewUrl;
      window.evolutePendingCheckinPhoto=selectedFile;
-     window.evolutePendingCheckinPhotoDataUrl=photoDataUrl;
+     /* A conversão para DataURL fica para a publicação, não para a confirmação. */
+     window.evolutePendingCheckinPhotoDataUrl=null;
      window.evolutePendingCheckinPhotoSource=lastSource;
-     formPhoto.onload=()=>{formPhoto.style.display='block';};
-     formPhoto.onerror=()=>{formPhoto.removeAttribute('src');formPhoto.alt='Não foi possível exibir a prévia da foto';};
-     formPhoto.src=photoDataUrl;
-     closeConfirm();
+     confirmLayer.classList.remove('open');
+     if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
+     preview.removeAttribute('src');
      pendingFile=null;
      formMessage.classList.remove('show');formMessage.textContent='';
      formLayer.classList.add('open');
-     window.dispatchEvent(new CustomEvent('evolute:checkin-photo-confirmed',{detail:{file:window.evolutePendingCheckinPhoto,source:window.evolutePendingCheckinPhotoSource,dataUrl:photoDataUrl}}));
-   }catch(err){formMessage.textContent=err?.message||'Não foi possível carregar a foto.';formMessage.classList.add('show');}
+     window.dispatchEvent(new CustomEvent('evolute:checkin-photo-confirmed',{detail:{file:selectedFile,source:window.evolutePendingCheckinPhotoSource}}));
+   }catch(err){
+     formMessage.textContent=err?.message||'Não foi possível abrir o formulário do check-in.';
+     formMessage.classList.add('show');
+   }
  });
- formBack.addEventListener('click',()=>{formLayer.classList.remove('open');closeConfirm();});
+ formBack.addEventListener('click',()=>{formLayer.classList.remove('open');closeConfirm();if(formPreviewUrl){URL.revokeObjectURL(formPreviewUrl);formPreviewUrl=null;}formPhoto.removeAttribute('src');});
  findLocationButton.addEventListener('click',async()=>{
    placesBox.innerHTML='';
    if(!navigator.geolocation){locationStatus.textContent='Este navegador não oferece acesso ao GPS.';return;}
@@ -26702,7 +26740,7 @@ html body #app .community-runtime-tabs {
      window.evolutePendingCheckinDraft=post;
      window.dispatchEvent(new CustomEvent('evolute:checkin-published',{detail:{communityId:community.id,post}}));
      formMessage.textContent='Publicação adicionada ao feed da comunidade.';formMessage.classList.add('show');
-     window.evolutePendingCheckinPhoto=null;window.evolutePendingCheckinPhotoDataUrl=null;window.evolutePendingCheckinPhotoSource=null;
+     window.evolutePendingCheckinPhoto=null;window.evolutePendingCheckinPhotoDataUrl=null;window.evolutePendingCheckinPhotoSource=null;if(formPreviewUrl){URL.revokeObjectURL(formPreviewUrl);formPreviewUrl=null;}formPhoto.removeAttribute('src');
      setTimeout(()=>{
        formLayer.classList.remove('open');
        const feedButton=document.querySelector('.community-social-tabs [data-panel="feed"], .community-v1-detail .community-v1-tab[data-panel="feed"], nav.community-runtime-tabs [data-panel="feed"]');
