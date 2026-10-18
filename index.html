@@ -9139,7 +9139,7 @@ function showCommunityCodeJoin(){
 function joinCommunityByCode(){
  const u=communityCurrentUser(); const code=document.getElementById('communityCodeInput')?.value.trim().toUpperCase();
  const c=db.communities.find(x=>x.code===code);
- if(!c){alert('Código de comunidade não encontrado.');return;}
+ if(!c){alert('Não foi possível encontrar essa comunidade nesta conta. No momento, os dados das comunidades ainda não são compartilhados entre contas diferentes. A entrada por código entre usuários precisa da integração com o banco compartilhado. Confira o código e tente novamente após essa integração.');return;}
  if(!u){return;}
  if(!c.members.includes(u.id))c.members.push(u.id);
  c.joinRequests=(c.joinRequests||[]).filter(r=>r.userId!==u.id);
@@ -9148,7 +9148,7 @@ function joinCommunityByCode(){
 
 function showCommunitySearch(){
  setTab("btnComm");
- app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunities()">‹&nbsp; voltar para comunidades</button><h1>Encontrar comunidade</h1><p class="muted">Pesquise pelo nome. A entrada pela pesquisa segue a regra definida pelo administrador.</p><div class="community-form-lines"><label>Pesquisar<input id="communitySearchInput" oninput="renderCommunitySearchResults()" placeholder="Digite o nome da comunidade"></label></div><div id="communitySearchResults" class="community-section"></div></div>`;
+ app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunities()">‹&nbsp; voltar para comunidades</button><h1>Encontrar comunidade</h1><p class="muted">Pesquise pelo nome. A entrada pela pesquisa segue a regra definida pelo administrador.</p><div class="community-form-lines"><label>Pesquisar<input id="communitySearchInput" oninput="renderCommunitySearchResults()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderCommunitySearchResults();}" placeholder="Digite o nome da comunidade"></label></div><button type="button" class="primary community-primary" onclick="renderCommunitySearchResults()">${evoIcon('search')} Pesquisar comunidades</button><div id="communitySearchResults" class="community-section"></div></div>`;
  renderCommunitySearchResults(); window.scrollTo(0,0);
 }
 
