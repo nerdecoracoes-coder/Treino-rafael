@@ -3310,6 +3310,10 @@ nav button,.home-calendar-nav,.first-steps-item{
 .community-list-icon,.community-member-avatar{width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex:0 0 38px;color:#FF751B;background:rgba(255,154,50,.08);border:1px solid rgba(255,154,50,.28);border-radius:12px}
 .community-list-icon .evo-ui-icon,.community-member-avatar .evo-ui-icon{width:21px;height:21px}
 .community-list-meta{font-size:11px;color:#FE6405;white-space:nowrap}
+.community-delete-section{margin-top:28px;border-top:1px solid rgba(255,255,255,.18);padding-top:8px}
+.community-delete-line .evo-ui-icon,.community-delete-line strong,.community-delete-line>b{color:#ff625e!important}
+.community-delete-line small{color:#b7a2a2!important}
+.community-delete-line:hover{background:rgba(255,75,75,.07)}
 .community-form-lines{margin-top:18px}
 .community-form-lines label{display:block;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.16);color:#f5f7fa;font-weight:700}
 .community-form-lines label:last-child{border-bottom:0}
@@ -12242,6 +12246,17 @@ html body #app .community-runtime-tabs {
 @keyframes communityPhotoDialogIn{from{opacity:0;transform:translateY(9px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.community-photo-choice-overlay,.community-photo-choice-dialog{animation:none}.community-photo-choice-option{transition:none}}
 </style>
+<style id="community-card-actions-styles">
+.community-card-actions-overlay{position:fixed;inset:0;z-index:100000;background:rgba(12,16,22,.62);display:flex;align-items:flex-end;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:communityActionsFade .16s ease-out}
+.community-card-actions-dialog{width:min(100%,480px);background:var(--card-bg,#fff);color:var(--text-color,#20242a);border:1px solid rgba(128,128,128,.2);border-radius:26px;padding:14px 18px 18px;box-shadow:0 24px 70px rgba(0,0,0,.3);box-sizing:border-box;animation:communityActionsUp .2s ease-out}
+.community-card-actions-grip{width:42px;height:4px;border-radius:9px;background:var(--muted-color,#a5a5a5);opacity:.55;margin:0 auto 18px}
+.community-card-actions-dialog h2{font-size:21px;line-height:1.25;margin:0 0 5px;font-weight:800;overflow-wrap:anywhere}.community-card-actions-dialog>p{margin:0 0 16px;color:var(--muted-color,#697386);font-size:14px}
+.community-card-action{display:flex;align-items:center;gap:13px;width:100%;padding:14px 4px;border:0;border-top:1px solid var(--border-color,#e5e7eb);border-radius:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer;min-height:76px}
+.community-card-action-icon{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:15px;background:rgba(243,107,33,.12);color:#f36b21}.community-card-action-icon svg{width:23px;height:23px}.community-card-action>span:nth-child(2){flex:1;min-width:0}.community-card-action strong,.community-card-action small{display:block}.community-card-action strong{font-size:16px;font-weight:800}.community-card-action small{font-size:13px;color:var(--muted-color,#697386);margin-top:4px;line-height:1.35}.community-card-action>b{font-size:27px;color:#f36b21;font-weight:500}.community-card-action-danger .community-card-action-icon{background:rgba(220,53,69,.1);color:#dc3545}.community-card-action-danger strong,.community-card-action-danger>b{color:#dc3545}
+.community-card-actions-cancel{display:block;width:100%;border:0;background:transparent;color:#f36b21;font:inherit;font-weight:800;padding:16px 10px 8px;cursor:pointer}
+@keyframes communityActionsFade{from{opacity:0}to{opacity:1}}@keyframes communityActionsUp{from{transform:translateY(18px);opacity:.7}to{transform:translateY(0);opacity:1}}
+@media(min-width:600px){.community-card-actions-overlay{align-items:center}.community-card-actions-dialog{border-radius:24px}}
+</style>
 </head>
 
 <body>
@@ -16655,6 +16670,42 @@ function communityPostDate(value){
  return date.toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 }
 
+function openCommunityCardActions(id){
+ const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+ if(!c||!u||!(c.admins||[]).includes(u.id))return;
+ document.getElementById('communityCardActionsModal')?.remove();
+ const overlay=document.createElement('div');
+ overlay.id='communityCardActionsModal';
+ overlay.className='community-card-actions-overlay';
+ overlay.innerHTML=`<div class="community-card-actions-dialog" role="dialog" aria-modal="true" aria-labelledby="communityCardActionsTitle"><div class="community-card-actions-grip"></div><h2 id="communityCardActionsTitle">${esc(c.name||'Comunidade')}</h2><p>O que você deseja fazer?</p><button type="button" class="community-card-action" data-action="edit"><span class="community-card-action-icon">${evoIcon('edit')}</span><span><strong>Editar comunidade</strong><small>Alterar nome, descrição e foto.</small></span><b>›</b></button><button type="button" class="community-card-action community-card-action-danger" data-action="delete"><span class="community-card-action-icon">${evoIcon('trash-2')}</span><span><strong>Excluir comunidade</strong><small>Excluir permanentemente esta comunidade.</small></span><b>›</b></button><button type="button" class="community-card-actions-cancel">Cancelar</button></div>`;
+ document.body.appendChild(overlay);
+ const close=()=>overlay.remove();
+ overlay.addEventListener('click',e=>{if(e.target===overlay||e.target.closest('.community-card-actions-cancel'))close();});
+ overlay.querySelector('[data-action="edit"]').addEventListener('click',()=>{close();showEditCommunity(id);});
+ overlay.querySelector('[data-action="delete"]').addEventListener('click',()=>{close();showEditCommunity(id);setTimeout(()=>{const btn=document.querySelector('.community-delete-line');if(btn)btn.scrollIntoView({behavior:'smooth',block:'center'});},80);});
+ const escClose=e=>{if(e.key==='Escape'){close();document.removeEventListener('keydown',escClose);}};
+ document.addEventListener('keydown',escClose);
+}
+
+function initCommunityCardLongPress(){
+ const root=document.getElementById('app'); if(!root||root.dataset.communityLongPressReady==='1')return;
+ root.dataset.communityLongPressReady='1';
+ let timer=null,startedOn=null,triggered=false,startX=0,startY=0;
+ const clear=()=>{if(timer)clearTimeout(timer);timer=null;startedOn=null;};
+ root.addEventListener('pointerdown',e=>{
+  const card=e.target.closest('.community-v1-card'); if(!card)return;
+  const id=card.getAttribute('onclick')?.match(/showCommunityDetail\('([^']+)'\)/)?.[1];
+  if(!id)return;
+  const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+  if(!c||!u||!(c.admins||[]).includes(u.id))return;
+  clear();startedOn=card;triggered=false;startX=e.clientX;startY=e.clientY;
+  timer=setTimeout(()=>{if(startedOn===card){triggered=true;card.dataset.suppressNextClick='1';openCommunityCardActions(id);}},550);
+ },{passive:true});
+ root.addEventListener('pointermove',e=>{if(!startedOn)return;if(Math.hypot(e.clientX-startX,e.clientY-startY)>12)clear();},{passive:true});
+ ['pointerup','pointercancel','pointerleave'].forEach(type=>root.addEventListener(type,clear,{passive:true}));
+ root.addEventListener('click',e=>{const card=e.target.closest('.community-v1-card');if(card&&card.dataset.suppressNextClick==='1'){delete card.dataset.suppressNextClick;e.preventDefault();e.stopImmediatePropagation();}},true);
+}
+
 function showCommunitySettings(id){
  const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
  if(!c||!u||!(c.admins||[]).includes(u.id)){showCommunityDetail(id);return;}
@@ -16686,8 +16737,29 @@ function showEditCommunity(id){
  delete window.__evoluteCommunityPhotoDrafts?.editCommunityPhotoInput;
  const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
  if(!c||!u||!c.admins?.includes(u.id)){showCommunities();return;}
- app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunityDetail('${esc(c.id)}')">‹&nbsp; voltar para comunidade</button><h1>Editar comunidade</h1><p class="muted">Atualize o perfil que aparece para os participantes.</p><div class="community-form-lines"><label>Foto da comunidade<button type="button" class="primary community-photo-choose" onclick="openCommunityPhotoChoices('editCommunityPhotoInput')">Escolher foto</button><input id="editCommunityPhotoInput" type="file" accept="image/*" hidden onchange="previewCommunityPhoto('editCommunityPhotoInput','editCommunityPhotoPreview')"><input id="editCommunityPhotoCameraInput" type="file" accept="image/*" capture="environment" hidden onchange="communityPhotoInputSelected(this,'editCommunityPhotoInput','editCommunityPhotoPreview')"><small class="community-photo-help">Você pode tirar uma foto ou escolher uma da galeria. A foto salva só muda ao confirmar em Salvar alterações.</small><span id="editCommunityPhotoPreview" class="community-photo-preview">${c.photo?`<img src="${c.photo}" alt="Foto atual da comunidade">`:evoIcon('users')}</span></label><label>Nome da comunidade<input id="editCommunityName" maxlength="60" value="${esc(c.name)}"></label><label>Descrição<input id="editCommunityDescription" maxlength="140" value="${esc(c.description||'')}"></label><label>Categoria<input id="editCommunityCategory" maxlength="60" value="${esc(c.category||'')}" placeholder="Ex.: Treino, estudos, bem-estar"></label></div><button type="button" class="primary community-primary" onclick="saveCommunityProfile('${esc(c.id)}')">Salvar alterações</button></div>`;
+ app.innerHTML=`<div class="community-page"><button type="button" class="back-to-routines" onclick="showCommunityDetail('${esc(c.id)}')">‹&nbsp; voltar para comunidade</button><h1>Editar comunidade</h1><p class="muted">Atualize o perfil que aparece para os participantes.</p><div class="community-form-lines"><label>Foto da comunidade<button type="button" class="primary community-photo-choose" onclick="openCommunityPhotoChoices('editCommunityPhotoInput')">Escolher foto</button><input id="editCommunityPhotoInput" type="file" accept="image/*" hidden onchange="previewCommunityPhoto('editCommunityPhotoInput','editCommunityPhotoPreview')"><input id="editCommunityPhotoCameraInput" type="file" accept="image/*" capture="environment" hidden onchange="communityPhotoInputSelected(this,'editCommunityPhotoInput','editCommunityPhotoPreview')"><small class="community-photo-help">Você pode tirar uma foto ou escolher uma da galeria. A foto salva só muda ao confirmar em Salvar alterações.</small><span id="editCommunityPhotoPreview" class="community-photo-preview">${c.photo?`<img src="${c.photo}" alt="Foto atual da comunidade">`:evoIcon('users')}</span></label><label>Nome da comunidade<input id="editCommunityName" maxlength="60" value="${esc(c.name)}"></label><label>Descrição<input id="editCommunityDescription" maxlength="140" value="${esc(c.description||'')}"></label><label>Categoria<input id="editCommunityCategory" maxlength="60" value="${esc(c.category||'')}" placeholder="Ex.: Treino, estudos, bem-estar"></label></div><button type="button" class="primary community-primary" onclick="saveCommunityProfile('${esc(c.id)}')">Salvar alterações</button><div class="community-section community-delete-section"><button type="button" class="community-line community-delete-line" onclick="deleteCommunityFromEdit('${esc(c.id)}')">${evoIcon('trash-2')}<span><strong>Excluir comunidade</strong><small>Excluir permanentemente esta comunidade e seus dados associados.</small></span><b>›</b></button></div></div>`;
  window.scrollTo(0,0);
+}
+
+async function deleteCommunityFromEdit(id){
+ const c=db.communities.find(x=>x.id===id),u=communityCurrentUser();
+ if(!c||!u||!(c.admins||[]).includes(u.id))return;
+ const typed=prompt(`Para excluir esta comunidade permanentemente, digite o nome exatamente como aparece:\n\n${c.name}`);
+ if(typed===null)return;
+ if(typed.trim()!==c.name){alert('O nome não corresponde. A comunidade não foi excluída.');return;}
+ const idx=db.communities.findIndex(x=>x.id===id);
+ if(idx<0)return;
+ const removed=db.communities.splice(idx,1)[0];
+ saveDB();
+ if(window.evoluteCloudSessionActive===true&&typeof window.evoluteForceCloudSync==='function'){
+  const synced=await window.evoluteForceCloudSync();
+  if(!synced){
+   alert('A comunidade foi removida desta sessão, mas não foi possível confirmar a sincronização na nuvem. Confira a conexão antes de sair.');
+   showCommunities();return;
+  }
+ }
+ alert(`A comunidade “${removed.name}” foi excluída.`);
+ showCommunities();
 }
 
 async function saveCommunityProfile(id){
@@ -19954,6 +20026,7 @@ setTimeout(()=>{
   const discoverable=db.communities.filter(c=>c.discoverable&&!(c.members||[]).includes(u.id));
   const card=(c)=>{const isAdmin=Array.isArray(c.admins)&&c.admins.includes(u.id);return `<div class="community-v1-card-wrap"><button type="button" class="community-v1-card" onclick="showCommunityDetail('${escapeText(c.id)}')"><span class="community-v1-avatar">${c.photo?`<img src="${c.photo}" alt="">`:icon('users')}</span><span class="community-v1-card-copy"><strong>${escapeText(c.name||'Comunidade')}</strong><small>${(c.members||[]).length} membro${(c.members||[]).length===1?'':'s'}${c.description?' · '+escapeText(c.description):''}</small></span><span aria-hidden="true">›</span></button>${isAdmin?`<button type="button" class="community-v1-edit-btn" title="Configurações da comunidade" onclick="event.stopPropagation();showCommunitySettings('${escapeText(c.id)}')" aria-label="Configurações da comunidade ${escapeText(c.name||'')}">${icon('settings')}</button>`:''}</div>`};
   app.innerHTML=`<div class="community-v1-home"><header class="community-v1-heading"><div><h1>Comunidades</h1><p>Treine junto, compartilhe sua evolução e mantenha a motivação.</p></div></header><h2 class="community-v1-section-title" style="margin-top:0">Minhas comunidades</h2>${topMine.length?`<div class="community-v1-list">${topMine.map(card).join('')}</div>`:'<div class="community-v1-empty">Você ainda não participa de uma comunidade.<br>Crie uma ou entre com um código de convite.</div>'}<button type="button" class="community-v1-more-btn" onclick="toggleCommunityMore('${escapeText(u.id)}')">Ver mais comunidades</button><div id="communityV1MoreList" hidden>${remaining.length?`<div class="community-v1-list">${remaining.map(card).join('')}</div>`:''}</div><div class="community-v1-actions community-v1-actions-list" aria-label="Ações de comunidades"><button type="button" class="settings-menu-card community-v1-action-item" onclick="showCreateCommunity()"><strong>Criar comunidade</strong><span>Crie um espaço para sua família, amigos ou equipe.</span><b class="settings-menu-card-arrow" aria-hidden="true">›</b></button><button type="button" class="settings-menu-card community-v1-action-item" onclick="showCommunityCodeJoin()"><strong>Entrar com código</strong><span>Use o código de convite recebido para entrar em uma comunidade.</span><b class="settings-menu-card-arrow" aria-hidden="true">›</b></button><button type="button" class="settings-menu-card community-v1-action-item" onclick="showCommunitySearch()"><strong>Encontrar comunidades</strong><span>Explore comunidades disponíveis para participar.</span><b class="settings-menu-card-arrow" aria-hidden="true">›</b></button><button type="button" class="settings-menu-card community-v1-action-item" onclick="communityFocusSearch('')"><strong>Buscar publicações</strong><span>Encontre publicações e experiências compartilhadas.</span><b class="settings-menu-card-arrow" aria-hidden="true">›</b></button></div><nav class="community-v1-tabs community-v1-home-tabs" aria-label="Navegação das comunidades"><button type="button" class="community-v1-tab" data-panel="ranking" onclick="communityOpenSectionFromHome('ranking')"><span>${icon('trophy')}</span><strong>Campeões</strong></button><button type="button" class="community-v1-tab" data-panel="checkin" onclick="communityOpenSectionFromHome('checkin')"><span>${icon('check')}</span><strong>Check-in</strong></button><button type="button" class="community-v1-tab" data-panel="feed" onclick="communityOpenSectionFromHome('feed')"><span>${icon('users')}</span><strong>Feed</strong></button><button type="button" class="community-v1-tab" data-panel="challenges" onclick="communityOpenSectionFromHome('challenges')"><span>${icon('target')}</span><strong>Desafios</strong></button></nav></div>`;
+  initCommunityCardLongPress();
   window.scrollTo(0,0);
  };
   window.toggleCommunityMore=function(userId){
