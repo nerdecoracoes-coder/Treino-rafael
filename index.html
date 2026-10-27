@@ -507,14 +507,35 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  const nativeSet=Storage.prototype.setItem;
  Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
  async function activate(user){
-   cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
+   cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Localizando os dados da sua conta…');
    try{
-     const record=await fetchRecord(user);const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
+     const record=await fetchRecord(user);
+     const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:null;
+     // Safety: never create an empty cloud row when this authenticated ID has no linked backup.
+     // That would hide the real problem and could make recovery harder.
+     const hasLegacy=!!(payload&&((Array.isArray(payload.profiles)&&payload.profiles.length)||
+       (Array.isArray(payload.history)&&payload.history.length)||
+       (payload.evolution&&Object.keys(payload.evolution).length)));
+     const hasSnapshot=!!(payload&&payload[SNAP_KEY]&&payload[SNAP_KEY].values);
+     if(!record||(!hasLegacy&&!hasSnapshot)){
+       cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;
+       const uid=user.id||'indisponível';
+       msg('Login confirmado, mas não encontrei um backup vinculado a esta conta. Não criei nem alterei dados. ID da conta: '+uid+'. Envie uma captura desta mensagem para localizar o backup correto.');
+       return;
+     }
      // First load of this newer UI: migrate a copy of the selected legacy profile/routines, never remove the old history.
      if(payload[SNAP_KEY]&&restore(payload[SNAP_KEY],user.id)){
        // Existing current-format state restored successfully.
      }else{
        legacyToCurrent(payload,user.id);
+       // Preserve all legacy records locally too, for future display/migration without data loss.
+       try{
+         const pfx=prefix(user.id);
+         localStorage.setItem(pfx+'legacyHistory',JSON.stringify(Array.isArray(payload.history)?payload.history:[]));
+         localStorage.setItem(pfx+'legacyProfiles',JSON.stringify(Array.isArray(payload.profiles)?payload.profiles:[]));
+         localStorage.setItem(pfx+'legacyEvolution',JSON.stringify(payload.evolution||{}));
+         localStorage.setItem(pfx+'legacyPayloadUpdatedAt',String(record.updated_at||''));
+       }catch(storageError){console.warn('Legacy backup cache failed',storageError);}
        const snap=capture();payload[SNAP_KEY]=snap;
        await saveRecord(payload);
      }
