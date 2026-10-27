@@ -531,13 +531,12 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    const officialLogo=document.querySelector('header .logo, .header .logo, img.logo');
    if(officialLogo&&officialLogo.getAttribute('src'))overlay.querySelectorAll('.auth-mark-image').forEach(img=>img.src=officialLogo.currentSrc||officialLogo.src);
    if(!client){show('login');msg('Não foi possível carregar o serviço de autenticação. Verifique a internet e recarregue.');return;}
-   const {data,error}=await client.auth.getSession();
+   // Always show the login screen on page load so a previously saved developer/test
+   // session cannot silently open the app under the wrong account. Supabase keeps the
+   // session securely; submitting the real account credentials selects the correct user.
+   const {error}=await client.auth.getSession();
    if(error){show('login');msg('Não foi possível verificar sua sessão: '+error.message);return;}
-   if(data.session){
-     const saved=localStorage.getItem('evolute.authUid');
-     if(saved===data.session.user.id){cloudUser=data.session.user;try{const record=await fetchRecord(cloudUser);const payload=record&&record.payload||{};if(payload[SNAP_KEY])restore(payload[SNAP_KEY],cloudUser.id);ready=true;window.evoluteCloudSessionActive=true;enterApp();}catch(e){console.error(e);show('login');msg('Não consegui sincronizar sua conta. Seus dados locais foram mantidos.');}}
-     else await activate(data.session.user);
-   }else{show('login');window.setTimeout(()=>{if(overlay.isConnected&&overlay.querySelector('[data-auth-screen="splash"]')?.classList.contains('is-active'))show('login');},1000);}
+   show('login');
    client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;show('login');} });
  }
  overlay.querySelector('#evolute-login-form').addEventListener('submit',async e=>{e.preventDefault();if(!client){msg('Serviço de login indisponível.');return;}const email=document.getElementById('evolute-email').value.trim();const password=document.getElementById('evolute-password').value;msg('Entrando…');const {data,error}=await client.auth.signInWithPassword({email,password});if(error){msg(error.message);return;}await activate(data.user);});
