@@ -433,37 +433,118 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
   </div>
   <div class="auth-foot">EVOLUTE TRAINING · PERFORMANCE SYSTEM</div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="evolute-auth-logic">
 (function(){
-  const overlay=document.getElementById('evolute-auth');
-  if(!overlay) return;
-  const syncOfficialLogo=()=>{
-    const officialLogo=document.querySelector('header .logo, .header .logo, img.logo');
-    if(officialLogo && officialLogo.getAttribute('src')){
-      overlay.querySelectorAll('.auth-mark-image').forEach(img=>{img.src=officialLogo.currentSrc||officialLogo.src;});
-    }
-  };
-  syncOfficialLogo();
-  document.addEventListener('DOMContentLoaded',syncOfficialLogo,{once:true});
-  window.setTimeout(syncOfficialLogo,120);
-  const screens=[...overlay.querySelectorAll('[data-auth-screen]')];
-  const show=(name)=>{screens.forEach(s=>s.classList.toggle('is-active',s.dataset.authScreen===name));const m=document.getElementById('evolute-auth-message');if(m)m.textContent='';};
-  overlay.querySelectorAll('[data-auth-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.authGo)));
-  const enterApp=()=>{overlay.style.transition='opacity .24s ease';overlay.style.opacity='0';setTimeout(()=>{overlay.remove();document.body.classList.add('evolute-authenticated');},240);};
-  overlay.querySelector('[data-auth-action="developer"]').addEventListener('click',enterApp);
-  overlay.querySelector('[data-auth-action="forgot"]').addEventListener('click',()=>{const m=document.getElementById('evolute-auth-message');m.textContent='No protótipo, use o acesso de desenvolvedor abaixo. A recuperação real será conectada ao serviço de autenticação.';});
-  overlay.querySelector('#evolute-login-form').addEventListener('submit',e=>{
-    e.preventDefault();const email=document.getElementById('evolute-email').value.trim().toLowerCase();const pass=document.getElementById('evolute-password').value;const msg=document.getElementById('evolute-auth-message');
-    if(email==='dev@evolute.app'&&pass==='EvoluteDev2026!'){enterApp();return;}
-    msg.textContent='Login real ainda não está conectado. Para revisar o aplicativo, use “Entrar como desenvolvedor”.';
-  });
-  overlay.querySelector('#evolute-register-form').addEventListener('submit',e=>{
-    e.preventDefault();const pass=document.getElementById('evolute-register-password').value;const confirm=document.getElementById('evolute-confirm-password').value;const msg=document.getElementById('evolute-register-message');
-    if(pass!==confirm){msg.textContent='As senhas não coincidem.';return;}
-    msg.textContent='Cadastro visual pronto. A criação real de contas será conectada ao serviço de autenticação.';
-  });
-  // Short presentation, then login. A direct continuation is always available.
-  window.setTimeout(()=>{if(overlay.isConnected && overlay.querySelector('[data-auth-screen="splash"]').classList.contains('is-active'))show('login');},1800);
+ 'use strict';
+ const SUPABASE_URL='https://nzkjpeggckvjhfsyluar.supabase.co';
+ const SUPABASE_KEY='sb_publishable_lpEVZFxgVnTe4-ME8pWkhA__4Uza1RS';
+ const TABLE='evolute_sync_data';
+ const overlay=document.getElementById('evolute-auth');
+ if(!overlay)return;
+ const msg=(text,which)=>{const el=document.getElementById(which||'evolute-auth-message');if(el)el.textContent=text||'';};
+ const screens=[...overlay.querySelectorAll('[data-auth-screen]')];
+ const show=name=>{screens.forEach(s=>s.classList.toggle('is-active',s.dataset.authScreen===name));msg('');};
+ overlay.querySelectorAll('[data-auth-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.authGo)));
+ const dev=overlay.querySelector('[data-auth-action="developer"]'); if(dev)dev.style.display='none';
+ const enterApp=()=>{overlay.style.transition='opacity .24s ease';overlay.style.opacity='0';setTimeout(()=>{overlay.remove();document.body.classList.add('evolute-authenticated');},240);};
+ const client=window.supabase&&window.supabase.createClient?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+ const prefix=id=>'evolute.u.'+id+'.';
+ const SNAP_KEY='__evolute_current_v2';
+ let cloudUser=null, ready=false, timer=null, busy=false;
+ function safeJSON(x,fallback){try{return JSON.parse(x)}catch(e){return fallback}}
+ function capture(){
+   const id=cloudUser&&cloudUser.id;if(!id)return {};
+   const p=prefix(id), values={};
+   try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith(p)||k==='evolute.communities'||k==='evolute.theme'))values[k]=localStorage.getItem(k)}}catch(e){}
+   return {version:2,uid:id,values,updatedAt:new Date().toISOString()};
+ }
+ function restore(snapshot,id){
+   if(!snapshot||snapshot.version!==2||!snapshot.values)return false;
+   const p=prefix(id);
+   try{
+     // Restore only this account's namespaced data. Shared keys are restored from this account's own snapshot.
+     for(const k of Object.keys(snapshot.values)){
+       if(k.startsWith(p)||k==='evolute.communities'||k==='evolute.theme')localStorage.setItem(k,snapshot.values[k]);
+     }
+     return true;
+   }catch(e){console.error('Restore current Evolute data failed',e);return false;}
+ }
+ function legacyToCurrent(payload,id){
+   const profiles=Array.isArray(payload&&payload.profiles)?payload.profiles:[];
+   const selectedId=String(payload&&payload.currentProfile||'');
+   const selected=profiles.find(p=>String(p.id)===selectedId)||profiles[0]||{};
+   const pfx=prefix(id);
+   // Keep any pre-login device data as a local safety copy; do not mix it into this account.
+   try{const localCopy={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('evolute.u.')||k==='evolute.communities'){localCopy[k]=localStorage.getItem(k)}}if(Object.keys(localCopy).length)localStorage.setItem('evolute.preAuthBackup.'+id,JSON.stringify(localCopy));}catch(e){console.warn('Pre-auth local backup could not be made',e);}
+   try{localStorage.removeItem('evolute.communities');}catch(e){}
+   const profile={name:String(selected.name||''),birth:String(selected.birth||''),gender:String(selected.gender||''),goals:Array.isArray(selected.goals)?selected.goals:[],other:String(selected.other||''),photo:typeof selected.photo==='string'?selected.photo:''};
+   const fichas=[]; const routines=selected.routines&&typeof selected.routines==='object'?selected.routines:{};
+   Object.keys(routines).sort().forEach((key,idx)=>{
+     const routine=routines[key]||{};const exs=Array.isArray(routine.ex)?routine.ex:[];
+     if(!exs.length)return;
+     const exercises=exs.map((x,j)=>{
+       const n=Math.max(1,Math.min(5,Math.round(Number(x.series)||3)));
+       const carga=String(x.targetLoad||x.refLoad||'');const reps=String(x.targetReps||x.refReps||x.maxReps||'');
+       return {id:'legacy-'+key+'-'+j,exId:0,name:String(x.name||'Exercício'),group:String(x.category||''),sets:n,range:String(x.minReps&&x.maxReps?x.minReps+'-'+x.maxReps:(x.maxReps||'')),obs:'',meta:{carga,reps},series:Array.from({length:n},()=>({carga,reps}))};
+     });
+     fichas.push({id:'legacy-routine-'+key,type:'treino',days:[],name:String(routine.name||('Treino '+key)).slice(0,60),groups:[],exercises,note:String(routine.description||'').slice(0,200),updatedAt:Date.now(),pos:{}});
+   });
+   // No legacy information is discarded: the complete source payload remains in Supabase.
+   try{localStorage.setItem(pfx+'profile',JSON.stringify(profile));localStorage.setItem(pfx+'fichas',JSON.stringify(fichas));}catch(e){console.warn('Could not seed current app cache',e);}
+   return {profile,fichas,selectedProfile:selected.id||null,legacyHistoryCount:Array.isArray(payload&&payload.history)?payload.history.length:0};
+ }
+ async function fetchRecord(user){const {data,error}=await client.from(TABLE).select('user_id,payload,updated_at').eq('user_id',user.id).maybeSingle();if(error)throw error;return data;}
+ async function saveRecord(payload){const {error}=await client.from(TABLE).upsert({user_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;}
+ async function syncNow(){if(!client||!cloudUser||!ready||busy)return false;busy=true;try{
+   const record=await fetchRecord(cloudUser); const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
+   // Keep all original legacy fields (including workout history) intact; add current app state alongside them.
+   payload[SNAP_KEY]=capture(); await saveRecord(payload); window.evoluteCloudStatus='synced'; return true;
+ }catch(e){console.error('Evolute sync error',e);window.evoluteCloudStatus='error';return false;}finally{busy=false;}}
+ function scheduleSync(){if(!ready)return;clearTimeout(timer);timer=setTimeout(syncNow,1600);}
+ window.evoluteForceCloudSync=syncNow;
+ // Debounced backup of current-app localStorage changes to the authenticated user's row.
+ const nativeSet=Storage.prototype.setItem;
+ Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
+ async function activate(user){
+   cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
+   try{
+     const record=await fetchRecord(user);const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
+     // First load of this newer UI: migrate a copy of the selected legacy profile/routines, never remove the old history.
+     if(payload[SNAP_KEY]&&restore(payload[SNAP_KEY],user.id)){
+       // Existing current-format state restored successfully.
+     }else{
+       legacyToCurrent(payload,user.id);
+       const snap=capture();payload[SNAP_KEY]=snap;
+       await saveRecord(payload);
+     }
+     const oldUid=localStorage.getItem('evolute.uid');
+     localStorage.setItem('evolute.uid',user.id);localStorage.setItem('evolute.authUid',user.id);
+     ready=true;
+     if(oldUid!==user.id){location.reload();return;}
+     enterApp();
+     window.evoluteCloudSessionActive=true;
+     await syncNow();
+   }catch(e){console.error('Evolute account initialization failed',e);cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;msg('Não consegui carregar sua conta com segurança. Nenhum histórico antigo foi apagado. Confira a conexão e tente novamente.');}
+ }
+ async function init(){
+   const officialLogo=document.querySelector('header .logo, .header .logo, img.logo');
+   if(officialLogo&&officialLogo.getAttribute('src'))overlay.querySelectorAll('.auth-mark-image').forEach(img=>img.src=officialLogo.currentSrc||officialLogo.src);
+   if(!client){show('login');msg('Não foi possível carregar o serviço de autenticação. Verifique a internet e recarregue.');return;}
+   const {data,error}=await client.auth.getSession();
+   if(error){show('login');msg('Não foi possível verificar sua sessão: '+error.message);return;}
+   if(data.session){
+     const saved=localStorage.getItem('evolute.authUid');
+     if(saved===data.session.user.id){cloudUser=data.session.user;try{const record=await fetchRecord(cloudUser);const payload=record&&record.payload||{};if(payload[SNAP_KEY])restore(payload[SNAP_KEY],cloudUser.id);ready=true;window.evoluteCloudSessionActive=true;enterApp();}catch(e){console.error(e);show('login');msg('Não consegui sincronizar sua conta. Seus dados locais foram mantidos.');}}
+     else await activate(data.session.user);
+   }else{show('login');window.setTimeout(()=>{if(overlay.isConnected&&overlay.querySelector('[data-auth-screen="splash"]')?.classList.contains('is-active'))show('login');},1000);}
+   client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;show('login');} });
+ }
+ overlay.querySelector('#evolute-login-form').addEventListener('submit',async e=>{e.preventDefault();if(!client){msg('Serviço de login indisponível.');return;}const email=document.getElementById('evolute-email').value.trim();const password=document.getElementById('evolute-password').value;msg('Entrando…');const {data,error}=await client.auth.signInWithPassword({email,password});if(error){msg(error.message);return;}await activate(data.user);});
+ overlay.querySelector('#evolute-register-form').addEventListener('submit',async e=>{e.preventDefault();if(!client){msg('Serviço de login indisponível.','evolute-register-message');return;}const email=document.getElementById('evolute-register-email').value.trim();const password=document.getElementById('evolute-register-password').value;const confirm=document.getElementById('evolute-confirm-password').value;if(password!==confirm){msg('As senhas não coincidem.','evolute-register-message');return;}if(password.length<6){msg('Use uma senha com pelo menos 6 caracteres.','evolute-register-message');return;}msg('Criando conta…','evolute-register-message');const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0]}});if(error){msg(error.message,'evolute-register-message');return;}if(data.session)await activate(data.user);else msg('Cadastro iniciado. Confirme o e-mail e depois entre.','evolute-register-message');});
+ overlay.querySelector('[data-auth-action="forgot"]').addEventListener('click',async()=>{const email=document.getElementById('evolute-email').value.trim();if(!email){msg('Digite seu e-mail primeiro.');return;}if(!client){msg('Serviço de autenticação indisponível.');return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});msg(error?error.message:'Se houver uma conta para esse e-mail, enviaremos instruções para redefinir a senha.');});
+ window.evoluteCloudSignOut=async function(){ready=false;window.evoluteCloudSessionActive=false;if(client)await client.auth.signOut();localStorage.removeItem('evolute.authUid');show('login');};
+ init();
 })();
 </script>
 
