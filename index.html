@@ -475,29 +475,23 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    const selectedId=String(payload&&payload.currentProfile||'');
    const selected=profiles.find(p=>String(p.id)===selectedId)||profiles[0]||{};
    const pfx=prefix(id);
-   // Keep a local safety copy before migration; never combine different accounts.
-   try{const localCopy={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if((k&&k.startsWith('evolute.u.'))||k==='evolute.communities'){localCopy[k]=localStorage.getItem(k)}}if(Object.keys(localCopy).length)localStorage.setItem('evolute.preAuthBackup.'+id,JSON.stringify(localCopy));}catch(e){console.warn('Pre-auth local backup could not be made',e);}
-   const profile={name:String(selected.name||''),birth:String(selected.birthDate||selected.birth||''),gender:String(selected.gender||''),goals:Array.isArray(selected.objectives)?selected.objectives:(Array.isArray(selected.goals)?selected.goals:[]),other:String(selected.other||''),photo:typeof selected.photo==='string'?selected.photo:''};
-   const routines=selected.routines&&typeof selected.routines==='object'?selected.routines:{};
-   const schedule=selected.weeklyRoutineSchedule&&typeof selected.weeklyRoutineSchedule==='object'?selected.weeklyRoutineSchedule:{};
-   const assigned={};
-   Object.keys(schedule).forEach(day=>{const key=String(schedule[day]||'');if(key&&routines[key]){if(!assigned[key])assigned[key]=[];const n=Number(day);if(Number.isInteger(n)&&n>=0&&n<=6)assigned[key].push(n);}});
-   // If an older profile has no weekly schedule, keep every routine visible by assigning
-   // routines to successive weekdays rather than creating cards with no scheduled days.
-   const routineKeys=Object.keys(routines);
-   if(!Object.keys(schedule).length)routineKeys.forEach((key,index)=>{assigned[key]=[index%7]});
-   const fichas=[];
-   routineKeys.forEach((key,idx)=>{
+   // Keep any pre-login device data as a local safety copy; do not mix it into this account.
+   try{const localCopy={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('evolute.u.')||k==='evolute.communities'){localCopy[k]=localStorage.getItem(k)}}if(Object.keys(localCopy).length)localStorage.setItem('evolute.preAuthBackup.'+id,JSON.stringify(localCopy));}catch(e){console.warn('Pre-auth local backup could not be made',e);}
+   try{localStorage.removeItem('evolute.communities');}catch(e){}
+   const profile={name:String(selected.name||''),birth:String(selected.birth||''),gender:String(selected.gender||''),goals:Array.isArray(selected.goals)?selected.goals:[],other:String(selected.other||''),photo:typeof selected.photo==='string'?selected.photo:''};
+   const fichas=[]; const routines=selected.routines&&typeof selected.routines==='object'?selected.routines:{};
+   Object.keys(routines).sort().forEach((key,idx)=>{
      const routine=routines[key]||{};const exs=Array.isArray(routine.ex)?routine.ex:[];
      if(!exs.length)return;
      const exercises=exs.map((x,j)=>{
        const n=Math.max(1,Math.min(5,Math.round(Number(x.series)||3)));
        const carga=String(x.targetLoad||x.refLoad||'');const reps=String(x.targetReps||x.refReps||x.maxReps||'');
-       return {id:'legacy-'+key+'-'+j,exId:0,name:String(x.name||'Exercício'),group:String(x.category||''),sets:n,range:String(x.minReps&&x.maxReps?x.minReps+'-'+x.maxReps:(x.maxReps||'')),obs:String(x.observation||''),image:String(x.image||x.maleImage||x.femaleImage||''),video:String(x.video||''),meta:{carga,reps},series:Array.from({length:n},()=>({carga,reps}))};
+       return {id:'legacy-'+key+'-'+j,exId:0,name:String(x.name||'Exercício'),group:String(x.category||''),sets:n,range:String(x.minReps&&x.maxReps?x.minReps+'-'+x.maxReps:(x.maxReps||'')),obs:'',meta:{carga,reps},series:Array.from({length:n},()=>({carga,reps}))};
      });
-     const days=[...new Set(assigned[key]||[])].sort((a,b)=>a-b);const pos={};days.forEach((day,i)=>pos[day]=i);
-     fichas.push({id:'legacy-routine-'+key,type:'treino',days,name:String(routine.name||('Treino '+key)).slice(0,60),groups:[],exercises,note:String(routine.description||'').slice(0,200),updatedAt:Date.now(),pos,restSeconds:Number(routine.restSeconds)||0});
+     const dayMap={A:[0],B:[1],C:[2],D:[3],E:[4],F:[5],G:[6]};
+     fichas.push({id:'legacy-routine-'+key,type:'treino',days:dayMap[String(key).toUpperCase()]||[(idx%7)],name:String(routine.name||('Treino '+key)).slice(0,60),groups:[],exercises,note:String(routine.description||'').slice(0,200),updatedAt:Date.now(),pos:{}});
    });
+   // No legacy information is discarded: the complete source payload remains in Supabase.
    try{localStorage.setItem(pfx+'profile',JSON.stringify(profile));localStorage.setItem(pfx+'fichas',JSON.stringify(fichas));}catch(e){console.warn('Could not seed current app cache',e);}
    return {profile,fichas,selectedProfile:selected.id||null,legacyHistoryCount:Array.isArray(payload&&payload.history)?payload.history.length:0};
  }
@@ -513,59 +507,30 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  // Debounced backup of current-app localStorage changes to the authenticated user's row.
  const nativeSet=Storage.prototype.setItem;
  Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
- async function activate(user, afterReload=false){
+ async function activate(user){
    cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
    try{
-     const record=await fetchRecord(user);
-     // Safety stop: never create an empty row when the authenticated UUID has no matching legacy record.
-     // The original data is stored under four historical UUIDs; blindly upserting here could hide the mapping problem.
-     if(!record){
-       cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;
-       msg('Login realizado, mas não encontramos fichas vinculadas a esta conta. ID autenticado: '+user.id+'. Nenhum dado foi sobrescrito. Envie este ID para localizar o backup correto.');
-       return;
-     }
-     const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
-     // First load of this newer UI: migrate a copy of the selected legacy profile/routines, never remove the old history.
+     const record=await fetchRecord(user);const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
+     // Restore current-format state only when it contains usable fichas. Earlier versions could save an empty snapshot and then block legacy migration forever.
      const existingSnap=payload[SNAP_KEY];
-     let restored=false;
-     let migratedNow=false;
-     if(existingSnap&&restore(existingSnap,user.id)){
-       // Treat a snapshot containing only empty profile/ficha data as incomplete:
-       // this happened when the new UI was opened before legacy data was migrated.
-       const pfx=prefix(user.id);
-       const currentProfile=safeJSON(localStorage.getItem(pfx+'profile')||'null',null);
-       const currentFichas=safeJSON(localStorage.getItem(pfx+'fichas')||'null',null);
-       restored=!!(currentProfile && typeof currentProfile==='object' &&
-                   Array.isArray(currentFichas) && currentFichas.length>0);
-     }
-     if(!restored){
-       // Migrate the legacy payload even if an empty v2 snapshot already exists.
-       // Never replace or delete legacy history/evolution/profile fields in Supabase.
-       const migrated=legacyToCurrent(payload,user.id);
-       migratedNow=true;
-       // Keep the original workout history in account-scoped local storage as a recoverable copy.
-       try{
-         localStorage.setItem(prefix(user.id)+'legacyHistory',JSON.stringify(Array.isArray(payload.history)?payload.history:[]));
-         localStorage.setItem(prefix(user.id)+'legacyEvolution',JSON.stringify(payload.evolution||{}));
-         localStorage.setItem(prefix(user.id)+'legacyProfiles',JSON.stringify(Array.isArray(payload.profiles)?payload.profiles:[]));
-       }catch(copyErr){console.warn('Legacy history copy failed',copyErr);}
+     let snapshotHasFichas=false;
+     try{
+       const raw=existingSnap&&existingSnap.values&&existingSnap.values[prefix(user.id)+'fichas'];
+       const parsed=typeof raw==='string'?JSON.parse(raw):raw;
+       snapshotHasFichas=Array.isArray(parsed)&&parsed.some(f=>f&&Array.isArray(f.exercises)&&f.exercises.length>0);
+     }catch(e){snapshotHasFichas=false;}
+     const hasLegacyRoutines=Array.isArray(payload.profiles)&&payload.profiles.some(p=>p&&p.routines&&Object.values(p.routines).some(r=>r&&Array.isArray(r.ex)&&r.ex.length));
+     if(existingSnap&&restore(existingSnap,user.id)&& (snapshotHasFichas||!hasLegacyRoutines)){
+       // Keep current-format data when it is usable, or when no legacy routines exist to recover.
+     }else{
+       legacyToCurrent(payload,user.id);
        const snap=capture();payload[SNAP_KEY]=snap;
        await saveRecord(payload);
      }
      const oldUid=localStorage.getItem('evolute.uid');
      localStorage.setItem('evolute.uid',user.id);localStorage.setItem('evolute.authUid',user.id);
      ready=true;
-     // The app's embedded pages read their profile/fichas into memory before login.
-     // After migration, reload once so those pages initialize from the authenticated account's restored storage.
-     // A one-time session marker reopens the same authenticated session after reload instead of asking for login again.
-     // The main app reads localStorage into memory before this async login restore completes.
-     // Even if the account UUID is unchanged and a v2 snapshot already exists, the in-memory
-     // UI may still be empty. Reload once so every page initializes from restored profile/fichas.
-     // afterReload prevents a reload loop.
-     if(!afterReload&&(restored||migratedNow||oldUid!==user.id)){
-       try{sessionStorage.setItem('evolute.auth.reloadOnce',user.id);}catch(e){}
-       location.reload();return;
-     }
+     if(oldUid!==user.id){location.reload();return;}
      enterApp();
      window.evoluteCloudSessionActive=true;
      await syncNow();
@@ -578,14 +543,8 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    // Always show the login screen on page load so a previously saved developer/test
    // session cannot silently open the app under the wrong account. Supabase keeps the
    // session securely; submitting the real account credentials selects the correct user.
-   const {data,error}=await client.auth.getSession();
+   const {error}=await client.auth.getSession();
    if(error){show('login');msg('Não foi possível verificar sua sessão: '+error.message);return;}
-   let reloadUid='';try{reloadUid=sessionStorage.getItem('evolute.auth.reloadOnce')||'';sessionStorage.removeItem('evolute.auth.reloadOnce');}catch(e){}
-   if(reloadUid&&data&&data.session&&data.session.user&&data.session.user.id===reloadUid){
-     // Re-enter only the same Supabase session after the one-time initialization reload.
-     await activate(data.session.user,true);
-     return;
-   }
    show('login');
    client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;show('login');} });
  }
