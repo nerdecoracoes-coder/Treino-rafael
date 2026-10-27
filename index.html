@@ -509,7 +509,15 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  async function activate(user){
    cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
    try{
-     const record=await fetchRecord(user);const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
+     const record=await fetchRecord(user);
+     // Safety stop: never create an empty row when the authenticated UUID has no matching legacy record.
+     // The original data is stored under four historical UUIDs; blindly upserting here could hide the mapping problem.
+     if(!record){
+       cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;
+       msg('Login realizado, mas não encontramos fichas vinculadas a esta conta. ID autenticado: '+user.id+'. Nenhum dado foi sobrescrito. Envie este ID para localizar o backup correto.');
+       return;
+     }
+     const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
      // First load of this newer UI: migrate a copy of the selected legacy profile/routines, never remove the old history.
      const existingSnap=payload[SNAP_KEY];
      let restored=false;
