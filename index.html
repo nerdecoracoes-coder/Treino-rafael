@@ -506,7 +506,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  // Debounced backup of current-app localStorage changes to the authenticated user's row.
  const nativeSet=Storage.prototype.setItem;
  Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
- async function activate(user){
+ async function activate(user, afterReload=false){
    cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
    try{
      const record=await fetchRecord(user);
@@ -551,7 +551,11 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
      // The app's embedded pages read their profile/fichas into memory before login.
      // After migration, reload once so those pages initialize from the authenticated account's restored storage.
      // A one-time session marker reopens the same authenticated session after reload instead of asking for login again.
-     if(migratedNow||oldUid!==user.id){
+     // The main app reads localStorage into memory before this async login restore completes.
+     // Even if the account UUID is unchanged and a v2 snapshot already exists, the in-memory
+     // UI may still be empty. Reload once so every page initializes from restored profile/fichas.
+     // afterReload prevents a reload loop.
+     if(!afterReload&&(restored||migratedNow||oldUid!==user.id)){
        try{sessionStorage.setItem('evolute.auth.reloadOnce',user.id);}catch(e){}
        location.reload();return;
      }
@@ -572,7 +576,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    let reloadUid='';try{reloadUid=sessionStorage.getItem('evolute.auth.reloadOnce')||'';sessionStorage.removeItem('evolute.auth.reloadOnce');}catch(e){}
    if(reloadUid&&data&&data.session&&data.session.user&&data.session.user.id===reloadUid){
      // Re-enter only the same Supabase session after the one-time initialization reload.
-     await activate(data.session.user);
+     await activate(data.session.user,true);
      return;
    }
    show('login');
@@ -945,82 +949,6 @@ body>*{position:relative;z-index:1}
       if(msg)msg.textContent='A entrada com '+btn.getAttribute('data-social')+' será ativada quando o serviço de autenticação for conectado.';
     });
   });
-})();
-</script>
-
-
-<script id="evolute-legacy-history-viewer-v1">
-(function(){
-  'use strict';
-  const style=document.createElement('style');
-  style.textContent=`
-    #evo-history-shortcut{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:9997;border:1px solid rgba(255,104,28,.45);background:#171a1f;color:#fff;border-radius:999px;padding:12px 16px;font:700 14px system-ui;box-shadow:0 8px 24px #0006;display:none}
-    #evo-history-shortcut span{color:#ff681c;margin-right:6px}
-    #evo-history-overlay{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.78);display:none;align-items:flex-end;justify-content:center;padding:12px;box-sizing:border-box}
-    #evo-history-overlay.open{display:flex}
-    #evo-history-sheet{width:min(720px,100%);max-height:88dvh;overflow:auto;background:#0e1115;color:#f5f6f7;border:1px solid #343941;border-radius:22px;padding:18px;box-sizing:border-box;font-family:system-ui}
-    .evo-h-head{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:-18px;background:#0e1115;padding:4px 0 12px;z-index:2}
-    .evo-h-head h2{font-size:21px;margin:0}.evo-h-close{background:#252a31;border:0;border-radius:12px;color:white;font-size:23px;padding:4px 12px}
-    .evo-h-note{color:#aab1bb;font-size:13px;margin:0 0 12px}
-    .evo-h-card{border:1px solid #2b3038;border-radius:14px;padding:13px;margin:10px 0;background:#15191f}
-    .evo-h-title{font-weight:800;font-size:15px}.evo-h-meta{font-size:12px;color:#aab1bb;margin-top:5px}
-    .evo-h-ex{font-size:13px;color:#e4e7eb;margin-top:9px;line-height:1.5}
-    .evo-h-empty{padding:20px 12px;color:#c4c9d0;background:#171b21;border-radius:14px;line-height:1.5}
-    .evo-h-filter{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-    .evo-h-filter button{background:#20252c;color:#fff;border:1px solid #383e47;border-radius:999px;padding:8px 12px}
-    .evo-h-filter button.active{border-color:#ff681c;color:#ff8a4b}
-  `;
-  document.head.appendChild(style);
-  const btn=document.createElement('button');btn.id='evo-history-shortcut';btn.type='button';btn.innerHTML='<span>▤</span> Histórico antigo';
-  const overlay=document.createElement('div');overlay.id='evo-history-overlay';
-  overlay.innerHTML='<section id="evo-history-sheet" role="dialog" aria-modal="true" aria-label="Histórico de treinos"><div class="evo-h-head"><h2>Histórico de treinos</h2><button class="evo-h-close" type="button" aria-label="Fechar">×</button></div><p class="evo-h-note">Registros recuperados do backup antigo. Eles são exibidos sem apagar nem modificar o backup original.</p><div id="evo-history-content"></div></section>';
-  document.body.append(btn,overlay);
-  const close=()=>overlay.classList.remove('open');
-  overlay.querySelector('.evo-h-close').addEventListener('click',close);
-  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
-  function readJSON(k,f){try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch(e){return f}}
-  function render(){
-    const uid=localStorage.getItem('evolute.authUid')||localStorage.getItem('evolute.uid')||'';
-    const prefix='evolute.u.'+uid+'.';
-    const history=readJSON(prefix+'legacyHistory',[]);
-    const profiles=readJSON(prefix+'legacyProfiles',[]);
-    const pmap={};profiles.forEach(p=>pmap[p.id]=p);
-    const host=document.getElementById('evo-history-content');
-    if(!Array.isArray(history)||!history.length){
-      host.innerHTML='<div class="evo-h-empty"><strong>Nenhum registro antigo foi carregado nesta sessão.</strong><br><br>Isso não significa que o backup foi perdido. O aplicativo precisa localizar o registro correto da conta antes de importar o histórico.</div>';
-      return;
-    }
-    const names=[...new Set(history.map(h=>h.profileId||'rafael'))];
-    let selected='all';
-    function draw(){
-      const filtered=history.filter(h=>selected==='all'||(h.profileId||'rafael')===selected).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-      const filters='<div class="evo-h-filter"><button data-prof="all" class="'+(selected==='all'?'active':'')+'">Todos ('+history.length+')</button>'+names.map(id=>'<button data-prof="'+String(id).replace(/"/g,'&quot;')+'" class="'+(selected===id?'active':'')+'">'+esc((pmap[id]&&pmap[id].name)||id)+' ('+history.filter(h=>(h.profileId||'rafael')===id).length+')</button>').join('')+'</div>';
-      const cards=filtered.map(h=>{
-        const prof=pmap[h.profileId]||{};
-        const routine=prof.routines&&prof.routines[h.workout];
-        const title=(routine&&routine.name)||('Treino '+(h.workout||''));
-        const date=h.date?new Date(String(h.date)+'T12:00:00').toLocaleDateString('pt-BR'):'Data não informada';
-        const exercises=(Array.isArray(h.exercises)?h.exercises:[]).map(ex=>{
-          const sets=(Array.isArray(ex.sets)?ex.sets:[]).map(s=>[s.load?s.load+' kg':'',s.reps?s.reps+' reps':''].filter(Boolean).join(' × ')).filter(Boolean).join(' · ');
-          return '<div>• '+esc(ex.name||'Exercício')+(sets?' — '+esc(sets):'')+(ex.completed?' ✓':'')+'</div>';
-        }).join('');
-        return '<article class="evo-h-card"><div class="evo-h-title">'+esc(title)+'</div><div class="evo-h-meta">'+esc(date)+' · '+esc(prof.name||h.profileId||'Perfil')+(h.duration?' · '+esc(h.duration)+' min':'')+(h.weight?' · '+esc(h.weight)+' kg':'')+'</div><div class="evo-h-ex">'+(exercises||'Registro de treino salvo; sem detalhes de exercícios neste item.')+'</div></article>';
-      }).join('');
-      host.innerHTML=filters+(cards||'<div class="evo-h-empty">Nenhum registro para este perfil.</div>');
-      host.querySelectorAll('[data-prof]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.prof;draw()}));
-    }
-    draw();
-  }
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-  btn.addEventListener('click',()=>{render();overlay.classList.add('open')});
-  function update(){btn.style.display=(typeof current!=='undefined'&&current==='treinos')?'block':'none'}
-  const oldShow=window.show;
-  // The app uses a lexical show() function; patch its nav buttons to update shortcut visibility.
-  document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>setTimeout(update,0)));
-  window.addEventListener('message',()=>setTimeout(update,0));
-  setInterval(update,700);
-  update();
 })();
 </script>
 
