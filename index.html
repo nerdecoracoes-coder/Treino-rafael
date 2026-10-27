@@ -525,7 +525,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
      try{
        const raw=existingSnap&&existingSnap.values&&existingSnap.values[prefix(user.id)+'fichas'];
        const parsed=typeof raw==='string'?JSON.parse(raw):raw;
-       snapshotHasFichas=Array.isArray(parsed)&&parsed.some(f=>f&&Array.isArray(f.exercises)&&f.exercises.length>0);
+       snapshotHasFichas=Array.isArray(parsed)&&parsed.some(f=>f&&Array.isArray(f.exercises)&&f.exercises.length>0&&Array.isArray(f.days)&&f.days.length>0);
      }catch(e){snapshotHasFichas=false;}
      const hasLegacyRoutines=Array.isArray(payload.profiles)&&payload.profiles.some(p=>p&&p.routines&&Object.values(p.routines).some(r=>r&&Array.isArray(r.ex)&&r.ex.length));
      if(existingSnap&&restore(existingSnap,user.id)&& (snapshotHasFichas||!hasLegacyRoutines)){
