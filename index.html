@@ -475,22 +475,29 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    const selectedId=String(payload&&payload.currentProfile||'');
    const selected=profiles.find(p=>String(p.id)===selectedId)||profiles[0]||{};
    const pfx=prefix(id);
-   // Keep any pre-login device data as a local safety copy; do not mix it into this account.
-   try{const localCopy={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('evolute.u.')||k==='evolute.communities'){localCopy[k]=localStorage.getItem(k)}}if(Object.keys(localCopy).length)localStorage.setItem('evolute.preAuthBackup.'+id,JSON.stringify(localCopy));}catch(e){console.warn('Pre-auth local backup could not be made',e);}
-   try{localStorage.removeItem('evolute.communities');}catch(e){}
-   const profile={name:String(selected.name||''),birth:String(selected.birth||''),gender:String(selected.gender||''),goals:Array.isArray(selected.goals)?selected.goals:[],other:String(selected.other||''),photo:typeof selected.photo==='string'?selected.photo:''};
-   const fichas=[]; const routines=selected.routines&&typeof selected.routines==='object'?selected.routines:{};
-   Object.keys(routines).sort().forEach((key,idx)=>{
+   // Keep a local safety copy before migration; never combine different accounts.
+   try{const localCopy={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if((k&&k.startsWith('evolute.u.'))||k==='evolute.communities'){localCopy[k]=localStorage.getItem(k)}}if(Object.keys(localCopy).length)localStorage.setItem('evolute.preAuthBackup.'+id,JSON.stringify(localCopy));}catch(e){console.warn('Pre-auth local backup could not be made',e);}
+   const profile={name:String(selected.name||''),birth:String(selected.birthDate||selected.birth||''),gender:String(selected.gender||''),goals:Array.isArray(selected.objectives)?selected.objectives:(Array.isArray(selected.goals)?selected.goals:[]),other:String(selected.other||''),photo:typeof selected.photo==='string'?selected.photo:''};
+   const routines=selected.routines&&typeof selected.routines==='object'?selected.routines:{};
+   const schedule=selected.weeklyRoutineSchedule&&typeof selected.weeklyRoutineSchedule==='object'?selected.weeklyRoutineSchedule:{};
+   const assigned={};
+   Object.keys(schedule).forEach(day=>{const key=String(schedule[day]||'');if(key&&routines[key]){if(!assigned[key])assigned[key]=[];const n=Number(day);if(Number.isInteger(n)&&n>=0&&n<=6)assigned[key].push(n);}});
+   // If an older profile has no weekly schedule, keep every routine visible by assigning
+   // routines to successive weekdays rather than creating cards with no scheduled days.
+   const routineKeys=Object.keys(routines);
+   if(!Object.keys(schedule).length)routineKeys.forEach((key,index)=>{assigned[key]=[index%7]});
+   const fichas=[];
+   routineKeys.forEach((key,idx)=>{
      const routine=routines[key]||{};const exs=Array.isArray(routine.ex)?routine.ex:[];
      if(!exs.length)return;
      const exercises=exs.map((x,j)=>{
        const n=Math.max(1,Math.min(5,Math.round(Number(x.series)||3)));
        const carga=String(x.targetLoad||x.refLoad||'');const reps=String(x.targetReps||x.refReps||x.maxReps||'');
-       return {id:'legacy-'+key+'-'+j,exId:0,name:String(x.name||'Exercício'),group:String(x.category||''),sets:n,range:String(x.minReps&&x.maxReps?x.minReps+'-'+x.maxReps:(x.maxReps||'')),obs:'',meta:{carga,reps},series:Array.from({length:n},()=>({carga,reps}))};
+       return {id:'legacy-'+key+'-'+j,exId:0,name:String(x.name||'Exercício'),group:String(x.category||''),sets:n,range:String(x.minReps&&x.maxReps?x.minReps+'-'+x.maxReps:(x.maxReps||'')),obs:String(x.observation||''),image:String(x.image||x.maleImage||x.femaleImage||''),video:String(x.video||''),meta:{carga,reps},series:Array.from({length:n},()=>({carga,reps}))};
      });
-     fichas.push({id:'legacy-routine-'+key,type:'treino',days:[],name:String(routine.name||('Treino '+key)).slice(0,60),groups:[],exercises,note:String(routine.description||'').slice(0,200),updatedAt:Date.now(),pos:{}});
+     const days=[...new Set(assigned[key]||[])].sort((a,b)=>a-b);const pos={};days.forEach((day,i)=>pos[day]=i);
+     fichas.push({id:'legacy-routine-'+key,type:'treino',days,name:String(routine.name||('Treino '+key)).slice(0,60),groups:[],exercises,note:String(routine.description||'').slice(0,200),updatedAt:Date.now(),pos,restSeconds:Number(routine.restSeconds)||0});
    });
-   // No legacy information is discarded: the complete source payload remains in Supabase.
    try{localStorage.setItem(pfx+'profile',JSON.stringify(profile));localStorage.setItem(pfx+'fichas',JSON.stringify(fichas));}catch(e){console.warn('Could not seed current app cache',e);}
    return {profile,fichas,selectedProfile:selected.id||null,legacyHistoryCount:Array.isArray(payload&&payload.history)?payload.history.length:0};
  }
