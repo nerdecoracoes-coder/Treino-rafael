@@ -507,35 +507,31 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  const nativeSet=Storage.prototype.setItem;
  Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
  async function activate(user){
-   cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Localizando os dados da sua conta…');
+   cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
    try{
-     const record=await fetchRecord(user);
-     const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:null;
-     // Safety: never create an empty cloud row when this authenticated ID has no linked backup.
-     // That would hide the real problem and could make recovery harder.
-     const hasLegacy=!!(payload&&((Array.isArray(payload.profiles)&&payload.profiles.length)||
-       (Array.isArray(payload.history)&&payload.history.length)||
-       (payload.evolution&&Object.keys(payload.evolution).length)));
-     const hasSnapshot=!!(payload&&payload[SNAP_KEY]&&payload[SNAP_KEY].values);
-     if(!record||(!hasLegacy&&!hasSnapshot)){
-       cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;
-       const uid=user.id||'indisponível';
-       msg('Login confirmado, mas não encontrei um backup vinculado a esta conta. Não criei nem alterei dados. ID da conta: '+uid+'. Envie uma captura desta mensagem para localizar o backup correto.');
-       return;
-     }
+     const record=await fetchRecord(user);const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
      // First load of this newer UI: migrate a copy of the selected legacy profile/routines, never remove the old history.
-     if(payload[SNAP_KEY]&&restore(payload[SNAP_KEY],user.id)){
-       // Existing current-format state restored successfully.
-     }else{
-       legacyToCurrent(payload,user.id);
-       // Preserve all legacy records locally too, for future display/migration without data loss.
+     const existingSnap=payload[SNAP_KEY];
+     let restored=false;
+     if(existingSnap&&restore(existingSnap,user.id)){
+       // Treat a snapshot containing only empty profile/ficha data as incomplete:
+       // this happened when the new UI was opened before legacy data was migrated.
+       const pfx=prefix(user.id);
+       const currentProfile=safeJSON(localStorage.getItem(pfx+'profile')||'null',null);
+       const currentFichas=safeJSON(localStorage.getItem(pfx+'fichas')||'null',null);
+       restored=!!(currentProfile && typeof currentProfile==='object' &&
+                   Array.isArray(currentFichas) && currentFichas.length>0);
+     }
+     if(!restored){
+       // Migrate the legacy payload even if an empty v2 snapshot already exists.
+       // Never replace or delete legacy history/evolution/profile fields in Supabase.
+       const migrated=legacyToCurrent(payload,user.id);
+       // Keep the original workout history in account-scoped local storage as a recoverable copy.
        try{
-         const pfx=prefix(user.id);
-         localStorage.setItem(pfx+'legacyHistory',JSON.stringify(Array.isArray(payload.history)?payload.history:[]));
-         localStorage.setItem(pfx+'legacyProfiles',JSON.stringify(Array.isArray(payload.profiles)?payload.profiles:[]));
-         localStorage.setItem(pfx+'legacyEvolution',JSON.stringify(payload.evolution||{}));
-         localStorage.setItem(pfx+'legacyPayloadUpdatedAt',String(record.updated_at||''));
-       }catch(storageError){console.warn('Legacy backup cache failed',storageError);}
+         localStorage.setItem(prefix(user.id)+'legacyHistory',JSON.stringify(Array.isArray(payload.history)?payload.history:[]));
+         localStorage.setItem(prefix(user.id)+'legacyEvolution',JSON.stringify(payload.evolution||{}));
+         localStorage.setItem(prefix(user.id)+'legacyProfiles',JSON.stringify(Array.isArray(payload.profiles)?payload.profiles:[]));
+       }catch(copyErr){console.warn('Legacy history copy failed',copyErr);}
        const snap=capture();payload[SNAP_KEY]=snap;
        await saveRecord(payload);
      }
