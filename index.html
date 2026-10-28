@@ -744,7 +744,12 @@ function comView(c){
   const photoOf=m=>m.uid===uid?(isImg(profile.photo)?profile.photo:""):(m.photo||"");
   return{id:c.id,name:c.name,desc:c.desc,photo:c.photo||"",type:c.type,typeLabel:c.type==="Outros"&&c.typeCustom?c.typeCustom:c.type,entry:c.entry,searchable:!!c.searchable,createdAt:c.createdAt,members:c.members.length,avatars:c.members.slice(0,4).map(photoOf),isMember:!!mem,isAdmin:adm,pending:c.requests.some(r=>r.uid===uid),code:mem?c.code:"",requests:adm?c.requests.map(r=>({uid:r.uid,name:r.name,photo:r.photo})):[]}}
 function pushCom(){if(frames.comunidades&&ready.has("comunidades"))post(frames.comunidades,{type:"communities",list:communities.filter(c=>isMem(c)||c.searchable).map(comView)})}
-function saveCom(extra){let ok=true;try{localStorage.setItem("evolute.communities",JSON.stringify(communities))}catch(e){ok=false}pushCom();pushCm(extra);return ok}
+function saveCom(extra){let ok=true;try{localStorage.setItem("evolute.communities",JSON.stringify(communities))}catch(e){ok=false}pushCom();pushCm(extra);syncOwnedCommunitiesToCloud();return ok}
+async function communityRpc(name,args){const cloud=window.evoluteCloud;if(!cloud||!cloud.client||cloud.userId!==uid)throw new Error('Entre novamente na sua conta para usar comunidades compartilhadas.');const result=await cloud.client.rpc(name,args||{});if(result.error)throw result.error;return result.data}
+let communitySyncBusy=false;
+async function syncOwnedCommunitiesToCloud(){if(communitySyncBusy||!window.evoluteCloud||window.evoluteCloud.userId!==uid)return;communitySyncBusy=true;try{for(const c of communities){const m=(c.members||[]).find(x=>x.uid===uid&&x.role==='admin');if(m){await communityRpc('ev_community_sync',{p_community:c})}}}catch(e){console.warn('Sincronização de comunidades pendente:',e)}finally{communitySyncBusy=false}}
+async function loadSharedCommunities(){try{const list=await communityRpc('ev_community_list',{});if(!Array.isArray(list))return;const byId=new Map(communities.map(c=>[String(c.id),c]));for(const c of list){if(c&&c.id)byId.set(String(c.id),normCom(c))}communities=[...byId.values()];try{localStorage.setItem('evolute.communities',JSON.stringify(communities))}catch(e){}pushCom();if(cmOpen)pushCm()}catch(e){console.warn('Não foi possível carregar comunidades compartilhadas:',e)}}
+window.addEventListener('evolute-cloud-ready',()=>{setTimeout(()=>{loadSharedCommunities().then(syncOwnedCommunitiesToCloud)},0)});
 const ymdL=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function cmData(c){
   const mm=c.members.find(m=>m.uid===uid),adm=!!mm&&mm.role==="admin",photoOf=m=>m.uid===uid?(isImg(profile.photo)?profile.photo:""):(m.photo||"");
@@ -813,10 +818,20 @@ window.addEventListener("message",e=>{
     saveCom();
   }
   else if(d.type==="join-code"){
-    const code=str(d.code,12).toUpperCase(),c=communities.find(x=>x.code===code);
-    if(!c){post(frames[from],{type:"code-result",ok:false,msg:"Código não encontrado. Confira o código e tente novamente."});return}
-    if(isMem(c)){post(frames[from],{type:"code-result",ok:true,msg:"Você já faz parte de "+c.name+"."});return}
-    addMember(c,me());saveCom();post(frames[from],{type:"code-result",ok:true,msg:"Entrada confirmada! Você agora faz parte de "+c.name+"."});
+    const code=str(d.code,12).toUpperCase();
+    (async()=>{try{
+      const joined=await communityRpc('ev_community_join',{p_code:code,p_name:str(profile.name||'Integrante',80),p_photo:isImg(profile.photo)?profile.photo:''});
+      if(!joined||!joined.id)throw new Error('EV_INVALID_CODE');
+      const idx=communities.findIndex(x=>String(x.id)===String(joined.id));if(idx>=0)communities[idx]=normCom(joined);else communities.push(normCom(joined));
+      try{localStorage.setItem('evolute.communities',JSON.stringify(communities))}catch(e){}
+      pushCom();pushCm();post(frames[from],{type:'code-result',ok:true,msg:'Entrada confirmada! Você agora faz parte de '+joined.name+'.'});
+    }catch(err){
+      const msg=String(err&&err.message||'');
+      if(msg.includes('EV_INVALID_CODE'))post(frames[from],{type:'code-result',ok:false,msg:'Código não encontrado. Confira o código e tente novamente.'});
+      else if(msg.includes('EV_ALREADY_MEMBER'))post(frames[from],{type:'code-result',ok:true,msg:'Você já faz parte desta comunidade.'});
+      else if(/Could not find the function|schema cache|PGRST202/i.test(msg))post(frames[from],{type:'code-result',ok:false,msg:'A integração de comunidades ainda não foi instalada no Supabase. Instale a migração SQL fornecida com este arquivo.'});
+      else post(frames[from],{type:'code-result',ok:false,msg:'Não foi possível validar o código no servidor. Verifique a conexão e a configuração do Supabase.'});
+    }})();
   }
   else if(d.type==="cm-regenerate-code"){
     const c=communities.find(x=>x.id===String(d.id)),mm=c&&c.members.find(m=>m.uid===uid);
