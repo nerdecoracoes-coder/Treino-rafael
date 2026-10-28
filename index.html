@@ -750,6 +750,8 @@ let communitySyncBusy=false;
 async function syncOwnedCommunitiesToCloud(){if(communitySyncBusy||!window.evoluteCloud||window.evoluteCloud.userId!==uid)return;communitySyncBusy=true;try{for(const c of communities){const m=(c.members||[]).find(x=>x.uid===uid&&x.role==='admin');if(m){await communityRpc('ev_community_sync',{p_community:c})}}}catch(e){console.warn('Sincronização de comunidades pendente:',e)}finally{communitySyncBusy=false}}
 async function loadSharedCommunities(){try{const list=await communityRpc('ev_community_list',{});if(!Array.isArray(list))return;const byId=new Map(communities.map(c=>[String(c.id),c]));for(const c of list){if(c&&c.id)byId.set(String(c.id),normCom(c))}communities=[...byId.values()];try{localStorage.setItem('evolute.communities',JSON.stringify(communities))}catch(e){}pushCom();if(cmOpen)pushCm()}catch(e){console.warn('Não foi possível carregar comunidades compartilhadas:',e)}}
 window.addEventListener('evolute-cloud-ready',()=>{setTimeout(()=>{loadSharedCommunities().then(syncOwnedCommunitiesToCloud)},0)});
+window.addEventListener("focus",()=>{if(window.evoluteCloud&&window.evoluteCloud.userId===uid)loadSharedCommunities().then(syncOwnedCommunitiesToCloud)});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&window.evoluteCloud&&window.evoluteCloud.userId===uid)loadSharedCommunities().then(syncOwnedCommunitiesToCloud)});
 const ymdL=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function cmData(c){
   const mm=c.members.find(m=>m.uid===uid),adm=!!mm&&mm.role==="admin",photoOf=m=>m.uid===uid?(isImg(profile.photo)?profile.photo:""):(m.photo||"");
@@ -777,7 +779,7 @@ window.addEventListener("message",e=>{
   const d=e.data;if(!d||typeof d!=="object")return;
   const from=Object.keys(frames).find(k=>frames[k].contentWindow===e.source);if(!from)return;
   if(d.type==="cm-copy-code"){const code=String(d.code||"").trim();if(!code)return;let ok=false;try{const ta=document.createElement("textarea");ta.value=code;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";ta.style.pointerEvents="none";document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);ok=document.execCommand("copy");ta.remove()}catch(err){};if(ok)post(frames[from],{type:"cm-copy-result",ok:true});else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(code).then(()=>post(frames[from],{type:"cm-copy-result",ok:true})).catch(()=>post(frames[from],{type:"cm-copy-result",ok:false}))}else post(frames[from],{type:"cm-copy-result",ok:false});return;}
-  if(d.type==="frame-ready"){ready.add(from);push(frames[from]);if(from==="ficha"||from==="cpage"||from==="profissional")post(frames[from],{type:"open",arg:args[from]||null})}
+  if(d.type==="frame-ready"){ready.add(from);push(frames[from]);if(from==="comunidades"){setTimeout(()=>{loadSharedCommunities().then(()=>syncOwnedCommunitiesToCloud()).catch(e=>console.warn("Sincronização ao abrir Comunidades falhou:",e))},150)}if(from==="ficha"||from==="cpage"||from==="profissional")post(frames[from],{type:"open",arg:args[from]||null})}
   else if(d.type==="links-request")pushLinks(frames[from]);
   else if(d.type==="link-action")linkAction(String(d.action||""),String(d.id||""),from);
   else if(d.type==="open-profile")openPage("perfil");
