@@ -1,17 +1,27 @@
 {
-  "id": "./?app=evolute-training-pro",
+  "id": "/Treino-rafael/pro/",
   "name": "Evolute Training Pro",
   "short_name": "Evolute Pro",
-  "description": "Evolute Training Pro — plataforma para profissionais acompanharem praticantes e prescreverem treinos.",
+  "description": "Evolute Training Pro — plataforma para profissionais acompanharem seus praticantes.",
   "lang": "pt-BR",
-  "start_url": "./?app=evolute-training-pro",
-  "scope": "./",
+  "start_url": "/Treino-rafael/pro/?source=pwa-pro",
+  "scope": "/Treino-rafael/pro/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#080b0d",
   "theme_color": "#080b0d",
   "icons": [
-    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/Treino-rafael/pro/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Treino-rafael/pro/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
