@@ -816,8 +816,13 @@ window.addEventListener("message",e=>{
   }
   else if(d.type==="join-community"){
     const c=communities.find(x=>x.id===String(d.id));if(!c||isMem(c)||!(c.searchable))return;
-    if(c.entry==="automatica")addMember(c,me());else if(!c.requests.some(r=>r.uid===uid))c.requests.push({uid,name:me().name,photo:me().photo,at:Date.now()});
-    saveCom();
+    (async()=>{try{
+      const updated=await communityRpc('ev_community_request',{p_id:String(c.id),p_name:str(profile.name||'Integrante',80),p_photo:isImg(profile.photo)?profile.photo:''});
+      if(!updated||!updated.id)throw new Error('EV_REQUEST_FAILED');
+      const idx=communities.findIndex(x=>String(x.id)===String(updated.id));if(idx>=0)communities[idx]=normCom(updated);else communities.push(normCom(updated));
+      try{localStorage.setItem('evolute.communities',JSON.stringify(communities))}catch(e){}
+      pushCom();pushCm();
+    }catch(err){console.warn('Solicitação de entrada não sincronizada:',err);post(frames[from],{type:'community-request-result',ok:false,msg:'Não foi possível enviar a solicitação ao servidor. Verifique a conexão e tente novamente.'})}})();
   }
   else if(d.type==="join-code"){
     const code=str(d.code,12).toUpperCase();
@@ -852,8 +857,13 @@ window.addEventListener("message",e=>{
   }
   else if(d.type==="resolve-request"){
     const c=communities.find(x=>x.id===String(d.id)),mm=c&&c.members.find(m=>m.uid===uid);if(!c||!mm||mm.role!=="admin")return;
-    const r=c.requests.find(x=>x.uid===String(d.uid));if(!r)return;
-    if(d.accept)addMember(c,r);else c.requests=c.requests.filter(x=>x!==r);saveCom();
+    (async()=>{try{
+      const updated=await communityRpc('ev_community_resolve_request',{p_id:String(d.id),p_requester:String(d.uid),p_accept:!!d.accept});
+      if(!updated||!updated.id)throw new Error('EV_RESOLVE_FAILED');
+      const idx=communities.findIndex(x=>String(x.id)===String(updated.id));if(idx>=0)communities[idx]=normCom(updated);else communities.push(normCom(updated));
+      try{localStorage.setItem('evolute.communities',JSON.stringify(communities))}catch(e){}
+      pushCom();pushCm();
+    }catch(err){console.warn('Não foi possível responder à solicitação:',err);post(frames[from],{type:'cm-error',msg:'Não foi possível responder à solicitação no servidor. Confirme a conexão e tente novamente.'})}})();
   }
   else if(d.type==="pro-sync"){pushPros(frames[from])}
   else if(d.type==="pro-demo"){proDemo=!!d.on;try{localStorage.setItem("evolute.prodemo",proDemo?"1":"0")}catch(err){}pushProsAll()}
