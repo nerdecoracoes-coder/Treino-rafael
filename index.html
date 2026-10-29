@@ -749,8 +749,8 @@ const isMem=c=>(c.members||[]).some(m=>m.uid===PID());
 const cmKey=n=>CM_PREFIX+n+"."+uid;
 const ymdL=(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const normCom=c=>{c.members=c.members||[];c.checkins=c.checkins||[];c.posts=c.posts||[];c.challenges=c.challenges||[];c.requests=c.requests||[];return c};
-try{const s=JSON.parse(localStorage.getItem(cmKey("cache"))||"null");if(s&&Array.isArray(s.list))communities=s.list.map(normCom)}catch(e){}
-function cmCacheSave(){try{localStorage.setItem(cmKey("cache"),JSON.stringify({list:communities}))}catch(e){}}
+try{const s=JSON.parse(localStorage.getItem(cmKey("cache3"))||"null");if(s&&Array.isArray(s.list))communities=s.list.map(normCom)}catch(e){}
+function cmCacheSave(){try{localStorage.setItem(cmKey("cache3"),JSON.stringify({list:communities}))}catch(e){}}
 function newCode(){let c;do{c=Array.from({length:6},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random()*32)]).join("")}while(communities.some(x=>x.code===c));return c}
 function cmMsg(err){
   const m=String(err&&(err.message||err.details||err)||"");
