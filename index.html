@@ -820,7 +820,7 @@ function nfItems(){
   return cmNotifs.map(n=>({id:n.id,cat:"comunidades",title:"",body:"",ts:n.ts,read:!!n.read,meta:n,dest:{page:"cpage",arg:n.community}}))}
 function nfMarkRead(id){
   if(typeof CM_INBOX_READ==="function"){try{CM_INBOX_READ(id)}catch(e){}}
-  else{cmNotifs.forEach(n=>{if(id==="all"||n.id===id)n.read=true});cmNotifSave()}
+  else{cmNotifs.forEach(n=>{if(id==="all"||n.id===id)n.read=true});cmNotifs=cmNotifs.filter(n=>!n.read);cmNotifSave()}
   cmBadge(true);nfDraw()}
 let cmBadgeN=-1;
 function cmBadge(force){
@@ -866,10 +866,10 @@ function nfEnsure(){
     const b=e.target.closest("[data-nf]");if(b)nfOpenItem(b.dataset.nf)})}
 function nfDraw(){
   const L=document.getElementById("evNfL");if(!L)return;
-  const items=nfItems().slice().sort((a,b)=>b.ts-a.ts).slice(0,100),un=items.filter(x=>!x.read).length;
+  const items=nfItems().filter(x=>!x.read).sort((a,b)=>b.ts-a.ts).slice(0,100),un=items.length;
   document.getElementById("evNfS").textContent=un?(un===1?"1 não lida":un+" não lidas"):"Tudo em dia";
   document.getElementById("evNfAll").style.display=un?"":"none";
-  L.innerHTML=items.length?items.map(nfCard).join(""):'<div class="no">'+NF_SVG.sistema+'Nenhuma notificação por enquanto.<br>Check-ins, comentários e avisos do app aparecem aqui.</div>'}
+  L.innerHTML=items.length?items.map(nfCard).join(""):'<div class="no">'+NF_SVG.sistema+'Tudo em dia, nenhuma notificação nova.<br>Check-ins, comentários e avisos do app aparecem aqui.</div>'}
 function nfOpen(){nfEnsure();nfDraw();document.getElementById("evNf").classList.add("on")}
 function nfClose(){const e=document.getElementById("evNf");if(e)e.classList.remove("on")}
 let cmFocus=null;
