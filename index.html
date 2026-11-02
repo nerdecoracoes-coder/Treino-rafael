@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
+<html lang="pt-BR"><head><script>try{if(Object.keys(localStorage).some(function(k){return /^sb-.*-auth-token$/.test(k)}))document.documentElement.classList.add("ev-boot");setTimeout(function(){document.documentElement.classList.remove("ev-boot")},12000)}catch(e){}</script><style id="ev-boot-css">html.ev-boot #evolute-auth [data-auth-screen]{opacity:0!important;pointer-events:none!important}html.ev-boot #evolute-auth::after{content:"";position:fixed;left:50%;top:58%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:#ff7a2f;animation:evbootspin .8s linear infinite}@keyframes evbootspin{to{transform:rotate(360deg)}}</style><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b0d"><link rel="manifest" href="./manifest.json"><link rel="icon" type="image/png" sizes="192x192" href="./praticantes-icon-192.png"><link rel="apple-touch-icon" href="./praticantes-icon-192.png"><meta name="application-name" content="Evolute Training"><meta name="apple-mobile-web-app-title" content="Evolute Training"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>Evolute Training 2.0</title>
 <style>
@@ -469,7 +469,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  if(!overlay)return;
  const msg=(text,which)=>{const el=document.getElementById(which||'evolute-auth-message');if(el)el.textContent=text||'';};
  const screens=[...overlay.querySelectorAll('[data-auth-screen]')];
- const show=name=>{screens.forEach(s=>s.classList.toggle('is-active',s.dataset.authScreen===name));msg('');};
+ const show=name=>{document.documentElement.classList.remove('ev-boot');screens.forEach(s=>s.classList.toggle('is-active',s.dataset.authScreen===name));msg('');};
  overlay.querySelectorAll('[data-auth-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.authGo)));
  const dev=overlay.querySelector('[data-auth-action="developer"]'); if(dev)dev.style.display='none';
  const enterApp=()=>{overlay.style.transition='opacity .24s ease';overlay.style.opacity='0';setTimeout(()=>{overlay.remove();document.body.classList.add('evolute-authenticated');},240);};
@@ -570,7 +570,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
      window.evoluteCloud={client:client,userId:user.id,email:user.email||''};
      try{window.dispatchEvent(new Event('evolute-cloud-ready'))}catch(e){}
      await syncNow();
-   }catch(e){console.error('Evolute account initialization failed',e);cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;msg('Não consegui carregar sua conta com segurança. Nenhum histórico antigo foi apagado. Confira a conexão e tente novamente.');}
+   }catch(e){console.error('Evolute account initialization failed',e);cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;show('login');msg('Não consegui carregar sua conta com segurança. Nenhum histórico antigo foi apagado. Confira a conexão e tente novamente.');}
  }
  async function init(){
    const officialLogo=document.querySelector('header .logo, .header .logo, img.logo');
@@ -582,7 +582,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    const {data:__sd,error}=await client.auth.getSession();
    if(error){show('login');msg('Não foi possível verificar sua sessão: '+error.message);return;}
    let __auto=false;try{__auto=sessionStorage.getItem('evolute.autoEnter')==='1';sessionStorage.removeItem('evolute.autoEnter')}catch(e){}
-   if(__sd&&__sd.session&&__sd.session.user){window.__evoluteViaAuto=true;show('login');msg('Carregando seus treinos e histórico…');await activate(__sd.session.user);return;}
+   if(__sd&&__sd.session&&__sd.session.user){window.__evoluteViaAuto=true;msg('Carregando seus treinos e histórico…');await activate(__sd.session.user);return;}
    show('login');
    client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;show('login');} });
  }
