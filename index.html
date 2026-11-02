@@ -582,7 +582,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    const {data:__sd,error}=await client.auth.getSession();
    if(error){show('login');msg('Não foi possível verificar sua sessão: '+error.message);return;}
    let __auto=false;try{__auto=sessionStorage.getItem('evolute.autoEnter')==='1';sessionStorage.removeItem('evolute.autoEnter')}catch(e){}
-   if(__auto&&__sd&&__sd.session&&__sd.session.user){window.__evoluteViaAuto=true;show('login');msg('Carregando seus treinos e histórico…');await activate(__sd.session.user);return;}
+   if(__sd&&__sd.session&&__sd.session.user){window.__evoluteViaAuto=true;show('login');msg('Carregando seus treinos e histórico…');await activate(__sd.session.user);return;}
    show('login');
    client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudUser=null;ready=false;window.evoluteCloudSessionActive=false;show('login');} });
  }
