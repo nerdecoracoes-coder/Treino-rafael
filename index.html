@@ -1263,7 +1263,7 @@ async function cmPullNotifs(){
   if(cmNotifOn())fresh.forEach(n=>{
     if(typeof CM_NOTIFY==="function"){try{CM_NOTIFY(n)}catch(e){}}
     else cmNotifs.unshift({id:n.id,kind:n.kind,community:n.community,communityName:n.communityName||"",actor:n.actor||"",actorPk:n.actorPk||"",post:n.post||"",text:n.text||"",ts:n.ts||Date.now(),read:false});
-    try{if(document.hidden)evSysNotify(n.kind==="comment"?"Novo comentário":"Novo check-in",(n.actor||"Alguém")+" · "+(n.communityName||""),n.id)}catch(e){}});
+    try{if(document.hidden)evSysNotify(n.kind==="request"?"Pedido para entrar":n.kind==="comment"?"Novo comentário":"Novo check-in",(n.actor||"Alguém")+" · "+(n.communityName||""),n.id)}catch(e){}});
   cmNotifs.sort((a,b)=>b.ts-a.ts);cmNotifs=cmNotifs.slice(0,100);cmNotifSave();pushNotifs();
   try{await cmRpc("ev_cm_notifs_ack",{p_ids:list.map(n=>n.id)})}catch(e){}}
 /* ===== Central de notificações (painel único do app, aberto pelo sino de qualquer tela) ===== */
@@ -1299,7 +1299,10 @@ function nfTime(ts){
 function nfCard(it){
   const m=it.meta||{},kind=m.kind||"",c=m.community?communities.find(x=>x.id===m.community):null;
   let title=it.title||"Notificação",who="",line="",img="",ico=NF_SVG[it.cat]||NF_SVG.sistema;
-  if(kind==="checkin"||kind==="comment"){
+  if(kind==="request"){
+    title="Pedido para entrar";ico=NF_SVG.comment;who=m.actor||"Alguém";line=(m.communityName||"")+"  ·  aguardando sua aprovação";
+    if(c&&m.actorPk){const mm=(c.requests||[]).find(x=>x.uid===m.actorPk);if(mm&&isImg(mm.photo))img=mm.photo}
+  }else if(kind==="checkin"||kind==="comment"){
     title=kind==="comment"?"Novo comentário":"Novo check-in";ico=NF_SVG[kind];who=m.actor||"Alguém";
     if(kind==="checkin"){line=(m.communityName||"")+(m.text?" · "+m.text:"")}else line="“"+(m.text||"")+"”"+(m.communityName?"  ·  "+m.communityName:"");
     if(c){
