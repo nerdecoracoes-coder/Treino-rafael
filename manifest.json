@@ -1,27 +1,17 @@
 {
   "id": "/Treino-rafael/",
   "name": "Evolute Training",
-  "short_name": "Evolute Training",
-  "description": "Aplicativo Evolute Training para acompanhamento de treinos",
+  "short_name": "Evolute",
+  "description": "Evolute Training para praticantes",
   "lang": "pt-BR",
-  "start_url": "/Treino-rafael/?source=pwa-praticantes",
+  "start_url": "/Treino-rafael/?source=pwa",
   "scope": "/Treino-rafael/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#080b0d",
   "theme_color": "#080b0d",
   "icons": [
-    {
-      "src": "/Treino-rafael/praticantes-icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/Treino-rafael/praticantes-icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    {"src": "/Treino-rafael/praticantes-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/Treino-rafael/praticantes-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
   ]
 }
