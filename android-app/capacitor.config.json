@@ -1,0 +1,13 @@
+{
+  "appId": "com.evolute.training",
+  "appName": "Evolute Training",
+  "webDir": "www",
+  "server": {
+    "url": "https://nerdecoracoes-coder.github.io/Treino-rafael/",
+    "androidScheme": "https",
+    "allowNavigation": ["nerdecoracoes-coder.github.io", "*.supabase.co"]
+  },
+  "android": {
+    "useLegacyBridge": true
+  }
+}
