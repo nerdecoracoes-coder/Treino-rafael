@@ -1,0 +1,28 @@
+name: Sondagem de plugins (somente leitura)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sondar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar plugins e coletar documentação
+        run: |
+          mkdir -p /tmp/p && cd /tmp/p && npm init -y >/dev/null
+          npm i @capacitor/core @capacitor/cli @capacitor/android @capgo/capacitor-health @capacitor-community/background-geolocation @capacitor/geolocation 2>&1 | tail -3
+          mkdir -p "$GITHUB_WORKSPACE/_sondagem"
+          for p in @capgo/capacitor-health @capacitor-community/background-geolocation @capacitor/geolocation @capacitor/core @capacitor/android; do
+            d="$GITHUB_WORKSPACE/_sondagem/$(echo $p | tr '/@' '__')"; mkdir -p "$d"
+            cp "node_modules/$p/package.json" "$d/" 2>/dev/null || true
+            for f in README.md LICENSE LICENSE.md CHANGELOG.md; do cp "node_modules/$p/$f" "$d/" 2>/dev/null || true; done
+            cp node_modules/$p/dist/esm/definitions.d.ts "$d/" 2>/dev/null || true
+            cp -r node_modules/$p/android/src/main/AndroidManifest.xml "$d/" 2>/dev/null || true
+          done
+          npm ls --depth=0 > "$GITHUB_WORKSPACE/_sondagem/versoes.txt" 2>&1 || true
+          cd "$GITHUB_WORKSPACE" && git config user.name "sondagem" && git config user.email "sondagem@users.noreply.github.com"
+          git checkout -b sondagem-saida && git add _sondagem && git commit -qm "saída da sondagem" && git push -f origin sondagem-saida
