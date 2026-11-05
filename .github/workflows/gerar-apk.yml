@@ -29,6 +29,8 @@ jobs:
           mkdir -p android/app/src/main/assets/public && cp privacypolicy.html android/app/src/main/assets/public/privacypolicy.html
           sed -i 's/minSdkVersion = [0-9]*/minSdkVersion = 26/' android/variables.gradle
           grep minSdkVersion android/variables.gradle
+          python3 -m pip install --quiet pillow
+          python3 make_icons.py ../praticantes-icon-1024.png android/app/src/main/res
           npx cap sync android
       - name: Garantir a chave de assinatura (criada na 1ª vez e reaproveitada nas próximas)
         run: |
