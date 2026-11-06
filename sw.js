@@ -23,3 +23,10 @@ self.addEventListener("notificationclick", function (e) {
     return self.clients.openWindow(url);
   }));
 });
+
+/* Atualização: a página principal é sempre buscada na rede, sem cache do navegador (o app instalado ficava com a versão velha). */
+self.addEventListener("fetch", function (e) {
+  var r = e.request;
+  if (r.mode !== "navigate") return;
+  e.respondWith(fetch(r.url, { cache: "no-store", credentials: "same-origin" }).catch(function () { return fetch(r); }));
+});
