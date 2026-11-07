@@ -30,3 +30,18 @@ self.addEventListener("fetch", function (e) {
   if (r.mode !== "navigate") return;
   e.respondWith(fetch(r.url, { cache: "no-store", credentials: "same-origin" }).catch(function () { return fetch(r); }));
 });
+
+/* Fotos dos exercícios: ficam guardadas no aparelho (abrem na hora) e se atualizam em segundo plano. */
+var EV_EXC = "evolute-ex-v1";
+self.addEventListener("fetch", function (e) {
+  var r = e.request;
+  if (r.method !== "GET") return;
+  var u; try { u = new URL(r.url); } catch (x) { return; }
+  if (u.origin !== self.location.origin || !/\/ex\/[^\/]+\.(webp|png|jpe?g)$/i.test(u.pathname)) return;
+  e.respondWith(caches.open(EV_EXC).then(function (c) {
+    return c.match(u.origin + u.pathname).then(function (hit) {
+      var net = fetch(r.url).then(function (res) { if (res && res.ok) c.put(u.origin + u.pathname, res.clone()); return res; }).catch(function () { return hit; });
+      return hit || net;
+    });
+  }));
+});
