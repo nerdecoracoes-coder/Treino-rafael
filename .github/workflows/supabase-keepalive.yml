@@ -18,6 +18,8 @@ jobs:
             code=$(curl -s -o /tmp/r.txt -w "%{http_code}" "$URL" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" || echo 000)
             echo "tentativa $i: HTTP $code"
             case "$code" in 2*) exit 0;; esac
+            # 42501 = o banco recebeu e respondeu a consulta (a tabela é protegida contra acesso anônimo, o que é o esperado)
+            grep -q '"42501"' /tmp/r.txt && { echo "banco respondeu (tabela protegida): ok"; exit 0; }
             sleep 20
           done
           cat /tmp/r.txt; exit 1
