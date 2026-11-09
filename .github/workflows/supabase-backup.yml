@@ -1,0 +1,36 @@
+name: Supabase - backup semanal criptografado
+# Exporta o banco inteiro, criptografa e guarda por 90 dias como arquivo da execução.
+# Precisa de 2 segredos no repositório: SUPABASE_DB_URL e BACKUP_PASSPHRASE.
+on:
+  schedule:
+    - cron: "43 6 * * 0"   # domingo, 06:43 UTC
+  workflow_dispatch:
+permissions: {}
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir segredos
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          PW: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$DB" ] && [ -n "$PW" ] || { echo "::error::Faltam os segredos SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE"; exit 1; }
+      - name: Exportar e criptografar
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          PW: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -e
+          D=$(date -u +%Y-%m-%d)
+          docker run --rm postgres:17 pg_dump "$DB" --no-owner --no-privileges --schema=public --schema=auth > /tmp/dump.sql
+          test -s /tmp/dump.sql
+          gzip -9 /tmp/dump.sql
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PW" --symmetric --cipher-algo AES256 -o "/tmp/evolute-backup-$D.sql.gz.gpg" /tmp/dump.sql.gz
+          ls -l /tmp/evolute-backup-*.gpg
+          echo "FILE=/tmp/evolute-backup-$D.sql.gz.gpg" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evolute-backup
+          path: ${{ env.FILE }}
+          retention-days: 90

@@ -1,0 +1,23 @@
+name: Supabase - manter projeto ativo
+# Faz uma consulta leve todo dia para o Supabase grátis não pausar por inatividade.
+on:
+  schedule:
+    - cron: "17 9 * * *"   # todo dia, 09:17 UTC
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar o banco
+        run: |
+          set -e
+          URL="https://nzkjpeggckvjhfsyluar.supabase.co/rest/v1/evolute_sync_data?select=*&limit=1"
+          KEY="sb_publishable_lpEVZFxgVnTe4-ME8pWkhA__4Uza1RS"
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/r.txt -w "%{http_code}" "$URL" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" || echo 000)
+            echo "tentativa $i: HTTP $code"
+            case "$code" in 2*) exit 0;; esac
+            sleep 20
+          done
+          cat /tmp/r.txt; exit 1
