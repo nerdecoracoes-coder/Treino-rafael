@@ -14,9 +14,9 @@ jobs:
       - name: Instalar plugins e coletar documentação
         run: |
           mkdir -p /tmp/p && cd /tmp/p && npm init -y >/dev/null
-          npm i @capacitor/core @capacitor/cli @capacitor/android @capgo/capacitor-health @capacitor-community/background-geolocation @capacitor/geolocation 2>&1 | tail -3
+          npm i @capacitor/core @capacitor/cli @capacitor/android @capgo/capacitor-health @capacitor-community/background-geolocation @capacitor/geolocation @capacitor-community/text-to-speech 2>&1 | tail -3
           mkdir -p "$GITHUB_WORKSPACE/_sondagem"
-          for p in @capgo/capacitor-health @capacitor-community/background-geolocation @capacitor/geolocation @capacitor/core @capacitor/android; do
+          for p in @capacitor-community/text-to-speech @capgo/capacitor-health @capacitor-community/background-geolocation @capacitor/geolocation @capacitor/core @capacitor/android; do
             d="$GITHUB_WORKSPACE/_sondagem/$(echo $p | tr '/@' '__')"; mkdir -p "$d"
             cp "node_modules/$p/package.json" "$d/" 2>/dev/null || true
             for f in README.md LICENSE LICENSE.md CHANGELOG.md; do cp "node_modules/$p/$f" "$d/" 2>/dev/null || true; done
