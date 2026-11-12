@@ -1557,6 +1557,7 @@ function nfOpenItem(id){
   const m=it.meta||{};
   if(m.community){cmFocus={community:m.community,post:m.post||"",kind:m.kind||""};if(typeof CM_GOTO==="function")CM_GOTO("cpage",m.community)}
   else if(it.dest&&it.dest.page&&typeof CM_GOTO==="function")CM_GOTO(it.dest.page,it.dest.arg||null)}
+function cmSeen(){try{const k="evx_seen_"+uid;if(Date.now()-(+localStorage.getItem(k)||0)<18e5)return;localStorage.setItem(k,String(Date.now()));cmRpc("ev_seen",{}).catch(()=>{try{localStorage.removeItem(k)}catch(e){}})}catch(e){}}
 async function cmRefresh(){
   const known={};communities.forEach(c=>{if(c.version!=null&&!c._dirty&&!c._pending)known[c.id]=c.version});
   const items=await cmRpc("ev_cm_list",{p_known:known});
@@ -1564,7 +1565,7 @@ async function cmRefresh(){
   const byId=new Map(communities.map(c=>[String(c.id),c])),next=[];
   for(const it of items){if(!it||!it.id)continue;if(it.unchanged){const old=byId.get(String(it.id));if(old)next.push(old)}else next.push(normCom(it))}
   communities.forEach(c=>{if(c._pending&&!next.some(x=>x.id===c.id))next.push(c)});
-  communities=next;cmCacheSave();pushCom();pushCm();
+  communities=next;cmCacheSave();pushCom();pushCm();cmSeen();
   try{await cmPullNotifs()}catch(e){}}
 let cmRun=null,cmDelay=0,cmTimer=null,cmWarned=false;
 function cmFlush(){
