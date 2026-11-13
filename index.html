@@ -1124,6 +1124,7 @@ function cmSeenAdd(ids){try{const a=cmSeenRead();let ch=false;(ids||[]).forEach(
 function evAppBadge(n){try{if(n>0&&navigator.setAppBadge)navigator.setAppBadge(n).catch(()=>{});else if(navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{})}catch(e){}}
 function evSysNotify(title,body,tag){
   try{if(!("Notification"in window)||Notification.permission!=="granted")return;
+    if(EV_PX.subOk)return; /* aparelho registrado: o servidor já manda o aviso (evita duplicar e silenciar) */
     const o={body,tag:tag||"evolute",renotify:true,silent:false,vibrate:[200,100,200],icon:"./praticantes-icon-192.png",badge:"./praticantes-icon-192.png",data:{url:"./"}};
     if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>{if(r)r.showNotification(title,o);else new Notification(title,o)}).catch(()=>{});else new Notification(title,o)}catch(e){}}
 const EV_VAPID="BF8GhJSvPXTXg7NrPEOffm3SYWKFk3xkwLGxOX8lrzD3HocY6Zx4EwbLu6OG2-b9Rv5F1UTSyDf0_aVbgx9RgGQ";
