@@ -1126,14 +1126,68 @@ function evSysNotify(title,body,tag){
   try{if(!("Notification"in window)||Notification.permission!=="granted")return;
     const o={body,tag:tag||"evolute",renotify:true,silent:false,vibrate:[200,100,200],icon:"./praticantes-icon-192.png",badge:"./praticantes-icon-192.png",data:{url:"./"}};
     if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>{if(r)r.showNotification(title,o);else new Notification(title,o)}).catch(()=>{});else new Notification(title,o)}catch(e){}}
-function evAskNotif(){try{if("Notification"in window&&Notification.permission==="default"){Notification.requestPermission().then(()=>evPushSubscribe()).catch(()=>{})}else evPushSubscribe()}catch(e){}}
-const EV_VAPID="BAG5F3NbcLgIxdHtVb05vjvezC79fPLD_bwJ_96hslq8xADJaavsWhZOFXmdWO_bxVZNwF9Vu1NScmTE_I36xaI";
+const EV_VAPID="BF8GhJSvPXTXg7NrPEOffm3SYWKFk3xkwLGxOX8lrzD3HocY6Zx4EwbLu6OG2-b9Rv5F1UTSyDf0_aVbgx9RgGQ";
 function evB64u(s){const p="=".repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/")),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
+function evPushOk(){return "serviceWorker"in navigator&&"PushManager"in window&&"Notification"in window}
+const EV_PX={last:"",busy:false,subOk:false};
+/* inscreve este aparelho para receber avisos; devolve {ok,msg} */
 async function evPushSubscribe(){
-  try{if(!EV_VAPID||!evCloud()||!("serviceWorker"in navigator)||!("PushManager"in window)||!("Notification"in window)||Notification.permission!=="granted")return;
-    const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+  try{
+    if(!evPushOk())return{ok:false,msg:"Este navegador não aceita avisos. No iPhone, instale o app na tela inicial; no Android, use o Chrome."};
+    if(!evCloud())return{ok:false,msg:"Entre na sua conta primeiro."};
+    if(Notification.permission==="denied")return{ok:false,msg:"Os avisos estão bloqueados neste aparelho. Abra as configurações do app (ou do Chrome) > Notificações e permita."};
+    if(Notification.permission!=="granted")return{ok:false,msg:"Permissão ainda não concedida."};
+    const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,r)=>setTimeout(()=>r(new Error("O serviço de avisos não iniciou. Feche e abra o app de novo.")),9000))]);
+    let sub=await reg.pushManager.getSubscription();
+    if(sub){try{const k=sub.options&&sub.options.applicationServerKey;if(k){const x=new Uint8Array(k),y=evB64u(EV_VAPID);if(x.length!==y.length||x.some((v,i)=>v!==y[i])){await sub.unsubscribe();sub=null}}}catch(e){}}
     if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:evB64u(EV_VAPID)});
-    const j=sub.toJSON();await evRpc("ev_push_save",{p_sub:{endpoint:j.endpoint,keys:j.keys}})}catch(e){}}
+    const j=sub.toJSON();
+    await evRpc("ev_push_save",{p_sub:{endpoint:j.endpoint,keys:j.keys}});
+    EV_PX.subOk=true;return{ok:true,msg:"Este aparelho está pronto para receber avisos."}
+  }catch(e){EV_PX.subOk=false;return{ok:false,msg:"Não consegui registrar o aparelho: "+String(e&&e.message||e).slice(0,140)}}}
+async function evPushEnable(){
+  try{if(evPushOk()&&Notification.permission==="default")await Notification.requestPermission()}catch(e){}
+  return evPushSubscribe()}
+function evAskNotif(){try{if(evPushOk()&&Notification.permission==="default")evPushEnable();else evPushSubscribe()}catch(e){}}
+/* envia um aviso de teste pelo servidor e conta o que aconteceu */
+async function evPushTest(){
+  const r=await evPushSubscribe();if(!r.ok)return r.msg;
+  const c=evCloud();if(!c||!c.client||!c.client.functions)return"Sem conexão com a conta.";
+  let out;try{out=await c.client.functions.invoke("push-notify",{body:{test:true}})}catch(e){return"O servidor de avisos não respondeu ("+String(e&&e.message||e).slice(0,80)+")."}
+  if(out.error){let st="";try{st=out.error.context&&out.error.context.status?" (código "+out.error.context.status+")":""}catch(e){}return"O servidor de avisos não está instalado ou recusou o pedido"+st+". Falta publicar a função push-notify no Supabase."}
+  const d=out.data||{};
+  if(!d.subs)return"O servidor não encontrou este aparelho. Toque em Ativar de novo.";
+  if(d.sent>0)return"Teste enviado. Deve aparecer agora com som. Se não aparecer, veja se as notificações do app não estão silenciadas no aparelho.";
+  return"O servidor tentou enviar mas o aparelho recusou"+(d.err?" ("+d.err+")":"")+". Toque em Ativar de novo."}
+let _pxStyle=0;
+function evPxCss(){if(_pxStyle)return;_pxStyle=1;const st=document.createElement("style");st.textContent='#evPxBar{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:2147482000;display:none;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-radius:20px;background:linear-gradient(90deg,#2a160c,#12181c 70%);border:1px solid #4a2c18;color:#f3f4f5;font-weight:600;font-size:13.5px;line-height:1.3;font-family:inherit;box-shadow:0 12px 34px rgba(0,0,0,.55)}#evPxBar.on{display:flex}#evPxBar span{flex:1}#evPxBar button{border:0;border-radius:999px;padding:10px 16px;font-weight:800;font-size:13px;line-height:1;font-family:inherit;background:#ff681c;color:#1a0a02;cursor:pointer}#evPxBar button.q{background:transparent;color:#8a949f;padding:10px 8px;font-size:16px}#evNf .px{border:1px solid #4a2c18;border-radius:20px;background:linear-gradient(90deg,rgba(255,104,28,.14),#12181c 60%);padding:14px;display:flex;flex-direction:column;gap:9px;font-size:13.5px;line-height:1.4;color:#e6eaee}#evNf .px b{font-size:15px}#evNf .px button{align-self:flex-start;border:0;border-radius:999px;padding:10px 16px;font-weight:800;font-size:13px;line-height:1;font-family:inherit;background:#ff681c;color:#1a0a02;cursor:pointer}#evNf .px button[disabled]{opacity:.55}#evNf .px .r{color:#9fb0bd;font-size:12.5px}';document.head.appendChild(st)}
+function evPushPaint(){
+  try{const L=document.getElementById("evNfL");if(!L)return;evPxCss();let el=document.getElementById("evPxCard");if(!el){el=document.createElement("div");el.id="evPxCard";el.className="px"}
+    L.insertBefore(el,L.firstChild);
+    if(!evPushOk()){el.innerHTML="<b>Avisos no celular</b><span>Este navegador não aceita avisos. No iPhone, instale o app na tela inicial.</span>";return}
+    const p=Notification.permission;
+    if(p==="granted"){el.innerHTML='<b>Avisos no celular: ativos</b><span class="r" id="evPxR">'+(EV_PX.last||"Você recebe som e o número no ícone quando alguém interagir com você.")+'</span><button type="button" id="evPxT">Enviar teste</button>'}
+    else if(p==="denied"){el.innerHTML='<b>Avisos bloqueados</b><span>Abra as configurações do app (ou do Chrome) &gt; Notificações e permita. Depois volte aqui.</span>'}
+    else el.innerHTML='<b>Ative os avisos no celular</b><span>Para ouvir o som e ver o número no ícone quando alguém curtir, comentar ou pedir para entrar.</span><button type="button" id="evPxA">Ativar avisos</button>'
+  }catch(e){}}
+async function evPxClick(t){
+  if(t.closest("#evPxA")){const b=document.getElementById("evPxA");if(b)b.disabled=true;const r=await evPushEnable();EV_PX.last=r.msg;evPushPaint();evPxBar(false);return true}
+  if(t.closest("#evPxT")){const b=document.getElementById("evPxT");if(b){b.disabled=true;b.textContent="Enviando..."}EV_PX.last=await evPushTest();evPushPaint();return true}
+  return false}
+function evPxBar(show){
+  try{evPxCss();let el=document.getElementById("evPxBar");
+    if(!el){el=document.createElement("div");el.id="evPxBar";el.innerHTML='<span>Ative os avisos para ouvir o som e ver o número no ícone.</span><button type="button" id="evPxBA">Ativar</button><button type="button" class="q" id="evPxBX" aria-label="Agora não">✕</button>';document.body.appendChild(el);
+      el.addEventListener("click",async e=>{if(e.target.closest("#evPxBX")){try{localStorage.setItem("evx_pxbar",String(Date.now()))}catch(x){}el.classList.remove("on");return}
+        if(e.target.closest("#evPxBA")){el.classList.remove("on");const r=await evPushEnable();EV_PX.last=r.msg}})}
+    el.classList.toggle("on",!!show)}catch(e){}}
+/* ao entrar: registra o aparelho (se já permitido) ou oferece ativar */
+(function(){let n=0,done=0;const t=setInterval(()=>{
+  if(++n>120){clearInterval(t);return}
+  if(!evPushOk()||!evCloud())return;
+  if(Notification.permission==="granted"){evPushSubscribe();clearInterval(t);return}
+  if(Notification.permission==="default"){let ts=0;try{ts=+localStorage.getItem("evx_pxbar")||0}catch(e){}
+    if(Date.now()-ts>432e5)setTimeout(()=>{if(Notification.permission==="default")evPxBar(true)},2500);clearInterval(t)}else clearInterval(t)},3000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&evPushOk()&&Notification.permission==="granted"&&evCloud()){const k=Date.now();if(k-done>6e5){done=k;evPushSubscribe()}}})})();
 try{if("serviceWorker"in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}
 /* ---- grupamentos: fichas antigas (categoria/categorias) ---- */
 const GRP_LIB={"crossover na polia alta":0,"crossover na polia baixa":0,"crossover na polia media":0,"crucifixo declinado":0,"crucifixo inclinado com halteres":0,"crucifixo na maquina":0,"crucifixo na maquina (peck deck)":0,"crucifixo reto com halteres":0,"flexao de bracos":0,"flexao declinada":0,"flexao inclinada":0,"mergulho nas paralelas":0,"mergulho no banco":0,"pullover com halter":0,"pullover na polia":0,"supino convergente":0,"supino declinado":0,"supino fechado":0,"supino inclinado articulado":0,"supino inclinado com barra":0,"supino inclinado com halteres":0,"supino inclinado na maquina":0,"supino na maquina":0,"supino reto com barra":0,"supino reto com halteres":0,"supino reto maquina":0,"supino smith":0,"barra fixa com pegada neutra":1,"barra fixa pronada":1,"barra fixa supinada":1,"extensao de quadril no banco":1,"extensao lombar na maquina":1,"extensao lombar no banco":1,"face pull":1,"puxada aberta na polia":1,"puxada alta neutra":1,"puxada atras da nuca":1,"puxada frontal aberta":1,"puxada frontal com pegada neutra":1,"puxada frontal fechada":1,"puxada unilateral na polia":1,"pulldown com bracos estendidos":1,"remada articulada":1,"remada baixa":1,"remada baixa aberta":1,"remada baixa com pegada neutra":1,"remada baixa com triangulo":1,"remada baixa triangulo":1,"remada cavalinho (t-bar)":1,"remada curvada com barra":1,"remada curvada com halteres":1,"remada na maquina":1,"remada neutra na maquina":1,"remada smith":1,"remada unilateral com halter":1,"remo ergometrico":1,"levantamento terra":1,"levantamento terra convencional":1,"levantamento terra romeno":1,"levantamento terra com pernas rigidas":1,"levantamento terra sumo":1,"rdl na polia baixa":1,"stiff com barra":1,"stiff com halteres":1,"bom-dia com barra":1,"good morning (bom-dia)":1,"desenvolvimento arnold":2,"desenvolvimento com barra":2,"desenvolvimento com halteres":2,"desenvolvimento maquina":2,"desenvolvimento na maquina":2,"desenvolvimento smith":2,"elevacao frontal com barra":2,"elevacao frontal com halteres":2,"elevacao frontal na polia":2,"elevacao lateral":2,"elevacao lateral com halteres":2,"elevacao lateral na maquina":2,"elevacao lateral na polia":2,"elevacao lateral unilateral":2,"encolhimento com barra":2,"encolhimento com halteres":2,"encolhimento de ombros com barra":2,"encolhimento de ombros com halteres":2,"remada alta":2,"remada alta com barra":2,"remada alta na polia":2,"crucifixo inverso com halteres":2,"crucifixo inverso na maquina":2,"crucifixo inverso na polia":2,"rotacao externa do ombro na polia":2,"rotacao interna do ombro na polia":2,"biceps maquina":3,"biceps na maquina":3,"rosca alternada com halteres":3,"rosca bilateral na maquina":3,"rosca concentrada":3,"rosca direta com barra reta":3,"rosca direta com barra w":3,"rosca direta com halteres":3,"rosca inclinada com halteres":3,"rosca inversa":3,"rosca inversa com barra":3,"rosca martelo":3,"rosca martelo com halteres":3,"rosca martelo cruzada":3,"rosca na polia baixa":3,"rosca scott com barra":3,"rosca scott com halteres":3,"rosca scott na maquina":3,"rosca spider":3,"rosca unilateral na polia":3,"rosca zottman":3,"triceps acima da cabeca na polia":4,"triceps coice com halter":4,"triceps coice na polia":4,"triceps frances com barra":4,"triceps frances com halter":4,"triceps frances unilateral na polia":4,"triceps na maquina":4,"triceps na polia com barra reta":4,"triceps na polia com corda":4,"triceps testa com barra w":4,"triceps testa com corda na polia":4,"triceps testa com halteres":4,"triceps testa na polia":4,"triceps testa polia":4,"triceps unilateral na polia":4,"extensao de punhos":5,"flexao de dedos com anilha":5,"flexao de punhos com barra":5,"flexao de punhos com halteres":5,"pronacao de antebraco com halter":5,"rosca de punho":5,"rosca de punho inversa":5,"supinacao de antebraco com halter":5,"sustentacao de anilhas (plate pinch)":5,"suspensao na barra (dead hang)":5,"caminhada do fazendeiro":5,"caminhada do fazendeiro (farmer’s walk)":5,"farmer’s walk":5,"afundo com barra":6,"afundo com halteres":6,"afundo no smith":6,"afundo reverso":6,"agachamento bulgaro":6,"agachamento com calcanhares elevados":6,"agachamento com halter (goblet)":6,"agachamento frontal":6,"agachamento livre":6,"agachamento no hack":6,"agachamento no pendulum":6,"agachamento no smith":6,"agachamento sumo":6,"cadeira extensora":6,"leg press 45°":6,"leg press horizontal":6,"leg press maquina":6,"leg press vertical":6,"passada caminhando":6,"passada reversa":6,"sissy squat":6,"step-up no banco ou caixa":6,"cadeira flexora":7,"flexora em pe":7,"flexora unilateral":7,"flexao de joelho no cabo":7,"flexao de joelhos com bola":7,"mesa flexora":7,"nordic curl":7,"abducao de quadril com elastico":8,"abducao de quadril na maquina":8,"abducao de quadril na polia":8,"abducao lateral deitado":8,"abducao com cabo":8,"clamshell com elastico":8,"coice com caneleira":8,"coice de gluteo na maquina":8,"coice de gluteo na polia":8,"elevacao pelvica":8,"elevacao pelvica com barra":8,"elevacao pelvica na maquina":8,"elevacao pelvica no chao":8,"elevacao pelvica unilateral":8,"glute bridge":8,"hiperextensao com foco nos gluteos":8,"pull-through na polia":8,"aducao de quadril com bola":9,"aducao de quadril deitado":9,"aducao de quadril na polia":9,"cadeira abdutora":9,"cadeira adutora":9,"caminhada lateral com miniband":9,"dorsiflexao do tornozelo na polia ou com elastico":10,"elevacao da ponta dos pes (tibial anterior)":10,"elevacao de panturrilha na maquina":10,"gemeos no leg press":10,"panturrilha em pe":10,"panturrilha no degrau":10,"panturrilha no hack":10,"panturrilha no leg press":10,"panturrilha no smith":10,"panturrilha sentado":10,"panturrilha unilateral em pe":10,"abdominal bicicleta":11,"abdominal canivete":11,"abdominal com bola suica":11,"abdominal curto (crunch)":11,"abdominal declinado":11,"abdominal infra":11,"abdominal na maquina":11,"abdominal na polia ajoelhado":11,"abdominal obliquo":11,"abdominal reverso":11,"abdominal russo (russian twist)":11,"abdominal tradicional":11,"bird dog":11,"dead bug":11,"elevacao de joelhos na barra":11,"elevacao de joelhos na cadeira romana":11,"elevacao de pernas deitado":11,"elevacao de pernas na barra":11,"pallof press":11,"prancha abdominal":11,"prancha com elevacao de braco":11,"prancha com toque nos ombros":11,"prancha lateral":11,"rollout com roda abdominal":11,"rotacao de tronco na maquina":11,"woodchopper na polia":11,"agachamento com desenvolvimento (thruster)":12,"agachamento com salto":12,"arrasto de treno":12,"burpee":12,"caminhada com carga":12,"clean":12,"hang clean":12,"kettlebell swing":12,"mountain climber":12,"power clean":12,"push jerk":12,"push press":12,"sled pull":12,"sled push":12,"turkish get-up":12,"air bike":13,"battle ropes":13,"bicicleta de spinning":13,"bicicleta ergometrica":13,"corda naval":13,"corrida":13,"eliptico":13,"ergometro de esqui (skierg)":13,"esteira":13,"pular corda":13,"simulador de escada":13,"sprints na esteira":13,"empurrada de treno":13,"puxada de treno":13};
@@ -1506,10 +1560,12 @@ function nfEnsure(){
   const el=document.createElement("div");el.id="evNf";el.innerHTML='<div class="sh" role="dialog" aria-label="Notificações"><div class="gp"></div><div class="hd"><div><h3>Notificações</h3><div class="sub" id="evNfS"></div></div><div class="ac"><button type="button" id="evNfAll">Marcar todas</button><button type="button" class="x" id="evNfX" aria-label="Fechar">✕</button></div></div><div class="ls" id="evNfL"></div></div>';
   document.body.appendChild(el);
   el.addEventListener("click",e=>{
+    if(e.target.closest("#evPxCard")){evPxClick(e.target);return}
     if(e.target===el||e.target.closest("#evNfX")){nfClose();return}
     if(e.target.closest("#evNfAll")){nfMarkRead("all");return}
     const b=e.target.closest("[data-nf]");if(b)nfOpenItem(b.dataset.nf)})}
-function nfDraw(){
+function nfDraw(){try{nfDraw0()}finally{evPushPaint()}}
+function nfDraw0(){
   const L=document.getElementById("evNfL");if(!L)return;
   const items=nfItems().filter(x=>!x.read).sort((a,b)=>b.ts-a.ts).slice(0,100),un=items.length;
   document.getElementById("evNfS").textContent=un?(un===1?"1 não lida":un+" não lidas"):"Tudo em dia";
