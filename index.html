@@ -1156,7 +1156,7 @@ async function evPushTest(){
   let out;try{out=await c.client.functions.invoke("push-notify",{body:{test:true}})}catch(e){return"O servidor de avisos não respondeu ("+String(e&&e.message||e).slice(0,80)+")."}
   if(out.error){let st="";try{st=out.error.context&&out.error.context.status?" (código "+out.error.context.status+")":""}catch(e){}return"O servidor de avisos não está instalado ou recusou o pedido"+st+". Falta publicar a função push-notify no Supabase."}
   const d=out.data||{};
-  if(!d.subs)return"O servidor não encontrou este aparelho. Toque em Ativar de novo.";
+  if(!d.subs)return"O servidor não encontrou este aparelho"+(d.dberr?" (erro: "+d.dberr+")":"")+". Toque em Ativar de novo.";
   if(d.sent>0)return"Teste enviado. Deve aparecer agora com som. Se não aparecer, veja se as notificações do app não estão silenciadas no aparelho.";
   return"O servidor tentou enviar mas o aparelho recusou"+(d.err?" ("+d.err+")":"")+". Toque em Ativar de novo."}
 let _pxStyle=0;
