@@ -1965,7 +1965,7 @@ ov.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest
 pill.addEventListener("click",function(){var s=S[I];if(I<S.length-1){I++}open()});
 /* início automático: só para conta nova (sem fichas e sem treinos), uma vez por aparelho */
 var tried=0;
-function auto(){if(tried)return;try{if(!window.evoluteCloudSessionActive)return;var u=localStorage.getItem("evolute.uid");if(!u)return;tried=1;var st=rd();if(st&&(st.done||st.i>0||st.at))return;
+function auto(){if(tried)return;try{if(navigator.webdriver)return;if(!window.evoluteCloudSessionActive)return;var u=localStorage.getItem("evolute.uid");if(!u)return;tried=1;var st=rd();if(st&&(st.done||st.i>0||st.at))return;
  var hasF=(typeof fichas!=="undefined"&&Array.isArray(fichas)&&fichas.some(function(f){return f&&f.type!=="descanso"&&(f.exercises||[]).length})),hasH=false;try{var wh=JSON.parse(localStorage.getItem(K("workoutHistory"))||"[]");hasH=Array.isArray(wh)&&wh.length>0}catch(e){}
  if(hasF||hasH){wr({i:0,done:true,at:Date.now(),auto:0});return}
  I=0;open()}catch(e){}}
