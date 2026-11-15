@@ -685,7 +685,7 @@ setTimeout(()=>{try{warmEx()}catch(e){}},3000);
 let gateT=null;function gateOn(k){try{warmEx()}catch(e){}const f=frames[k];if(!f)return;f.classList.add("opening");clearTimeout(gateT);gateT=setTimeout(()=>gateOff(k),4500)}
 function gateOff(k){clearTimeout(gateT);const f=frames[k];if(f)f.classList.remove("opening")}
 function openPage(page,arg,day){
-  if(!(page in SUB))return;if(page==="cpage"&&arg)try{cmHit(String(arg))}catch(e){}if(page==="flexibilizar"&&frames.flexibilizar){frames.flexibilizar.remove();delete frames.flexibilizar;ready.delete("flexibilizar")}
+  if(!(page in SUB))return;try{evSeen(page,arg)}catch(e){}if(page==="cpage"&&arg)try{cmHit(String(arg))}catch(e){}if(page==="flexibilizar"&&frames.flexibilizar){frames.flexibilizar.remove();delete frames.flexibilizar;ready.delete("flexibilizar")}
   if(page===current&&page!=="ficha"&&page!=="sessao"&&page!=="cpage"&&page!=="profissional")return;
   args[page]={id:arg||null,day:Number.isInteger(day)?day:null};stack.push(current);show(page);if(page==="ficha"&&frames.ficha)gateOn("ficha");
   if((page==="ficha"||page==="sessao"||page==="cpage"||page==="profissional"||page==="saude"||page==="corridaplus")&&ready.has(page))post(frames[page],{type:"open",arg:args[page]});if(page==="saude"&&args.saude&&args.saude.id)[250,900].forEach(ms=>setTimeout(()=>{try{post(frames.saude,{type:"open",arg:args.saude})}catch(e){}},ms));if(page==="corridaplus"&&args.corridaplus&&args.corridaplus.id)[250,900].forEach(ms=>setTimeout(()=>{try{post(frames.corridaplus,{type:"open",arg:args.corridaplus})}catch(e){}},ms));
@@ -1138,7 +1138,21 @@ function cmHit(id){const o=cmHitsRead(),h=o[id]||{n:0,last:0};h.n++;h.last=Date.
 function cmSeenRead(){try{const a=JSON.parse(localStorage.getItem(cmKey("seen"))||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
 function cmSeenAdd(ids){try{const a=cmSeenRead();let ch=false;(ids||[]).forEach(i=>{if(i&&!a.includes(i)){a.push(i);ch=true}});if(ch)localStorage.setItem(cmKey("seen"),JSON.stringify(a.slice(-600)))}catch(e){}}
 /* ---- ícone do app (número) e aviso do sistema com som ---- */
-function evClearSys(n){try{n=n>0?n:0;if(navigator.serviceWorker)navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.getNotifications)r.getNotifications().then(l=>{l.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));l.slice(0,Math.max(0,l.length-n)).forEach(x=>{try{x.close()}catch(e){}})}).catch(()=>{})}).catch(()=>{})}catch(e){}}
+function evClearSys(n){try{n=n>0?n:0;if(!navigator.serviceWorker)return;
+  let un=new Set(),seen=new Set();try{un=new Set(nfItems().filter(x=>!x.read).map(x=>String(x.id)));seen=new Set(cmSeenRead().map(String))}catch(e){}
+  navigator.serviceWorker.getRegistration().then(r=>{if(!r||!r.getNotifications)return;r.getNotifications().then(l=>{
+    const left=[];l.forEach(x=>{const t=String(x.tag||"");if(t&&seen.has(t)&&!un.has(t)){try{x.close()}catch(e){}}else left.push(x)});
+    left.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));left.slice(0,Math.max(0,left.length-n)).forEach(x=>{try{x.close()}catch(e){}})}).catch(()=>{})}).catch(()=>{})}catch(e){}}
+/* o assunto já foi visto dentro do app -> some do sino, do ícone e da barra */
+function evSeen(page,arg){try{
+  const a=arg==null?"":String(arg);let ch=false;
+  cmNotifs.forEach(m=>{if(m.read)return;const k=m.kind;let hit=false;
+    if(page==="cpage")hit=!!a&&String(m.community)===a&&k!=="request"&&k!=="conexao"&&k!=="ficha";
+    else if(page==="ficha")hit=k==="ficha"&&!!a&&String(m.link||"")===a&&!(m.dest&&m.dest.page);
+    else if(page==="saude")hit=!!(m.dest&&m.dest.page==="saude");
+    else if(page==="profissionais")hit=k==="conexao";
+    if(hit){m.read=true;ch=true}});
+  if(ch){cmNotifs=cmNotifs.filter(m=>!m.read);cmNotifSave();setTimeout(()=>{try{cmBadge(true);nfDraw()}catch(e){}},50)}}catch(e){}}
 function evAppBadge(n){try{if(!document.hidden)evClearSys(n);if(n>0&&navigator.setAppBadge)navigator.setAppBadge(n).catch(()=>{});else if(navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{})}catch(e){}}
 function evSysNotify(title,body,tag){
   try{if(!("Notification"in window)||Notification.permission!=="granted")return;
