@@ -1138,7 +1138,8 @@ function cmHit(id){const o=cmHitsRead(),h=o[id]||{n:0,last:0};h.n++;h.last=Date.
 function cmSeenRead(){try{const a=JSON.parse(localStorage.getItem(cmKey("seen"))||"[]");return Array.isArray(a)?a:[]}catch(e){return[]}}
 function cmSeenAdd(ids){try{const a=cmSeenRead();let ch=false;(ids||[]).forEach(i=>{if(i&&!a.includes(i)){a.push(i);ch=true}});if(ch)localStorage.setItem(cmKey("seen"),JSON.stringify(a.slice(-600)))}catch(e){}}
 /* ---- ícone do app (número) e aviso do sistema com som ---- */
-function evAppBadge(n){try{if(n>0&&navigator.setAppBadge)navigator.setAppBadge(n).catch(()=>{});else if(navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{})}catch(e){}}
+function evClearSys(){try{if(navigator.serviceWorker)navigator.serviceWorker.getRegistration().then(r=>{if(r&&r.getNotifications)r.getNotifications().then(l=>l.forEach(x=>{try{x.close()}catch(e){}})).catch(()=>{})}).catch(()=>{})}catch(e){}}
+function evAppBadge(n){try{if(n<1&&!document.hidden)evClearSys();if(n>0&&navigator.setAppBadge)navigator.setAppBadge(n).catch(()=>{});else if(navigator.clearAppBadge)navigator.clearAppBadge().catch(()=>{})}catch(e){}}
 function evSysNotify(title,body,tag){
   try{if(!("Notification"in window)||Notification.permission!=="granted")return;
     if(EV_PX.subOk||evPxOff())return; /* aparelho registrado: o servidor já manda o aviso (evita duplicar e silenciar) */
