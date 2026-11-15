@@ -589,7 +589,8 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  overlay.querySelector('#evolute-login-form').addEventListener('submit',async e=>{e.preventDefault();if(!client){msg('Serviço de login indisponível.');return;}const email=document.getElementById('evolute-email').value.trim();const password=document.getElementById('evolute-password').value;msg('Entrando…');const {data,error}=await client.auth.signInWithPassword({email,password});if(error){msg(error.message);return;}await activate(data.user);});
  overlay.querySelector('#evolute-register-form').addEventListener('submit',async e=>{e.preventDefault();if(!client){msg('Serviço de login indisponível.','evolute-register-message');return;}const email=document.getElementById('evolute-register-email').value.trim();const password=document.getElementById('evolute-register-password').value;const confirm=document.getElementById('evolute-confirm-password').value;if(password!==confirm){msg('As senhas não coincidem.','evolute-register-message');return;}if(password.length<6){msg('Use uma senha com pelo menos 6 caracteres.','evolute-register-message');return;}msg('Criando conta…','evolute-register-message');const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0]}});if(error){msg(error.message,'evolute-register-message');return;}if(data.session)await activate(data.user);else msg('Cadastro iniciado. Confirme o e-mail e depois entre.','evolute-register-message');});
  overlay.querySelector('[data-auth-action="forgot"]').addEventListener('click',async()=>{const email=document.getElementById('evolute-email').value.trim();if(!email){msg('Digite seu e-mail primeiro.');return;}if(!client){msg('Serviço de autenticação indisponível.');return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});msg(error?error.message:'Se houver uma conta para esse e-mail, enviaremos instruções para redefinir a senha.');});
- window.evoluteCloudSignOut=async function(){ready=false;window.evoluteCloudSessionActive=false;window.evoluteCloud=null;if(client)await client.auth.signOut();localStorage.removeItem('evolute.authUid');show('login');};
+ window.evoluteAuthOAuth=function(provider){if(!client||!client.auth||!client.auth.signInWithOAuth)return Promise.reject(new Error('no-client'));return client.auth.signInWithOAuth({provider:provider,options:{redirectTo:location.origin+location.pathname}})};
+  window.evoluteCloudSignOut=async function(){ready=false;window.evoluteCloudSessionActive=false;window.evoluteCloud=null;if(client)await client.auth.signOut();localStorage.removeItem('evolute.authUid');show('login');};
  init();
 })();
 </script>
@@ -1541,12 +1542,13 @@ function nfMarkRead(id){
   if(typeof CM_INBOX_READ==="function"){try{CM_INBOX_READ(id)}catch(e){}}
   else{cmNotifs.forEach(n=>{if(id==="all"||n.id===id)n.read=true});cmNotifs=cmNotifs.filter(n=>!n.read);cmNotifSave()}
   cmBadge(true);nfDraw()}
-let cmBadgeN=-1;
+let cmBadgeN=-1,cmBadgeAt=0;
 function cmBadge(force){
   const n=nfItems().filter(x=>!x.read).length;
-  if(!force&&n===cmBadgeN)return;cmBadgeN=n;evAppBadge(n);evTopBadge(n);
+  if(!force&&n===cmBadgeN){if(Date.now()-cmBadgeAt>12000){cmBadgeAt=Date.now();evAppBadge(n)}return}cmBadgeAt=Date.now();cmBadgeN=n;evAppBadge(n);evTopBadge(n);
   Object.keys(frames||{}).forEach(k=>{if(ready.has(k))post(frames[k],{type:"notif-badge",n})})}
 setInterval(()=>cmBadge(false),2500);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)cmBadge(true)});window.addEventListener('focus',()=>cmBadge(true));window.addEventListener('pageshow',()=>cmBadge(true));
 const NF_SVG={
   checkin:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></svg>',
   comment:'<svg viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg>',
@@ -2131,7 +2133,14 @@ body>*{position:relative;z-index:1}
   document.querySelectorAll('[data-social]').forEach(function(btn){
     btn.addEventListener('click',function(){
       var msg=document.querySelector('[data-auth-screen].is-active .auth-message');
-      if(msg)msg.textContent='A entrada com '+btn.getAttribute('data-social')+' será ativada quando o serviço de autenticação for conectado.';
+      var nome=btn.getAttribute('data-social'),prov={Google:'google',Apple:'apple',Facebook:'facebook'}[nome];
+      function say(t){if(msg)msg.textContent=t}
+      if(!prov||typeof window.evoluteAuthOAuth!=='function'){say('Sem conexão com o servidor. Verifique a internet e tente de novo.');return}
+      if(btn.dataset.busy)return;btn.dataset.busy='1';say('Abrindo '+nome+'…');
+      Promise.resolve(window.evoluteAuthOAuth(prov)).then(function(r){
+        if(r&&r.error){delete btn.dataset.busy;say(/provider|enabled|unsupported/i.test(r.error.message||'')?'A entrada com '+nome+' ainda não está ativada no servidor.':'Não foi possível entrar com '+nome+'. Tente de novo.')}
+        else setTimeout(function(){delete btn.dataset.busy},6000)
+      },function(){delete btn.dataset.busy;say('Não foi possível entrar com '+nome+'. Verifique a internet e tente de novo.')});
     });
   });
 })();

@@ -11,7 +11,8 @@ self.addEventListener("push", function (e) {
     var jobs = [];
     var visible = list.some(function (c) { return c.visibilityState === "visible"; });
     if (!visible || d.test) jobs.push(self.registration.showNotification(title, opts)); /* com o app aberto, o próprio app avisa */
-    try { if (d.n != null && self.navigator && self.navigator.setAppBadge) jobs.push(d.n > 0 ? self.navigator.setAppBadge(d.n) : self.navigator.clearAppBadge()); } catch (x) {}
+    /* com o app aberto, o número do ícone é do próprio app (acompanha o sininho) */
+    try { if (!visible && d.n != null && self.navigator && self.navigator.setAppBadge) jobs.push(d.n > 0 ? self.navigator.setAppBadge(d.n) : self.navigator.clearAppBadge()); } catch (x) {}
     return Promise.all(jobs.map(function (p) { return Promise.resolve(p).catch(function () {}); }));
   }));
 });
