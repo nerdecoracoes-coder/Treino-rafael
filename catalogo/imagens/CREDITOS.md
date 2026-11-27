@@ -1,6 +1,6 @@
 # Créditos das imagens do catálogo de alimentos
 
-Fotos do Wikimedia Commons, licença conferida arquivo a arquivo pela API do Commons em 27/11/2026. Imagens redimensionadas para no máximo 960 px. Este conjunto não deve ser redistribuído como banco de imagens.
+Fotos do Wikimedia Commons (licença conferida arquivo a arquivo pela API do Commons) e do Pexels (licença Pexels), em 27/11/2026. Imagens redimensionadas para no máximo 960 px. Este conjunto não deve ser redistribuído como banco de imagens.
 
 | Alimento | Arquivo | Autor | Licença | Origem |
 |---|---|---|---|---|
@@ -23,6 +23,7 @@ Fotos do Wikimedia Commons, licença conferida arquivo a arquivo pela API do Com
 | EVT-FOOD-0018 Patinho bovino (grelhado) | EVT-FOOD-0018.jpg | Ceeseven | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [página](https://commons.wikimedia.org/wiki/File:Grilled_Sirloin_Steak_with_Vegetables.jpg) |
 | EVT-FOOD-0019 Acém bovino (cozido) | EVT-FOOD-0019.jpg | Missvain | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) | [página](https://commons.wikimedia.org/wiki/File:Beef_stew_at_Swiss_Hotel_-_Sarah_Stierch.jpg) |
 | EVT-FOOD-0020 Tilápia (grelhada) | EVT-FOOD-0020.jpg | Penwills | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [página](https://commons.wikimedia.org/wiki/File:Grilled_tilapia.jpg) |
+| EVT-FOOD-0021 Atum em conserva (em água, drenado) | EVT-FOOD-0021.jpg | Towfiqu barbhuiya | [Licença Pexels](https://www.pexels.com/license/) | [página](https://www.pexels.com/photo/canned-tuna-12001951/) |
 | EVT-FOOD-0022 Ovo de galinha (cozido) | EVT-FOOD-0022.jpg | Ramesh NG | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0) | [página](https://commons.wikimedia.org/wiki/File:Boiled_Egg_-_Crossection.jpg) |
 | EVT-FOOD-0024 Leite de vaca (integral) | EVT-FOOD-0024.jpg | ILoveCocomelon | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) | [página](https://commons.wikimedia.org/wiki/File:Glass_of_milk.png) |
 | EVT-FOOD-0025 Iogurte natural (integral, sem açúcar) | EVT-FOOD-0025.jpg | Alabama Extension | [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en) | [página](https://commons.wikimedia.org/wiki/File:Plain_Yogurt.jpg) |

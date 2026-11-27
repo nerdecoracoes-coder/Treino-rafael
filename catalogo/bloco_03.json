@@ -25,15 +25,19 @@
   "status_nutri": "validado_com_ressalva",
   "estimativa": false,
   "imagem": {
-   "arquivo": null,
-   "arquivo_local": null,
-   "url": null,
-   "pagina": null,
-   "autor": null,
-   "licenca": null,
-   "atribuicao": null,
-   "status": "pendente",
-   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+   "arquivo": "Canned Tuna (Pexels 12001951)",
+   "arquivo_local": "catalogo/imagens/EVT-FOOD-0021.jpg",
+   "url": "https://www.pexels.com/photo/canned-tuna-12001951/",
+   "pagina": "https://www.pexels.com/photo/canned-tuna-12001951/",
+   "autor": "Towfiqu barbhuiya",
+   "licenca": "Licença Pexels",
+   "atribuicao": "Não exigida; crédito recomendado: Towfiqu barbhuiya / Pexels. Não redistribuir como banco de imagens.",
+   "status": "baixada_conferida",
+   "nota": "Atum em lascas na lata aberta",
+   "licenca_url": "https://www.pexels.com/license/",
+   "verificada_em": "2026-11-27",
+   "largura": 960,
+   "altura": 641
   },
   "valores_anteriores": {
    "kcal100": 116,
