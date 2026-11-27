@@ -1,0 +1,403 @@
+{
+ "EVT-FOOD-0001": {
+  "medida": {
+   "un": "colher de sopa cheia",
+   "pl": "colheres de sopa cheias",
+   "g": 25
+  },
+  "passo_g": 25,
+  "min_g": 50,
+  "max_g": 250
+ },
+ "EVT-FOOD-0002": {
+  "medida": {
+   "un": "colher de sopa cheia",
+   "pl": "colheres de sopa cheias",
+   "g": 25
+  },
+  "passo_g": 25,
+  "min_g": 50,
+  "max_g": 250
+ },
+ "EVT-FOOD-0003": {
+  "medida": {
+   "un": "batata média",
+   "pl": "batatas médias",
+   "g": 130
+  },
+  "passo_g": 65,
+  "min_g": 65,
+  "max_g": 390
+ },
+ "EVT-FOOD-0004": {
+  "medida": {
+   "un": "batata-doce média",
+   "pl": "batatas-doces médias",
+   "g": 140
+  },
+  "passo_g": 70,
+  "min_g": 70,
+  "max_g": 420
+ },
+ "EVT-FOOD-0005": {
+  "medida": {
+   "un": "pedaço médio",
+   "pl": "pedaços médios",
+   "g": 60
+  },
+  "passo_g": 30,
+  "min_g": 60,
+  "max_g": 300
+ },
+ "EVT-FOOD-0006": {
+  "medida": {
+   "un": "pegador",
+   "pl": "pegadores",
+   "g": 110
+  },
+  "passo_g": 55,
+  "min_g": 55,
+  "max_g": 330
+ },
+ "EVT-FOOD-0007": {
+  "medida": {
+   "un": "pão",
+   "pl": "pães",
+   "g": 50
+  },
+  "passo_g": 25,
+  "min_g": 25,
+  "max_g": 150
+ },
+ "EVT-FOOD-0008": {
+  "medida": {
+   "un": "colher de sopa",
+   "pl": "colheres de sopa",
+   "g": 15
+  },
+  "passo_g": 15,
+  "min_g": 15,
+  "max_g": 90
+ },
+ "EVT-FOOD-0009": {
+  "medida": {
+   "un": "pedaço médio",
+   "pl": "pedaços médios",
+   "g": 100
+  },
+  "passo_g": 50,
+  "min_g": 50,
+  "max_g": 300
+ },
+ "EVT-FOOD-0010": {
+  "medida": {
+   "un": "tapioca média",
+   "pl": "tapiocas médias",
+   "g": 60
+  },
+  "passo_g": 30,
+  "min_g": 30,
+  "max_g": 180
+ },
+ "EVT-FOOD-0011": {
+  "medida": {
+   "un": "concha média",
+   "pl": "conchas médias",
+   "g": 80
+  },
+  "passo_g": 40,
+  "min_g": 40,
+  "max_g": 320
+ },
+ "EVT-FOOD-0012": {
+  "medida": {
+   "un": "colher de sopa cheia",
+   "pl": "colheres de sopa cheias",
+   "g": 20
+  },
+  "passo_g": 20,
+  "min_g": 40,
+  "max_g": 240
+ },
+ "EVT-FOOD-0013": {
+  "medida": {
+   "un": "concha média",
+   "pl": "conchas médias",
+   "g": 80
+  },
+  "passo_g": 40,
+  "min_g": 40,
+  "max_g": 320
+ },
+ "EVT-FOOD-0014": {
+  "medida": {
+   "un": "colher de sopa cheia",
+   "pl": "colheres de sopa cheias",
+   "g": 20
+  },
+  "passo_g": 20,
+  "min_g": 40,
+  "max_g": 240
+ },
+ "EVT-FOOD-0015": {
+  "medida": {
+   "un": "colher de sopa cheia",
+   "pl": "colheres de sopa cheias",
+   "g": 22
+  },
+  "passo_g": 22,
+  "min_g": 44,
+  "max_g": 220
+ },
+ "EVT-FOOD-0016": {
+  "medida": {
+   "un": "filé médio",
+   "pl": "filés médios",
+   "g": 100
+  },
+  "passo_g": 10,
+  "min_g": 60,
+  "max_g": 250
+ },
+ "EVT-FOOD-0017": {
+  "medida": {
+   "un": "filé médio",
+   "pl": "filés médios",
+   "g": 100
+  },
+  "passo_g": 10,
+  "min_g": 60,
+  "max_g": 250
+ },
+ "EVT-FOOD-0018": {
+  "medida": {
+   "un": "bife médio",
+   "pl": "bifes médios",
+   "g": 100
+  },
+  "passo_g": 10,
+  "min_g": 60,
+  "max_g": 250
+ },
+ "EVT-FOOD-0019": {
+  "medida": {
+   "un": "pedaço médio",
+   "pl": "pedaços médios",
+   "g": 80
+  },
+  "passo_g": 10,
+  "min_g": 60,
+  "max_g": 250
+ },
+ "EVT-FOOD-0020": {
+  "medida": {
+   "un": "filé médio",
+   "pl": "filés médios",
+   "g": 120
+  },
+  "passo_g": 10,
+  "min_g": 60,
+  "max_g": 250
+ },
+ "EVT-FOOD-0021": {
+  "medida": {
+   "un": "colher de sopa",
+   "pl": "colheres de sopa",
+   "g": 20
+  },
+  "passo_g": 20,
+  "min_g": 40,
+  "max_g": 160
+ },
+ "EVT-FOOD-0022": {
+  "medida": {
+   "un": "ovo",
+   "pl": "ovos",
+   "g": 50
+  },
+  "passo_g": 50,
+  "min_g": 50,
+  "max_g": 200
+ },
+ "EVT-FOOD-0023": {
+  "medida": {
+   "un": "clara",
+   "pl": "claras",
+   "g": 30
+  },
+  "passo_g": 30,
+  "min_g": 30,
+  "max_g": 180
+ },
+ "EVT-FOOD-0024": {
+  "medida": {
+   "un": "copo (200 ml)",
+   "pl": "copos (200 ml)",
+   "g": 200
+  },
+  "passo_g": 50,
+  "min_g": 100,
+  "max_g": 400
+ },
+ "EVT-FOOD-0025": {
+  "medida": {
+   "un": "pote (170 g)",
+   "pl": "potes (170 g)",
+   "g": 170
+  },
+  "passo_g": 85,
+  "min_g": 85,
+  "max_g": 340
+ },
+ "EVT-FOOD-0026": {
+  "medida": {
+   "un": "fatia média",
+   "pl": "fatias médias",
+   "g": 30
+  },
+  "passo_g": 15,
+  "min_g": 15,
+  "max_g": 90
+ },
+ "EVT-FOOD-0027": {
+  "medida": {
+   "un": "folha",
+   "pl": "folhas",
+   "g": 10
+  },
+  "passo_g": 10,
+  "min_g": 20,
+  "max_g": 100
+ },
+ "EVT-FOOD-0028": {
+  "medida": {
+   "un": "tomate médio",
+   "pl": "tomates médios",
+   "g": 100
+  },
+  "passo_g": 25,
+  "min_g": 25,
+  "max_g": 200
+ },
+ "EVT-FOOD-0029": {
+  "medida": {
+   "un": "ramo médio",
+   "pl": "ramos médios",
+   "g": 25
+  },
+  "passo_g": 25,
+  "min_g": 25,
+  "max_g": 200
+ },
+ "EVT-FOOD-0030": {
+  "medida": {
+   "un": "colher de sopa",
+   "pl": "colheres de sopa",
+   "g": 25
+  },
+  "passo_g": 25,
+  "min_g": 25,
+  "max_g": 150
+ },
+ "EVT-FOOD-0031": {
+  "medida": {
+   "un": "pedaço médio",
+   "pl": "pedaços médios",
+   "g": 50
+  },
+  "passo_g": 25,
+  "min_g": 50,
+  "max_g": 250
+ },
+ "EVT-FOOD-0032": {
+  "medida": {
+   "un": "banana",
+   "pl": "bananas",
+   "g": 55
+  },
+  "passo_g": 55,
+  "min_g": 55,
+  "max_g": 165
+ },
+ "EVT-FOOD-0033": {
+  "medida": {
+   "un": "maçã média",
+   "pl": "maçãs médias",
+   "g": 130
+  },
+  "passo_g": 65,
+  "min_g": 65,
+  "max_g": 260
+ },
+ "EVT-FOOD-0034": {
+  "medida": {
+   "un": "fatia média",
+   "pl": "fatias médias",
+   "g": 170
+  },
+  "passo_g": 85,
+  "min_g": 85,
+  "max_g": 340
+ },
+ "EVT-FOOD-0035": {
+  "medida": {
+   "un": "laranja média",
+   "pl": "laranjas médias",
+   "g": 130
+  },
+  "passo_g": 65,
+  "min_g": 65,
+  "max_g": 260
+ },
+ "EVT-FOOD-0036": {
+  "medida": {
+   "un": "colher de sopa",
+   "pl": "colheres de sopa",
+   "g": 30
+  },
+  "passo_g": 30,
+  "min_g": 30,
+  "max_g": 150
+ },
+ "EVT-FOOD-0037": {
+  "medida": {
+   "un": "colher de chá",
+   "pl": "colheres de chá",
+   "g": 4
+  },
+  "passo_g": 4,
+  "min_g": 4,
+  "max_g": 20
+ },
+ "EVT-FOOD-0038": {
+  "medida": {
+   "un": "castanha",
+   "pl": "castanhas",
+   "g": 4
+  },
+  "passo_g": 4,
+  "min_g": 4,
+  "max_g": 20
+ },
+ "EVT-FOOD-0039": {
+  "medida": {
+   "un": "colher de sopa",
+   "pl": "colheres de sopa",
+   "g": 15
+  },
+  "passo_g": 15,
+  "min_g": 15,
+  "max_g": 45
+ },
+ "EVT-FOOD-0040": {
+  "medida": {
+   "un": "colher de sopa",
+   "pl": "colheres de sopa",
+   "g": 12
+  },
+  "passo_g": 6,
+  "min_g": 6,
+  "max_g": 36
+ },
+ "_nota": "Medidas caseiras aproximadas (referências usuais de medidas caseiras no Brasil). Servem para orientar a porção; os cálculos usam sempre os gramas."
+}
