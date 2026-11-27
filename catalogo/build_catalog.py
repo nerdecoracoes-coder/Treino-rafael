@@ -5,6 +5,7 @@ Uso:  python3 catalogo/build_catalog.py           (na raiz do repositório)
 - Traduz os status do catálogo para o vocabulário que o validador do app aceita:
     status_nutri: validado, validado_com_ressalva -> validado; sem_fonte_exata -> pendente
     imagem.status: baixada_conferida, baixada_aproximada -> validada; baixada_revisar -> candidata
+- Acrescenta medida caseira, passo e limites de porção de catalogo/medidas.json.
 - Só mexe no bloco <script> marcado "gerado por build_catalog.py" da página Saúde e na marca ev-build.
 - Não toca em nenhum dado de usuário (diário, planos, alimentos próprios ficam no aparelho/servidor).
 """
@@ -21,6 +22,11 @@ KEEP = ("id", "bloco", "nome", "variacao", "sinonimos", "categorias", "subcatego
         "f100", "fibra100", "fonte", "fonte_ref", "fonte_versao", "fonte_obs", "status_nutri", "estimativa")
 
 
+MEDIDAS = {}
+if os.path.exists(os.path.join(CAT, "medidas.json")):
+    MEDIDAS = {k: v for k, v in json.load(open(os.path.join(CAT, "medidas.json"), encoding="utf-8")).items() if k.startswith("EVT-")}
+
+
 def app_item(x):
     o = {k: x.get(k) for k in KEEP}
     o["status_nutri"] = MAP_N.get(x["status_nutri"], x["status_nutri"])
@@ -29,6 +35,9 @@ def app_item(x):
     im = dict(x.get("imagem") or {})
     im["status"] = MAP_I.get(im.get("status"), im.get("status") or "pendente")
     o["imagem"] = {k: im.get(k) for k in KEEP_I}
+    md = MEDIDAS.get(x["id"])
+    if md:
+        o.update({k: md[k] for k in ("medida", "passo_g", "min_g", "max_g")})
     return o
 
 
