@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta name="ev-build" content="1b9fd3042928"><script>(function(){try{var me=(document.querySelector("meta[name=ev-build]")||{}).content;if(!me||!/^https?:$/.test(location.protocol))return;var last=0,TAB={inicio:1,treinos:1,comunidades:1,profissionais:1,configuracoes:1};function idle(){var f=document.querySelector("iframe.page-frame.active");return !!f&&!!TAB[f.title]}function chk(){if(Date.now()-last<15000)return;last=Date.now();fetch(location.pathname+"?v="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="ev-build" content="([a-f0-9]+)"/);if(!m||m[1]===me)return;if(!idle()){last=0;return}var k="evBuildReload";try{if(sessionStorage.getItem(k)===m[1])return;sessionStorage.setItem(k,m[1])}catch(e){}location.reload()}).catch(function(){})}setTimeout(chk,2500);setInterval(function(){if(document.visibilityState==="visible")chk()},60000);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")chk()})}catch(e){}})();</script><script>try{if(Object.keys(localStorage).some(function(k){return /^sb-.*-auth-token$/.test(k)}))document.documentElement.classList.add("ev-boot");setTimeout(function(){document.documentElement.classList.remove("ev-boot")},12000)}catch(e){}</script><style id="ev-boot-css">html.ev-boot #evolute-auth [data-auth-screen]{opacity:0!important;pointer-events:none!important}html.ev-boot #evolute-auth::after{content:"";position:fixed;left:50%;top:58%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:#ff7a2f;animation:evbootspin .8s linear infinite}@keyframes evbootspin{to{transform:rotate(360deg)}}/*EVPA*/button:not(:disabled):active,[role=button]:active,.opt:active,a[href]:active,.nav-item:active,summary:active{scale:.97;filter:brightness(.9)}button,[role=button],a[href],.nav-item,.opt{-webkit-tap-highlight-color:transparent;touch-action:manipulation}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style><meta charset="utf-8">
+<html lang="pt-BR"><head><meta name="ev-build" content="d4d48e67789e"><script>(function(){try{var me=(document.querySelector("meta[name=ev-build]")||{}).content;if(!me||!/^https?:$/.test(location.protocol))return;var last=0,TAB={inicio:1,treinos:1,comunidades:1,profissionais:1,configuracoes:1};function idle(){var f=document.querySelector("iframe.page-frame.active");return !!f&&!!TAB[f.title]}function chk(){if(Date.now()-last<15000)return;last=Date.now();fetch(location.pathname+"?v="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){var m=t.match(/name="ev-build" content="([a-f0-9]+)"/);if(!m||m[1]===me)return;if(!idle()){last=0;return}var k="evBuildReload";try{if(sessionStorage.getItem(k)===m[1])return;sessionStorage.setItem(k,m[1])}catch(e){}location.reload()}).catch(function(){})}setTimeout(chk,2500);setInterval(function(){if(document.visibilityState==="visible")chk()},60000);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")chk()})}catch(e){}})();</script><script>try{if(Object.keys(localStorage).some(function(k){return /^sb-.*-auth-token$/.test(k)}))document.documentElement.classList.add("ev-boot");setTimeout(function(){document.documentElement.classList.remove("ev-boot")},12000)}catch(e){}</script><style id="ev-boot-css">html.ev-boot #evolute-auth [data-auth-screen]{opacity:0!important;pointer-events:none!important}html.ev-boot #evolute-auth::after{content:"";position:fixed;left:50%;top:58%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:#ff7a2f;animation:evbootspin .8s linear infinite}@keyframes evbootspin{to{transform:rotate(360deg)}}/*EVPA*/button:not(:disabled):active,[role=button]:active,.opt:active,a[href]:active,.nav-item:active,summary:active{scale:.97;filter:brightness(.9)}button,[role=button],a[href],.nav-item,.opt{-webkit-tap-highlight-color:transparent;touch-action:manipulation}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#080b0d"><link rel="manifest" href="./manifest.json"><link rel="icon" type="image/png" sizes="192x192" href="./praticantes-icon-192.png"><link rel="apple-touch-icon" href="./praticantes-icon-192.png"><meta name="application-name" content="Evolute Training"><meta name="apple-mobile-web-app-title" content="Evolute Training"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>Evolute Training 2.0</title>
 <style>
@@ -483,9 +483,15 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
    try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith(p)||k==='evolute.communities'||k==='evolute.theme'))values[k]=localStorage.getItem(k)}}catch(e){}
    return {version:2,uid:id,values,updatedAt:new Date().toISOString()};
  }
+ let restoring=false;
+ const dirtyKey=id=>'evolute.dirty.'+id;
  function restore(snapshot,id){
    if(!snapshot||snapshot.version!==2||!snapshot.values)return false;
    const p=prefix(id);
+   /* Proteção de dados: se este aparelho tem alterações que ainda não subiram (app fechado antes do envio, sem internet ou servidor fora),
+      a cópia do servidor é mais velha. Não sobrescreve: mantém o aparelho e envia na próxima sincronização. */
+   try{if(localStorage.getItem(dirtyKey(id))){console.warn('Evolute: alterações locais pendentes; cópia do servidor não aplicada');return false}}catch(e){return false}
+   restoring=true;
    try{
      // Restore only this account's namespaced data. Shared keys are restored from this account's own snapshot.
      for(const k of Object.keys(snapshot.values)){
@@ -493,6 +499,7 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
      }
      return true;
    }catch(e){console.error('Restore current Evolute data failed',e);return false;}
+   finally{restoring=false;}
  }
  function legacyToCurrent(payload,id){
    const profiles=Array.isArray(payload&&payload.profiles)?payload.profiles:[];
@@ -521,16 +528,22 @@ window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='theme
  }
  async function fetchRecord(user){const {data,error}=await client.from(TABLE).select('user_id,payload,updated_at').eq('user_id',user.id).maybeSingle();if(error)throw error;return data;}
  async function saveRecord(payload){const {error}=await client.from(TABLE).upsert({user_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;}
- async function syncNow(){if(!client||!cloudUser||!ready||busy)return false;busy=true;try{
+ let again=false;
+ async function syncNow(){if(!client||!cloudUser||!ready)return false;if(busy){again=true;return false}busy=true;again=false;try{
    const record=await fetchRecord(cloudUser); const payload=record&&record.payload&&typeof record.payload==='object'?record.payload:{};
    // Keep all original legacy fields (including workout history) intact; add current app state alongside them.
-   payload[SNAP_KEY]=capture(); await saveRecord(payload); window.evoluteCloudStatus='synced'; return true;
- }catch(e){console.error('Evolute sync error',e);window.evoluteCloudStatus='error';return false;}finally{busy=false;}}
+   const t0=Date.now();payload[SNAP_KEY]=capture(); await saveRecord(payload); window.evoluteCloudStatus='synced';
+   try{const d=+localStorage.getItem(dirtyKey(cloudUser.id))||0;if(d&&d<=t0)localStorage.removeItem(dirtyKey(cloudUser.id))}catch(e){}
+   return true;
+ }catch(e){console.error('Evolute sync error',e);window.evoluteCloudStatus='error';return false;}finally{busy=false;if(again){again=false;scheduleSync()}}}
  function scheduleSync(){if(!ready)return;clearTimeout(timer);timer=setTimeout(syncNow,1600);}
  window.evoluteForceCloudSync=syncNow;
  // Debounced backup of current-app localStorage changes to the authenticated user's row.
  const nativeSet=Storage.prototype.setItem;
- Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
+ Storage.prototype.setItem=function(key,value){const result=nativeSet.call(this,key,value);if(!restoring&&this===localStorage&&typeof key==='string'&&key.startsWith('evolute.u.')){const u=key.split('.')[2];if(u)try{nativeSet.call(this,dirtyKey(u),String(Date.now()))}catch(e){}}if(this===localStorage&&typeof key==='string'&&cloudUser&&(key.startsWith(prefix(cloudUser.id))||key==='evolute.communities'||key==='evolute.theme'))scheduleSync();return result;};
+ window.addEventListener('storage',e=>{const k=e.key;if(restoring||typeof k!=='string'||!k.startsWith('evolute.u.'))return;const u=k.split('.')[2];if(u)try{nativeSet.call(localStorage,dirtyKey(u),String(Date.now()))}catch(x){}if(cloudUser&&k.startsWith(prefix(cloudUser.id)))scheduleSync();});
+ const flushOut=()=>{try{if(cloudUser&&ready&&localStorage.getItem(dirtyKey(cloudUser.id))){clearTimeout(timer);syncNow()}}catch(e){}};
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)flushOut()});window.addEventListener('pagehide',flushOut);
  async function activate(user){
    cloudUser=user;ready=false;window.evoluteAccountEmail=user.email||'';msg('Carregando seus treinos e histórico…');
    try{
