@@ -1,0 +1,356 @@
+[
+ {
+  "id": "EVT-FOOD-0031",
+  "bloco": 4,
+  "nome": "Abóbora cabotiá",
+  "variacao": "cabotiá",
+  "sinonimos": [
+   "jerimum",
+   "abobora"
+  ],
+  "categorias": [
+   "verduras_legumes"
+  ],
+  "subcategoria": "Abóboras",
+  "preparo": "cozida",
+  "kcal100": 48,
+  "p100": 1.4,
+  "c100": 10.8,
+  "f100": 0.7,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed.",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0032",
+  "bloco": 4,
+  "nome": "Banana prata",
+  "variacao": "prata",
+  "sinonimos": [
+   "banana"
+  ],
+  "categorias": [
+   "frutas"
+  ],
+  "subcategoria": "Banana",
+  "preparo": "crua, parte comestível",
+  "kcal100": 98,
+  "p100": 1.3,
+  "c100": 26.0,
+  "f100": 0.1,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0033",
+  "bloco": 4,
+  "nome": "Maçã",
+  "variacao": "",
+  "sinonimos": [],
+  "categorias": [
+   "frutas"
+  ],
+  "subcategoria": "Maçã",
+  "preparo": "crua, com casca",
+  "kcal100": 56,
+  "p100": 0.3,
+  "c100": 15.2,
+  "f100": 0.0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0034",
+  "bloco": 4,
+  "nome": "Mamão formosa",
+  "variacao": "formosa",
+  "sinonimos": [
+   "papaia"
+  ],
+  "categorias": [
+   "frutas"
+  ],
+  "subcategoria": "Mamão",
+  "preparo": "cru",
+  "kcal100": 45,
+  "p100": 0.8,
+  "c100": 11.6,
+  "f100": 0.1,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0035",
+  "bloco": 4,
+  "nome": "Laranja pera",
+  "variacao": "pera",
+  "sinonimos": [],
+  "categorias": [
+   "frutas"
+  ],
+  "subcategoria": "Laranja",
+  "preparo": "crua",
+  "kcal100": 37,
+  "p100": 1.0,
+  "c100": 8.9,
+  "f100": 0.1,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0036",
+  "bloco": 4,
+  "nome": "Abacate",
+  "variacao": "",
+  "sinonimos": [],
+  "categorias": [
+   "frutas"
+  ],
+  "subcategoria": "Abacate",
+  "preparo": "cru",
+  "kcal100": 96,
+  "p100": 1.2,
+  "c100": 6.0,
+  "f100": 8.4,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0037",
+  "bloco": 4,
+  "nome": "Azeite de oliva",
+  "variacao": "",
+  "sinonimos": [
+   "azeite",
+   "oleo"
+  ],
+  "categorias": [
+   "gorduras"
+  ],
+  "subcategoria": "Óleos",
+  "preparo": "puro",
+  "kcal100": 884,
+  "p100": 0.0,
+  "c100": 0.0,
+  "f100": 100.0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0038",
+  "bloco": 4,
+  "nome": "Castanha-do-pará",
+  "variacao": "",
+  "sinonimos": [
+   "castanha"
+  ],
+  "categorias": [
+   "gorduras"
+  ],
+  "subcategoria": "Oleaginosas",
+  "preparo": "crua",
+  "kcal100": 643,
+  "p100": 14.3,
+  "c100": 15.1,
+  "f100": 63.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0039",
+  "bloco": 4,
+  "nome": "Amendoim",
+  "variacao": "",
+  "sinonimos": [],
+  "categorias": [
+   "gorduras"
+  ],
+  "subcategoria": "Oleaginosas",
+  "preparo": "torrado, sem sal",
+  "kcal100": 606,
+  "p100": 22.5,
+  "c100": 18.7,
+  "f100": 54.0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Referência secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0040",
+  "bloco": 4,
+  "nome": "Chia",
+  "variacao": "",
+  "sinonimos": [
+   "semente"
+  ],
+  "categorias": [
+   "gorduras"
+  ],
+  "subcategoria": "Sementes",
+  "preparo": "seca",
+  "kcal100": 486,
+  "p100": 16.5,
+  "c100": 42.1,
+  "f100": 30.7,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Referência secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ }
+]

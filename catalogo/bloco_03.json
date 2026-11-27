@@ -1,0 +1,363 @@
+[
+ {
+  "id": "EVT-FOOD-0021",
+  "bloco": 3,
+  "nome": "Atum em conserva",
+  "variacao": "",
+  "sinonimos": [
+   "peixe",
+   "conserva"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Peixes",
+  "preparo": "em água, drenado",
+  "kcal100": 116,
+  "p100": 26.0,
+  "c100": 0.0,
+  "f100": 1.0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Referência secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0022",
+  "bloco": 3,
+  "nome": "Ovo de galinha",
+  "variacao": "",
+  "sinonimos": [
+   "ovo"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Ovos",
+  "preparo": "cozido",
+  "kcal100": 146,
+  "p100": 13.3,
+  "c100": 0.6,
+  "f100": 9.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0023",
+  "bloco": 3,
+  "nome": "Clara de ovo",
+  "variacao": "",
+  "sinonimos": [
+   "ovo"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Ovos",
+  "preparo": "cozida",
+  "kcal100": 59,
+  "p100": 13.0,
+  "c100": 0.7,
+  "f100": 0.2,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Referência secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0024",
+  "bloco": 3,
+  "nome": "Leite de vaca",
+  "variacao": "integral",
+  "sinonimos": [],
+  "categorias": [
+   "proteinas",
+   "outros"
+  ],
+  "subcategoria": "Leite",
+  "preparo": "integral",
+  "kcal100": 61,
+  "p100": 3.0,
+  "c100": 4.7,
+  "f100": 3.3,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0025",
+  "bloco": 3,
+  "nome": "Iogurte natural",
+  "variacao": "natural",
+  "sinonimos": [
+   "iogurte"
+  ],
+  "categorias": [
+   "proteinas",
+   "outros"
+  ],
+  "subcategoria": "Iogurte",
+  "preparo": "integral, sem açúcar",
+  "kcal100": 51,
+  "p100": 4.1,
+  "c100": 1.9,
+  "f100": 3.0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Referência secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0026",
+  "bloco": 3,
+  "nome": "Queijo minas frescal",
+  "variacao": "minas frescal",
+  "sinonimos": [
+   "queijo"
+  ],
+  "categorias": [
+   "proteinas",
+   "outros"
+  ],
+  "subcategoria": "Queijos",
+  "preparo": "pronto para consumo",
+  "kcal100": 264,
+  "p100": 17.4,
+  "c100": 3.2,
+  "f100": 20.2,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0027",
+  "bloco": 3,
+  "nome": "Alface crespa",
+  "variacao": "crespa",
+  "sinonimos": [
+   "salada",
+   "folha"
+  ],
+  "categorias": [
+   "verduras_legumes"
+  ],
+  "subcategoria": "Folhas",
+  "preparo": "crua",
+  "kcal100": 11,
+  "p100": 1.3,
+  "c100": 1.7,
+  "f100": 0.2,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0028",
+  "bloco": 3,
+  "nome": "Tomate",
+  "variacao": "",
+  "sinonimos": [
+   "salada"
+  ],
+  "categorias": [
+   "verduras_legumes"
+  ],
+  "subcategoria": "Hortaliças",
+  "preparo": "cru",
+  "kcal100": 15,
+  "p100": 1.1,
+  "c100": 3.1,
+  "f100": 0.2,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0029",
+  "bloco": 3,
+  "nome": "Brócolis",
+  "variacao": "",
+  "sinonimos": [
+   "brocolis"
+  ],
+  "categorias": [
+   "verduras_legumes"
+  ],
+  "subcategoria": "Brássicas",
+  "preparo": "cozido",
+  "kcal100": 25,
+  "p100": 2.1,
+  "c100": 4.4,
+  "f100": 0.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0030",
+  "bloco": 3,
+  "nome": "Cenoura",
+  "variacao": "",
+  "sinonimos": [],
+  "categorias": [
+   "verduras_legumes"
+  ],
+  "subcategoria": "Raízes",
+  "preparo": "cozida",
+  "kcal100": 30,
+  "p100": 0.8,
+  "c100": 6.7,
+  "f100": 0.2,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ }
+]

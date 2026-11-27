@@ -1,0 +1,370 @@
+[
+ {
+  "id": "EVT-FOOD-0011",
+  "bloco": 2,
+  "nome": "Feijão carioca",
+  "variacao": "carioca",
+  "sinonimos": [
+   "feijao",
+   "caldo"
+  ],
+  "categorias": [
+   "carboidratos",
+   "proteinas"
+  ],
+  "subcategoria": "Feijão",
+  "preparo": "cozido, grão e caldo",
+  "kcal100": 71,
+  "p100": 4.8,
+  "c100": 15.3,
+  "f100": 0.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TBCA BRC0001T",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0012",
+  "bloco": 2,
+  "nome": "Feijão carioca",
+  "variacao": "carioca",
+  "sinonimos": [
+   "feijao"
+  ],
+  "categorias": [
+   "carboidratos",
+   "proteinas"
+  ],
+  "subcategoria": "Feijão",
+  "preparo": "cozido, drenado",
+  "kcal100": 133,
+  "p100": 9.61,
+  "c100": 26.3,
+  "f100": 0.81,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TBCA BRC0255T",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0013",
+  "bloco": 2,
+  "nome": "Feijão preto",
+  "variacao": "preto",
+  "sinonimos": [
+   "feijao"
+  ],
+  "categorias": [
+   "carboidratos",
+   "proteinas"
+  ],
+  "subcategoria": "Feijão",
+  "preparo": "cozido",
+  "kcal100": 77,
+  "p100": 4.5,
+  "c100": 14.0,
+  "f100": 0.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed. (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0014",
+  "bloco": 2,
+  "nome": "Lentilha",
+  "variacao": "",
+  "sinonimos": [],
+  "categorias": [
+   "carboidratos",
+   "proteinas"
+  ],
+  "subcategoria": "Lentilha",
+  "preparo": "cozida",
+  "kcal100": 93,
+  "p100": 6.3,
+  "c100": 16.3,
+  "f100": 0.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0015",
+  "bloco": 2,
+  "nome": "Grão-de-bico",
+  "variacao": "",
+  "sinonimos": [
+   "grao de bico"
+  ],
+  "categorias": [
+   "carboidratos",
+   "proteinas"
+  ],
+  "subcategoria": "Grão-de-bico",
+  "preparo": "cozido",
+  "kcal100": 164,
+  "p100": 8.9,
+  "c100": 27.4,
+  "f100": 2.6,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0016",
+  "bloco": 2,
+  "nome": "Peito de frango",
+  "variacao": "",
+  "sinonimos": [
+   "frango",
+   "peito"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Aves",
+  "preparo": "grelhado, sem pele",
+  "kcal100": 165,
+  "p100": 31.0,
+  "c100": 0.0,
+  "f100": 3.6,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0017",
+  "bloco": 2,
+  "nome": "Peito de frango",
+  "variacao": "",
+  "sinonimos": [
+   "frango",
+   "peito"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Aves",
+  "preparo": "cozido, sem pele",
+  "kcal100": 159,
+  "p100": 32.0,
+  "c100": 0.0,
+  "f100": 2.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0018",
+  "bloco": 2,
+  "nome": "Patinho bovino",
+  "variacao": "",
+  "sinonimos": [
+   "carne",
+   "boi"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Carnes bovinas",
+  "preparo": "grelhado",
+  "kcal100": 219,
+  "p100": 35.9,
+  "c100": 0.0,
+  "f100": 7.3,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0019",
+  "bloco": 2,
+  "nome": "Acém bovino",
+  "variacao": "",
+  "sinonimos": [
+   "carne",
+   "boi"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Carnes bovinas",
+  "preparo": "cozido",
+  "kcal100": 212,
+  "p100": 26.7,
+  "c100": 0.0,
+  "f100": 11.4,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Referência secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ },
+ {
+  "id": "EVT-FOOD-0020",
+  "bloco": 2,
+  "nome": "Tilápia",
+  "variacao": "",
+  "sinonimos": [
+   "peixe"
+  ],
+  "categorias": [
+   "proteinas"
+  ],
+  "subcategoria": "Peixes",
+  "preparo": "grelhada",
+  "kcal100": 128,
+  "p100": 26.0,
+  "c100": 0.0,
+  "f100": 2.7,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": null,
+   "arquivo_local": null,
+   "url": null,
+   "pagina": null,
+   "autor": null,
+   "licenca": null,
+   "atribuicao": null,
+   "status": "pendente",
+   "nota": "Sem imagem pesquisada: nenhuma candidata foi verificada."
+  }
+ }
+]
