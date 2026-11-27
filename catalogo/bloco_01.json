@@ -1,0 +1,371 @@
+[
+ {
+  "id": "EVT-FOOD-0001",
+  "bloco": 1,
+  "nome": "Arroz branco",
+  "variacao": "branco",
+  "sinonimos": [
+   "arroz"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Arroz",
+  "preparo": "cozido",
+  "kcal100": 128,
+  "p100": 2.5,
+  "c100": 28.1,
+  "f100": 0.2,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed.; valores compilados em fonte secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "A bowl of rice.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/A_bowl_of_rice.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:A_bowl_of_rice.jpg",
+   "autor": "Douglas Perkins",
+   "licenca": "CC0 1.0",
+   "atribuicao": "Sem exigência (CC0), atribuição opcional",
+   "status": "candidata",
+   "nota": "Selecionada – corresponde a arroz branco cozido"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0002",
+  "bloco": 1,
+  "nome": "Arroz integral",
+  "variacao": "integral",
+  "sinonimos": [
+   "arroz"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Arroz",
+  "preparo": "cozido",
+  "kcal100": 124,
+  "p100": 2.6,
+  "c100": 25.8,
+  "f100": 1,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Bowl of Cooked Brown Rice.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bowl_of_Cooked_Brown_Rice.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Bowl_of_Cooked_Brown_Rice.jpg",
+   "autor": "Ceeseven",
+   "licenca": "CC BY-SA 4.0",
+   "atribuicao": "Atribuir autor, indicar a licença e o link; obras derivadas sob a mesma licença (ShareAlike)",
+   "status": "candidata",
+   "nota": "Selecionada – arroz integral cozido"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0003",
+  "bloco": 1,
+  "nome": "Batata inglesa",
+  "variacao": "inglesa",
+  "sinonimos": [
+   "batata",
+   "batata comum"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Tubérculos",
+  "preparo": "cozida",
+  "kcal100": 52,
+  "p100": 1.2,
+  "c100": 11.9,
+  "f100": 0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Boiled Potato 001.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Boiled_Potato_001.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Boiled_Potato_001.jpg",
+   "autor": "Ocdp",
+   "licenca": "CC0 1.0",
+   "atribuicao": "Sem exigência (CC0), atribuição opcional",
+   "status": "candidata",
+   "nota": "Candidata – confirmar visualmente se é batata cozida simples"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0004",
+  "bloco": 1,
+  "nome": "Batata-doce",
+  "variacao": "doce",
+  "sinonimos": [
+   "batata doce",
+   "batata"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Tubérculos",
+  "preparo": "cozida",
+  "kcal100": 77,
+  "p100": 0.6,
+  "c100": 18.4,
+  "f100": 0.1,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Boiled Sweet Potato.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Boiled_Sweet_Potato.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Boiled_Sweet_Potato.jpg",
+   "autor": null,
+   "licenca": null,
+   "atribuicao": "Não definida: confirmar na página de origem",
+   "status": "licenca_pendente",
+   "nota": "Candidata – descrição confirma batata-doce cozida; autoria/licença precisam de revisão"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0005",
+  "bloco": 1,
+  "nome": "Mandioca",
+  "variacao": "",
+  "sinonimos": [
+   "aipim",
+   "macaxeira"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Tubérculos",
+  "preparo": "cozida",
+  "kcal100": 125,
+  "p100": 0.6,
+  "c100": 30.1,
+  "f100": 0.3,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed.",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Boiled Cassava.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Boiled_Cassava.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Boiled_Cassava.jpg",
+   "autor": "Kazoo93",
+   "licenca": "CC BY-SA 4.0",
+   "atribuicao": "Atribuir autor, indicar a licença e o link; obras derivadas sob a mesma licença (ShareAlike)",
+   "status": "candidata",
+   "nota": "Selecionada – mandioca cozida; imagem documenta fervura/preparo"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0006",
+  "bloco": 1,
+  "nome": "Macarrão de trigo",
+  "variacao": "de trigo",
+  "sinonimos": [
+   "massa",
+   "macarrao",
+   "espaguete",
+   "penne"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Massas",
+  "preparo": "cozido",
+  "kcal100": 157,
+  "p100": 5.8,
+  "c100": 30.9,
+  "f100": 0.9,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO (referência secundária)",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Cooked dry pasta.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cooked_dry_pasta.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Cooked_dry_pasta.jpg",
+   "autor": "MarkTraceur",
+   "licenca": null,
+   "atribuicao": "Não definida: confirmar na página de origem",
+   "status": "licenca_pendente",
+   "nota": "Selecionada – penne cozido e drenado; não representa necessariamente todo formato de massa"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0007",
+  "bloco": 1,
+  "nome": "Pão francês",
+  "variacao": "",
+  "sinonimos": [
+   "pao",
+   "pao de sal",
+   "paozinho"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Pães",
+  "preparo": "pronto para consumo",
+  "kcal100": 300,
+  "p100": 8,
+  "c100": 58.6,
+  "f100": 3.1,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed.",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Pão francês.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pão_francês.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Pão_francês.jpg",
+   "autor": "Kauan Martinez",
+   "licenca": "CC BY-SA 4.0",
+   "atribuicao": "Atribuir autor, indicar a licença e o link; obras derivadas sob a mesma licença (ShareAlike)",
+   "status": "candidata",
+   "nota": "Selecionada – descrição identifica pão francês brasileiro"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0008",
+  "bloco": 1,
+  "nome": "Aveia em flocos",
+  "variacao": "em flocos",
+  "sinonimos": [
+   "flocos de aveia"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Aveia",
+  "preparo": "seca",
+  "kcal100": 394,
+  "p100": 13.9,
+  "c100": 66.6,
+  "f100": 8.5,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO/TBCA; compilação secundária",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Rolled Oats.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Rolled_Oats.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Rolled_Oats.jpg",
+   "autor": "Gaurav Dhwaj Khadka",
+   "licenca": "CC BY-SA 4.0",
+   "atribuicao": "Atribuir autor, indicar a licença e o link; obras derivadas sob a mesma licença (ShareAlike)",
+   "status": "candidata",
+   "nota": "Selecionada – aveia em flocos"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0009",
+  "bloco": 1,
+  "nome": "Cuscuz de milho",
+  "variacao": "de milho",
+  "sinonimos": [
+   "cuscuz nordestino"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Milho",
+  "preparo": "cozido com sal",
+  "kcal100": 113,
+  "p100": 2.2,
+  "c100": 25.3,
+  "f100": 0.7,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "TACO 4ª ed.",
+  "status_nutri": "pendente",
+  "estimativa": false,
+  "imagem": {
+   "arquivo": "Cuscuz nordestino.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Cuscuz_nordestino.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Cuscuz_nordestino.jpg",
+   "autor": "André Koehne",
+   "licenca": null,
+   "atribuicao": "Não definida: confirmar na página de origem",
+   "status": "licenca_pendente",
+   "nota": "Selecionada – cuscuz nordestino de milho; confirmar licença antes de uso"
+  }
+ },
+ {
+  "id": "EVT-FOOD-0010",
+  "bloco": 1,
+  "nome": "Goma de tapioca",
+  "variacao": "",
+  "sinonimos": [
+   "tapioca",
+   "goma"
+  ],
+  "categorias": [
+   "carboidratos"
+  ],
+  "subcategoria": "Tapioca",
+  "preparo": "hidratada/preparada sem recheio",
+  "kcal100": 230,
+  "p100": 0.2,
+  "c100": 57,
+  "f100": 0,
+  "fibra100": null,
+  "fonte": null,
+  "fonte_ref": null,
+  "fonte_versao": null,
+  "fonte_obs": "Estimativa de referência; não inserir em produção",
+  "status_nutri": "pendente",
+  "estimativa": true,
+  "imagem": {
+   "arquivo": "Beiju.jpg",
+   "arquivo_local": null,
+   "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Beiju.jpg",
+   "pagina": "https://commons.wikimedia.org/wiki/File:Beiju.jpg",
+   "autor": "Pensar Filmes Território Bacia do Jacuípe",
+   "licenca": "CC BY 2.0",
+   "atribuicao": "Atribuir autor, indicar a licença e o link",
+   "status": "candidata",
+   "nota": "Candidata – beiju/tapioca pronto, não goma hidratada; não usar como foto da goma crua"
+  }
+ }
+]
